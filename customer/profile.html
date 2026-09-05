@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile — Little Chef Pizza</title>
+<link rel="icon" type="image/svg+xml" href="../assets/images/logo/favicon.svg">
+<link rel="stylesheet" href="../css/global.css">
+<link rel="stylesheet" href="../css/customer.css">
+<link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body>
+
+<section class="section container">
+  <h1>Your Profile</h1>
+
+  <div id="guest-block" class="empty-state" hidden>
+    <div class="empty-state__icon">🔒</div>
+    <h3>You're browsing as a guest</h3>
+    <p>Create an account to save your details and view order history.</p>
+    <a href="../index.html" class="btn btn--primary" style="margin-top:14px;">Login / Create Account</a>
+  </div>
+
+  <form class="card profile-card" id="profile-form" hidden>
+    <div class="field"><label for="pf-username">Username</label><input id="pf-username" required></div>
+    <div class="field"><label for="pf-fullname">Full Name</label><input id="pf-fullname" required></div>
+    <div class="field"><label for="pf-phone">Phone</label><input id="pf-phone" required></div>
+    <div class="field">
+      <label for="pf-area">Saved Delivery Area</label>
+      <select id="pf-area"><option value="">— None saved —</option></select>
+    </div>
+    <div class="field"><label for="pf-address">Saved Address</label><input id="pf-address"></div>
+    <button type="submit" class="btn btn--primary btn--block">Save Changes</button>
+  </form>
+</section>
+
+<script src="../js/seed-data.js"></script>
+<script src="../js/db.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/validation.js"></script>
+<script src="../js/cart.js"></script>
+<script src="../js/nav.js"></script>
+<script>
+  LCP_NAV.mountCustomer("profile");
+  const user = LCP_NAV.currentUser();
+  if (!user) {
+    document.getElementById("guest-block").hidden = false;
+  } else {
+    const form = document.getElementById("profile-form");
+    form.hidden = false;
+    document.getElementById("pf-username").value = user.username;
+    document.getElementById("pf-fullname").value = user.full_name;
+    document.getElementById("pf-phone").value = user.phone;
+    document.getElementById("pf-address").value = user.address || "";
+    const areaSel = document.getElementById("pf-area");
+    LCP_SEED.delivery_areas.forEach((a) => {
+      const opt = document.createElement("option");
+      opt.value = a; opt.textContent = a;
+      if (a === user.area) opt.selected = true;
+      areaSel.appendChild(opt);
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector("button[type=submit]");
+      const patch = {
+        username: document.getElementById("pf-username").value.trim(),
+        full_name: document.getElementById("pf-fullname").value.trim(),
+        phone: document.getElementById("pf-phone").value.trim(),
+        area: areaSel.value || null,
+        address: document.getElementById("pf-address").value.trim() || null,
+      };
+      const errs = [LCP_VALID.username(patch.username), LCP_VALID.fullName(patch.full_name), LCP_VALID.phone(patch.phone)].filter(Boolean);
+      if (errs.length) return LCP_UTIL.toast(errs[0], "error");
+      LCP_UTIL.setLoading(btn, true, "Saving…");
+      const { error } = await LCP_DB.auth.updateProfile(user.id, patch);
+      LCP_UTIL.setLoading(btn, false);
+      if (error) return LCP_UTIL.toast(error, "error");
+      LCP_UTIL.toast("Profile updated.", "success");
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deals — Little Chef Pizza</title>
+<link rel="icon" type="image/svg+xml" href="../assets/images/logo/favicon.svg">
+<link rel="stylesheet" href="../css/global.css">
+<link rel="stylesheet" href="../css/customer.css">
+<link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body>
+
+<section class="section container">
+  <h1>Little Chef Deals</h1>
+  <p>Great combos, great prices. Deal composition and pricing may be updated by the restaurant from time to time.</p>
+  <div class="stack gap-16" id="deals-list">
+    <div class="skeleton" style="height:110px;"></div>
+    <div class="skeleton" style="height:110px;"></div>
+    <div class="skeleton" style="height:110px;"></div>
+  </div>
+</section>
+
+<script src="../js/seed-data.js"></script>
+<script src="../js/db.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/validation.js"></script>
+<script src="../js/cart.js"></script>
+<script src="../js/menu.js"></script>
+<script src="../js/nav.js"></script>
+<script>
+  LCP_NAV.mountCustomer("deals");
+  LCP_MENU.initDealsPage();
+</script>
+</body>
+</html>

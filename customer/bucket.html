@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Bucket — Little Chef Pizza</title>
+<link rel="icon" type="image/svg+xml" href="../assets/images/logo/favicon.svg">
+<link rel="stylesheet" href="../css/global.css">
+<link rel="stylesheet" href="../css/customer.css">
+<link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body>
+
+<section class="section container">
+  <h1>Your Bucket</h1>
+
+  <div id="bucket-empty" class="empty-state" hidden>
+    <div class="empty-state__icon">🧺</div>
+    <h3>Your bucket is empty</h3>
+    <p>Add something delicious from the menu to get started.</p>
+    <a href="menu.html" class="btn btn--primary" style="margin-top:14px;">Browse Menu</a>
+  </div>
+
+  <div class="bucket-layout" id="bucket-content">
+    <div class="card">
+      <div id="bucket-lines"></div>
+      <button class="btn btn--ghost btn--sm" id="clear-bucket" style="margin-top:14px;">Clear Bucket</button>
+    </div>
+    <div class="card">
+      <h3>Order Summary</h3>
+      <div id="bucket-warning"></div>
+      <div class="summary-row"><span>Subtotal</span><span id="sum-subtotal">Rs. 0</span></div>
+      <div class="summary-row"><span>Delivery</span><span>TBD at checkout</span></div>
+      <div class="summary-row summary-row--total"><span>Total</span><span id="sum-total">Rs. 0</span></div>
+      <a href="checkout.html" class="btn btn--primary btn--block" id="checkout-btn" style="margin-top:14px;">Proceed to Checkout</a>
+    </div>
+  </div>
+</section>
+
+<script src="../js/seed-data.js"></script>
+<script src="../js/db.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/validation.js"></script>
+<script src="../js/cart.js"></script>
+<script src="../js/menu.js"></script>
+<script src="../js/nav.js"></script>
+<script>
+  LCP_NAV.mountCustomer("bucket");
+
+  async function renderBucket() {
+    await LCP_loadCatalogCache();
+    const state = LCP_CART.getState();
+    const empty = state.items.length === 0 && state.deals.length === 0;
+    document.getElementById("bucket-empty").hidden = !empty;
+    document.getElementById("bucket-content").style.display = empty ? "none" : "grid";
+    if (empty) return;
+
+    const linesEl = document.getElementById("bucket-lines");
+    linesEl.innerHTML = "";
+
+    function line(item, isDeal) {
+      const row = LCP_UTIL.el("div", { class: "bucket-line" });
+      const name = LCP_UTIL.el("div", { class: "stack" }, [
+        LCP_UTIL.el("span", { class: "bucket-line__name" }, item.name),
+        item.unavailable ? LCP_UTIL.el("span", { class: "badge badge--danger" }, "No longer available") : null,
+        LCP_UTIL.el("span", { class: "muted" }, LCP_UTIL.pkr(item.unit_price) + " each"),
+      ]);
+      const stepper = LCP_UTIL.el("div", { class: "qty-stepper" });
+      const minus = LCP_UTIL.el("button", { type: "button" }, "−");
+      const qtyEl = LCP_UTIL.el("span", {}, String(item.qty));
+      const plus = LCP_UTIL.el("button", { type: "button" }, "+");
+      minus.addEventListener("click", () => {
+        const newQty = item.qty - 1;
+        isDeal ? LCP_CART.setDealQty(item.deal_id, newQty) : LCP_CART.setProductQty(item.product_id, item.size, newQty);
+        renderBucket();
+      });
+      plus.addEventListener("click", () => {
+        isDeal ? LCP_CART.setDealQty(item.deal_id, item.qty + 1) : LCP_CART.setProductQty(item.product_id, item.size, item.qty + 1);
+        renderBucket();
+      });
+      stepper.append(minus, qtyEl, plus);
+      const total = LCP_UTIL.el("span", { class: "price", style: "width:90px; text-align:right; display:inline-block;" }, LCP_UTIL.pkr(item.line_total));
+      const remove = LCP_UTIL.el("button", { class: "remove-link", type: "button" }, "Remove");
+      remove.addEventListener("click", () => {
+        isDeal ? LCP_CART.removeDeal(item.deal_id) : LCP_CART.removeProduct(item.product_id, item.size);
+        renderBucket();
+      });
+      row.append(name, stepper, total, remove);
+      return row;
+    }
+
+    state.items.forEach((i) => linesEl.appendChild(line(i, false)));
+    state.deals.forEach((d) => linesEl.appendChild(line(d, true)));
+
+    document.getElementById("sum-subtotal").textContent = LCP_UTIL.pkr(state.subtotal);
+    document.getElementById("sum-total").textContent = LCP_UTIL.pkr(state.subtotal);
+
+    const warnEl = document.getElementById("bucket-warning");
+    warnEl.innerHTML = "";
+    if (state.hasIssue) {
+      warnEl.appendChild(LCP_UTIL.el("div", { class: "notice-box" }, "Some items in your bucket are no longer available. Please remove them before checking out."));
+      document.getElementById("checkout-btn").classList.add("btn--disabled-look");
+    }
+  }
+
+  document.getElementById("clear-bucket").addEventListener("click", async () => {
+    const ok = await LCP_UTIL.confirmDialog("Clear everything from your bucket?", { confirmText: "Clear", danger: true });
+    if (ok) { LCP_CART.clear(); renderBucket(); LCP_UTIL.toast("Bucket cleared.", "info"); }
+  });
+
+  renderBucket();
+</script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Menu — Little Chef Pizza</title>
+<link rel="icon" type="image/svg+xml" href="../assets/images/logo/favicon.svg">
+<link rel="stylesheet" href="../css/global.css">
+<link rel="stylesheet" href="../css/customer.css">
+<link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body>
+
+<section class="section container" style="padding-bottom:20px;">
+  <h1>Our Menu</h1>
+  <p>Browse everything Little Chef Pizza has to offer — search by name or filter by category.</p>
+  <div class="search-box">
+    <input type="text" id="menu-search" placeholder="Search your favourite food…" aria-label="Search menu">
+  </div>
+  <div class="chip-row" id="menu-categories"></div>
+  <div class="product-grid" id="menu-grid">
+    <div class="skeleton" style="height:260px;"></div>
+    <div class="skeleton" style="height:260px;"></div>
+    <div class="skeleton" style="height:260px;"></div>
+    <div class="skeleton" style="height:260px;"></div>
+    <div class="skeleton" style="height:260px;"></div>
+    <div class="skeleton" style="height:260px;"></div>
+  </div>
+  <div class="empty-state" id="menu-empty" hidden>
+    <div class="empty-state__icon">🍕</div>
+    <h3>No items found</h3>
+    <p>Try a different search term or category.</p>
+  </div>
+</section>
+
+<script src="../js/seed-data.js"></script>
+<script src="../js/db.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/validation.js"></script>
+<script src="../js/cart.js"></script>
+<script src="../js/menu.js"></script>
+<script src="../js/nav.js"></script>
+<script>
+  LCP_NAV.mountCustomer("menu");
+  LCP_MENU.initMenuPage();
+</script>
+</body>
+</html>

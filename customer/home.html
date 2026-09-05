@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Little Chef Pizza — Home</title>
+<link rel="icon" type="image/svg+xml" href="../assets/images/logo/favicon.svg">
+<link rel="stylesheet" href="../css/global.css">
+<link rel="stylesheet" href="../css/customer.css">
+<link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body>
+
+<section class="hero">
+  <div class="container hero__inner">
+    <div>
+      <p class="hero__eyebrow">GUJRAT'S FAVOURITE PIZZA &amp; FAST FOOD</p>
+      <h1>Freshly Made.<br>Seriously Delicious.</h1>
+      <p>Order your favourites from Little Chef Pizza — hot, fresh and on its way. Delivery across Gujrat city, or ready for takeaway and dine-in.</p>
+      <div class="hero__actions">
+        <a href="menu.html" class="btn btn--primary">Order Now</a>
+        <a href="menu.html" class="btn btn--ghost" style="border-color:#3a3630; color:#fff;">Explore Menu</a>
+      </div>
+    </div>
+    <div class="hero__art">
+      <!-- IMAGE PROMPT:
+           Professional high-end photo of a freshly baked Little Chef style
+           pizza fresh out of the oven, melted cheese, dark restaurant
+           background, warm golden lighting, realistic food photography, 4K.
+      -->
+      <span class="muted" style="color:#7a7263;">Hero image placeholder — assets/images/hero/pizza-hero.webp</span>
+    </div>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="section-head">
+    <h2>Popular Right Now</h2>
+    <a href="menu.html">View full menu →</a>
+  </div>
+  <div class="product-grid" id="home-featured-products">
+    <div class="skeleton" style="height:260px;"></div>
+    <div class="skeleton" style="height:260px;"></div>
+    <div class="skeleton" style="height:260px;"></div>
+    <div class="skeleton" style="height:260px;"></div>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="section-head">
+    <h2>Little Chef Deals</h2>
+    <a href="deals.html">See all deals →</a>
+  </div>
+  <div class="stack gap-16" id="home-featured-deals">
+    <div class="skeleton" style="height:100px;"></div>
+    <div class="skeleton" style="height:100px;"></div>
+  </div>
+</section>
+
+<section class="section--dark section">
+  <div class="container" style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px; text-align:center;">
+    <div><h3 style="color:var(--gold);">🚚 Fast Delivery</h3><p>Up to 40 minutes across supported Gujrat city areas.</p></div>
+    <div><h3 style="color:var(--gold);">🥡 Easy Takeaway</h3><p>Ready in as little as 20 minutes.</p></div>
+    <div><h3 style="color:var(--gold);">🍕 Fresh Ingredients</h3><p>Made to order, every single time.</p></div>
+  </div>
+</section>
+
+<script src="../js/seed-data.js"></script>
+<script src="../js/db.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/validation.js"></script>
+<script src="../js/cart.js"></script>
+<script src="../js/menu.js"></script>
+<script src="../js/nav.js"></script>
+<script>
+  LCP_NAV.mountCustomer("home");
+  LCP_MENU.renderFeatured("home-featured-products", "products", 4);
+  LCP_MENU.renderFeatured("home-featured-deals", "deals", 2);
+</script>
+</body>
+</html>

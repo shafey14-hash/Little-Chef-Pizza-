@@ -1,0 +1,17 @@
+# Environment variables (never commit real secrets)
+.env
+.env.local
+.env.*.local
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+
+# Node (only relevant if you later add build tools / Supabase CLI)
+node_modules/
+npm-debug.log*
+
+# Supabase CLI local state (if you use `supabase init` later)
+.supabase/

@@ -1,0 +1,48 @@
+/* ============================================================
+   Responsive overrides. Base styles above are already mobile-
+   reasonable; this file tightens layout at the breakpoints
+   called out in the brief: 1440 / 1280 / 1024 / 768 / 480 / 390.
+   ============================================================ */
+
+@media (max-width: 1024px){
+  .hero__inner{ grid-template-columns:1fr; }
+  .hero__art{ order:-1; }
+  .bucket-layout{ grid-template-columns:1fr; }
+  .footer__grid{ grid-template-columns:1fr 1fr; }
+  .admin-sidebar{ width:200px; }
+}
+
+@media (max-width: 860px){
+  .nav{ display:none; }
+  .hamburger{ display:block; }
+  .topnav__right{ gap:10px; }
+  .nav__who{ display:none; }
+  .section{ padding:44px 0; }
+  .order-type-grid{ grid-template-columns:1fr; }
+  .footer__grid{ grid-template-columns:1fr; gap:28px; }
+
+  .admin-shell{ flex-direction:column; }
+  .admin-sidebar{ width:100%; height:auto; position:relative; flex-direction:row; overflow-x:auto; }
+  .admin-sidebar .brand{ display:none; }
+  .admin-nav{ flex-direction:row; }
+  .admin-logout{ margin:10px; flex-shrink:0; }
+  .admin-table{ font-size:12.5px; }
+  .admin-table th, .admin-table td{ padding:9px 8px; }
+}
+
+@media (max-width: 620px){
+  h1{ font-size:28px; }
+  .hero h1{ font-size:30px; }
+  .product-grid{ grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:14px; }
+  .auth-modal{ padding:28px 20px; }
+  .kpi-grid{ grid-template-columns:repeat(2,1fr); }
+  .checkout-steps__step{ font-size:11px; }
+  .deal-card{ grid-template-columns:auto 1fr; }
+  .deal-card > div:last-child{ grid-column:1/-1; flex-direction:row; align-items:center; justify-content:space-between; display:flex; }
+}
+
+@media (max-width: 480px){
+  .container{ padding:0 14px; }
+  .kpi-grid{ grid-template-columns:1fr 1fr; }
+  .admin-table{ display:block; overflow-x:auto; white-space:nowrap; }
+}
