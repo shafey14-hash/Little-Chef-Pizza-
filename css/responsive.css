@@ -4,191 +4,74 @@
    called out in the brief: 1440 / 1280 / 1024 / 768 / 480 / 390.
    ============================================================ */
 
-html,
-body {
-  max-width: 100%;
-  overflow-x: hidden;
-} /* safety net: nothing should ever force horizontal scroll */
+html, body{ max-width:100%; overflow-x:hidden; } /* safety net: nothing should ever force horizontal scroll */
 
-@media (max-width: 1024px) {
-  .hero__inner {
-    grid-template-columns: 1fr;
-  }
-  .hero__art {
-    order: -1;
-  }
-  .bucket-layout {
-    grid-template-columns: 1fr;
-  }
-  .footer__grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .admin-sidebar {
-    width: 200px;
-  }
+@media (max-width: 1024px){
+  .hero__inner{ grid-template-columns:1fr; }
+  .hero__art{ order:-1; }
+  .bucket-layout{ grid-template-columns:1fr; }
+  .footer__grid{ grid-template-columns:1fr 1fr; }
+  .admin-sidebar{ width:200px; }
+  .product-detail{ grid-template-columns:1fr; gap:22px; }
 }
 
-@media (max-width: 860px) {
-  .nav {
-    display: none;
-  }
-  .hamburger {
-    display: block;
-  }
-  .topnav__right {
-    gap: 10px;
-  }
-  .nav__who {
-    display: none;
-  }
-  .section {
-    padding: 44px 0;
-  }
-  .order-type-grid {
-    grid-template-columns: 1fr;
-  }
-  .footer__grid {
-    grid-template-columns: 1fr;
-    gap: 28px;
-  }
+@media (max-width: 860px){
+  .nav{ display:none; }
+  .hamburger{ display:block; }
+  .topnav__right{ gap:10px; }
+  .nav__who{ display:none; }
+  .section{ padding:44px 0; }
+  .order-type-grid{ grid-template-columns:1fr; }
+  .footer__grid{ grid-template-columns:1fr; gap:28px; }
 
-  .admin-shell {
-    flex-direction: column;
-  }
-  .admin-sidebar {
-    width: 100%;
-    height: auto;
-    position: relative;
-    flex-direction: row;
-    overflow-x: auto;
-  }
-  .admin-sidebar .brand {
-    display: none;
-  }
-  .admin-nav {
-    flex-direction: row;
-  }
-  .admin-logout {
-    margin: 10px;
-    flex-shrink: 0;
-  }
-  .admin-table {
-    font-size: 12.5px;
-  }
-  .admin-table th,
-  .admin-table td {
-    padding: 9px 8px;
-  }
+  .admin-shell{ flex-direction:column; }
+  .admin-sidebar{ width:100%; height:auto; position:relative; flex-direction:row; overflow-x:auto; }
+  .admin-sidebar .brand{ display:none; }
+  .admin-nav{ flex-direction:row; }
+  .admin-logout{ margin:10px; flex-shrink:0; }
+  .admin-table{ font-size:12.5px; }
+  .admin-table th, .admin-table td{ padding:9px 8px; }
 }
 
-@media (max-width: 620px) {
-  h1 {
-    font-size: 26px;
-  }
-  .hero h1 {
-    font-size: 28px;
-  }
-  .product-grid {
-    grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
-    gap: 12px;
-  }
-  .auth-modal {
-    padding: 26px 18px;
-  }
-  .kpi-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .checkout-steps__step {
-    font-size: 10.5px;
-  }
-  .deal-card {
-    grid-template-columns: auto 1fr;
-    row-gap: 10px;
-  }
-  .deal-card > div:last-child {
-    grid-column: 1/-1;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    display: flex;
-  }
-  .deal-card__badge {
-    width: 44px;
-    height: 44px;
-    font-size: 13px;
-  }
+@media (max-width: 620px){
+  h1{ font-size:26px; }
+  .hero h1{ font-size:28px; }
+  .product-grid{ grid-template-columns:repeat(auto-fill, minmax(155px,1fr)); gap:12px; }
+  .auth-modal{ padding:26px 18px; }
+  .kpi-grid{ grid-template-columns:repeat(2,1fr); }
+  .checkout-steps__step{ font-size:10.5px; }
+  .deal-card{ grid-template-columns:auto 1fr; row-gap:10px; }
+  .deal-card > div:last-child{ grid-column:1/-1; flex-direction:row; align-items:center; justify-content:space-between; display:flex; }
+  .deal-card__badge{ width:44px; height:44px; font-size:13px; }
 
   /* Product card footer: price + button can get tight on narrow cards —
      let them stack instead of squeezing/overflowing. */
-  .product-card__footer {
-    flex-wrap: wrap;
-    row-gap: 8px;
-  }
-  .product-card__footer .btn {
-    flex: 1 1 100%;
-  }
+  .product-card__footer{ flex-wrap:wrap; row-gap:8px; }
+  .product-card__footer .btn{ flex:1 1 100%; }
 
   /* Bucket line items: name / stepper / price / remove no longer fit in
      one row on small phones — wrap into two lines cleanly. */
-  .bucket-line {
-    flex-wrap: wrap;
-    row-gap: 8px;
-  }
-  .bucket-line__name {
-    flex: 1 1 100%;
-  }
+  .bucket-line{ flex-wrap:wrap; row-gap:8px; }
+  .bucket-line__name{ flex:1 1 100%; }
 
-  .topbar-title,
-  .admin-topbar strong {
-    font-size: 14px;
-  }
-  .admin-topbar .muted {
-    display: none;
-  } /* today's date — hide on tiny screens to avoid crowding */
+  .topbar-title, .admin-topbar strong{ font-size:14px; }
+  .admin-topbar .muted{ display:none; } /* today's date — hide on tiny screens to avoid crowding */
 }
 
-@media (max-width: 480px) {
-  .container {
-    padding: 0 14px;
-  }
-  .kpi-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .admin-table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-  .brand__tag {
-    display: none;
-  } /* "PIZZA & FAST FOOD" tagline — drop on very small screens so the logo never wraps/overflows */
-  .checkout-steps__step {
-    font-size: 9.5px;
-    padding-bottom: 8px;
-  }
-  .order-type-card {
-    padding: 14px;
-  }
-  .success-num {
-    font-size: 24px;
-  }
+@media (max-width: 480px){
+  .container{ padding:0 14px; }
+  .kpi-grid{ grid-template-columns:1fr 1fr; }
+  .admin-table{ display:block; overflow-x:auto; white-space:nowrap; }
+  .brand__tag{ display:none; } /* "PIZZA & FAST FOOD" tagline — drop on very small screens so the logo never wraps/overflows */
+  .checkout-steps__step{ font-size:9.5px; padding-bottom:8px; }
+  .order-type-card{ padding:14px; }
+  .success-num{ font-size:24px; }
 }
 
-@media (max-width: 380px) {
-  .btn {
-    padding: 0 16px;
-    font-size: 14px;
-  }
-  .product-grid {
-    grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
-  }
-  h1 {
-    font-size: 23px;
-  }
-  .bucket-pill {
-    padding: 0 12px;
-  }
-  .bucket-pill__label {
-    display: none;
-  }
+@media (max-width: 380px){
+  .btn{ padding:0 16px; font-size:14px; }
+  .product-grid{ grid-template-columns:repeat(auto-fill, minmax(135px,1fr)); }
+  h1{ font-size:23px; }
+  .bucket-pill{ padding:0 12px; }
+  .bucket-pill__label{ display:none; }
 }

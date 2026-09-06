@@ -13,14 +13,17 @@ no build step. Before anything will work you must:
 1. Run `supabase/schema.sql` → `supabase/seed.sql` → `supabase/policies.sql`
    → `supabase/auth_and_admin.sql`, in that exact order, in your Supabase
    project's SQL Editor.
-2. In **Authentication → Providers → Email**, turn **OFF** "Confirm email".
+2. Create a **Storage** bucket named exactly `menu-images` (Storage → New
+   bucket → toggle "Public bucket" ON), then run `supabase/storage_policies.sql`.
+   This powers the admin panel's direct image upload (max 5MB per image).
+3. In **Authentication → Providers → Email**, turn **OFF** "Confirm email".
    This app logs customers in with a username, mapped internally to a
    fake address like `alibaba@users.littlechefpizza.local` — no real inbox
    exists to click a confirmation link in, so confirmation must stay off.
-3. Fill in `js/config.js` with your project's URL and **anon/public** key
+4. Fill in `js/config.js` with your project's URL and **anon/public** key
    (Project Settings → API). This key is safe to commit — see the comment
    in that file for why.
-4. Create the admin account exactly as described at the top of
+5. Create the admin account exactly as described at the top of
    `supabase/auth_and_admin.sql`.
 
 Then just open `index.html` (or deploy — see below). No `localStorage`
@@ -57,9 +60,9 @@ the backend does.
 **Order totals are never trusted from the browser.** `orders.create()` is a
 thin wrapper around Postgres RPC `create_order()` (see
 `supabase/policies.sql`), which re-derives every price and validates
-availability from the current catalog *inside the database* before writing
+availability from the current catalog _inside the database_ before writing
 anything. That function — running with elevated `SECURITY DEFINER`
-privileges — is the *only* way a row is ever written to `orders`; there is
+privileges — is the _only_ way a row is ever written to `orders`; there is
 no public INSERT policy on that table at all, by design.
 
 **Sessions are async.** Supabase's `getSession()` is a Promise, so every
@@ -104,6 +107,7 @@ have real images, add an `image_url` to the matching product/deal in
 ## Changing the admin username / password
 
 See `supabase/auth_and_admin.sql` — it has ready-to-run queries for:
+
 - changing the admin's username (updates both `profiles` and the matching
   internal auth email, since login derives one from the other),
 - changing the admin's password (a direct, safe SQL statement using

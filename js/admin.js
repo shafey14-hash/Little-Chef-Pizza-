@@ -9,6 +9,105 @@ const LCP_ADMIN = (() => {
     return d.toDateString() === t.toDateString();
   }
 
+  /**
+   * Builds a small "thumbnail + Upload + Remove" widget. Uploads go
+   * straight into Supabase Storage (max 5MB, enforced in db.js), and the
+   * resulting public URL is saved via `saveFn`. The old file is deleted
+   * from Storage automatically when replaced or removed, so the bucket
+   * doesn't accumulate orphaned images.
+   *
+   * entity: the product/deal object (mutated in place on success)
+   * folder: "products" | "deals" — just keeps the Storage bucket tidy
+   * saveFn: async (patch) => { data, error } — e.g. LCP_DB.catalog.updateProduct(id, patch)
+   */
+  function buildImageCell(entity, folder, saveFn) {
+    const container = LCP_UTIL.el("div", { class: "img-cell" });
+    const thumb = LCP_UTIL.el("img", {
+      class: "img-cell__thumb",
+      src: entity.image_url || "",
+      alt: entity.name,
+    });
+    thumb.style.display = entity.image_url ? "block" : "none";
+    const placeholder = LCP_UTIL.el(
+      "span",
+      { class: "img-cell__placeholder" },
+      "No image",
+    );
+    placeholder.style.display = entity.image_url ? "none" : "flex";
+
+    const fileInput = LCP_UTIL.el("input", { type: "file", accept: "image/*" });
+    fileInput.hidden = true;
+    const uploadBtn = LCP_UTIL.el(
+      "button",
+      { class: "btn btn--sm btn--ghost", type: "button" },
+      entity.image_url ? "Change" : "Upload",
+    );
+    const removeBtn = LCP_UTIL.el(
+      "button",
+      { class: "btn btn--sm btn--danger", type: "button" },
+      "Remove",
+    );
+    removeBtn.disabled = !entity.image_url;
+
+    uploadBtn.addEventListener("click", () => fileInput.click());
+
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files[0];
+      fileInput.value = "";
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024)
+        return LCP_UTIL.toast("Image must be 5MB or smaller.", "error");
+
+      LCP_UTIL.setLoading(uploadBtn, true, "Uploading…");
+      const { data, error } = await LCP_DB.storage.uploadImage(file, folder);
+      if (error) {
+        LCP_UTIL.toast(error, "error");
+        LCP_UTIL.setLoading(uploadBtn, false);
+        return;
+      }
+
+      const oldUrl = entity.image_url;
+      const { error: saveErr } = await saveFn({ image_url: data.url });
+      LCP_UTIL.setLoading(uploadBtn, false);
+      if (saveErr) {
+        LCP_UTIL.toast(saveErr, "error");
+        await LCP_DB.storage.removeImage(data.path);
+        return;
+      }
+
+      if (oldUrl) await LCP_DB.storage.removeImage(oldUrl); // clean up the file it's replacing
+      entity.image_url = data.url;
+      thumb.src = data.url;
+      thumb.style.display = "block";
+      placeholder.style.display = "none";
+      uploadBtn.textContent = "Change";
+      removeBtn.disabled = false;
+      LCP_UTIL.toast("Image uploaded.", "success");
+    });
+
+    removeBtn.addEventListener("click", async () => {
+      const ok = await LCP_UTIL.confirmDialog("Remove this image?", {
+        confirmText: "Remove",
+        danger: true,
+      });
+      if (!ok) return;
+      LCP_UTIL.setLoading(removeBtn, true, "Removing…");
+      await LCP_DB.storage.removeImage(entity.image_url);
+      const { error } = await saveFn({ image_url: null });
+      LCP_UTIL.setLoading(removeBtn, false);
+      if (error) return LCP_UTIL.toast(error, "error");
+      entity.image_url = null;
+      thumb.style.display = "none";
+      placeholder.style.display = "flex";
+      uploadBtn.textContent = "Upload";
+      removeBtn.disabled = true;
+      LCP_UTIL.toast("Image removed.", "success");
+    });
+
+    container.append(thumb, placeholder, fileInput, uploadBtn, removeBtn);
+    return container;
+  }
+
   async function initDashboard() {
     const host = document.getElementById("admin-content");
     host.innerHTML = `<div class="kpi-grid" id="kpi-grid"></div>
@@ -201,11 +300,14 @@ const LCP_ADMIN = (() => {
             <button class="${!p.available ? "active-unavailable" : ""}" data-avail="false">Unavailable</button>
           </div>
         </td>
-        <td>
-          <input type="text" placeholder="https://…" value="${p.image_url ? LCP_NAV.escapeHtml(p.image_url) : ""}"
-                 data-image-url style="width:170px; height:34px; border-radius:8px; border:1.5px solid var(--line); padding:0 8px; font-size:12.5px;">
-        </td>
-        <td><button class="btn btn--sm btn--gold" data-save>Save</button></td>`;
+        <td data-image-cell></td>
+        <td><button class="btn btn--sm btn--gold" data-save>Save Price</button></td>`;
+
+      tr.querySelector("[data-image-cell]").appendChild(
+        buildImageCell(p, "products", (patch) =>
+          LCP_DB.catalog.updateProduct(p.id, patch),
+        ),
+      );
 
       tr.querySelectorAll("[data-avail]").forEach((btn) =>
         btn.addEventListener("click", async () => {
@@ -230,13 +332,11 @@ const LCP_ADMIN = (() => {
         } else {
           patch.price = Number(tr.querySelector("[data-price-flat]").value);
         }
-        patch.image_url =
-          tr.querySelector("[data-image-url]").value.trim() || null;
         LCP_UTIL.setLoading(e.target, true, "Saving…");
         await LCP_DB.catalog.updateProduct(p.id, patch);
         Object.assign(p, patch);
         LCP_UTIL.setLoading(e.target, false);
-        LCP_UTIL.toast(`${p.name} updated.`, "success");
+        LCP_UTIL.toast(`${p.name} price updated.`, "success");
       });
       return tr;
     }
@@ -244,7 +344,7 @@ const LCP_ADMIN = (() => {
     function renderAll() {
       const wrap = document.getElementById("products-table-wrap");
       wrap.innerHTML = `<table class="admin-table">
-        <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Availability</th><th>Image URL</th><th></th></tr></thead>
+        <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Availability</th><th>Image</th><th></th></tr></thead>
         <tbody id="products-tbody"></tbody></table>`;
       const tbody = document.getElementById("products-tbody");
       products.forEach((p) => tbody.appendChild(row(p)));
@@ -273,25 +373,30 @@ const LCP_ADMIN = (() => {
             <span class="badge ${d.available ? "badge--success" : "badge--muted"}">${d.available ? "Active" : "Deactivated"}</span>
           </div>
           <p class="muted">${LCP_NAV.escapeHtml(d.description)}</p>
-          <div class="row gap-12" style="flex-wrap:wrap;">
+          <div class="row gap-12" style="flex-wrap:wrap; align-items:center;">
             <div class="price-edit"><span>Rs.</span><input type="number" min="0" value="${d.price}" data-deal-price></div>
-            <input type="text" placeholder="Image URL (https://…)" value="${d.image_url ? LCP_NAV.escapeHtml(d.image_url) : ""}"
-                   data-deal-image style="width:220px; height:38px; border-radius:8px; border:1.5px solid var(--line); padding:0 10px; font-size:13px;">
-            <button class="btn btn--sm btn--gold" data-deal-save="${d.id}">Save</button>
+            <button class="btn btn--sm btn--gold" data-deal-save="${d.id}">Save Price</button>
             <button class="btn btn--sm btn--ghost" data-deal-toggle="${d.id}">${d.available ? "Deactivate" : "Activate"}</button>
-          </div>`;
+          </div>
+          <div data-deal-image-cell style="margin-top:12px;"></div>`;
+
+        card
+          .querySelector("[data-deal-image-cell]")
+          .appendChild(
+            buildImageCell(d, "deals", (patch) =>
+              LCP_DB.catalog.updateDeal(d.id, patch),
+            ),
+          );
+
         card
           .querySelector("[data-deal-save]")
           .addEventListener("click", async (e) => {
             const price = Number(card.querySelector("[data-deal-price]").value);
-            const image_url =
-              card.querySelector("[data-deal-image]").value.trim() || null;
             LCP_UTIL.setLoading(e.target, true, "Saving…");
-            await LCP_DB.catalog.updateDeal(d.id, { price, image_url });
+            await LCP_DB.catalog.updateDeal(d.id, { price });
             d.price = price;
-            d.image_url = image_url;
             LCP_UTIL.setLoading(e.target, false);
-            LCP_UTIL.toast(`${d.name} updated.`, "success");
+            LCP_UTIL.toast(`${d.name} price updated.`, "success");
           });
         card
           .querySelector("[data-deal-toggle]")

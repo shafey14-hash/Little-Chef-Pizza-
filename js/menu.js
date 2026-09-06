@@ -12,6 +12,23 @@ const LCP_MENU = (() => {
     const wrap = LCP_UTIL.el("div", {
       class: "card card--hover product-card",
       "data-product-id": product.id,
+      tabindex: "0",
+      role: "link",
+      "aria-label": `View details for ${product.name}`,
+    });
+
+    // Whole card is clickable -> product detail page. Inner interactive
+    // controls (size picker, Add to Bucket) call stopPropagation() so
+    // tapping them doesn't also navigate away.
+    const goToDetail = () => {
+      window.location.href = `product.html?id=${product.id}`;
+    };
+    wrap.addEventListener("click", goToDetail);
+    wrap.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        goToDetail();
+      }
     });
 
     // Renders the real photo once product.image_url is set (via admin panel or
@@ -52,7 +69,8 @@ const LCP_MENU = (() => {
           { type: "button", class: i === 0 ? "active" : "" },
           `${sz} · ${LCP_UTIL.pkr(product.sizes[sz])}`,
         );
-        b.addEventListener("click", () => {
+        b.addEventListener("click", (e) => {
+          e.stopPropagation(); // don't navigate to the detail page when just picking a size
           selectedSize = sz;
           LCP_UTIL.qsa("button", sizeRow).forEach((x) =>
             x.classList.remove("active"),
@@ -80,7 +98,8 @@ const LCP_MENU = (() => {
       addBtn.disabled = true;
       addBtn.textContent = "Unavailable";
     }
-    addBtn.addEventListener("click", () => {
+    addBtn.addEventListener("click", (e) => {
+      e.stopPropagation(); // don't navigate to the detail page when adding to the bucket
       LCP_CART.addProduct(product, selectedSize, 1);
       addBtn.textContent = "Added ✓";
       addBtn.classList.add("btn--gold");
@@ -245,5 +264,129 @@ const LCP_MENU = (() => {
     }
   }
 
-  return { productCard, dealCard, initMenuPage, initDealsPage, renderFeatured };
+  async function initProductPage() {
+    const root = document.getElementById("product-detail-root");
+    const loading = document.getElementById("product-detail-loading");
+    const notFound = document.getElementById("product-detail-notfound");
+
+    const id = new URLSearchParams(window.location.search).get("id");
+    if (!id) {
+      loading.hidden = true;
+      notFound.hidden = false;
+      return;
+    }
+
+    const { data: product, error } = await LCP_DB.catalog.getProduct(id);
+    loading.hidden = true;
+    if (error || !product) {
+      notFound.hidden = false;
+      return;
+    }
+
+    document.title = `${product.name} — Little Chef Pizza`;
+
+    const hasSizes = !!product.sizes;
+    const sizeKeys = hasSizes ? Object.keys(product.sizes) : null;
+    let selectedSize = hasSizes ? sizeKeys[0] : null;
+    let qty = 1;
+
+    root.hidden = false;
+    root.innerHTML = `
+      <a href="menu.html" class="muted" style="display:inline-block; margin-bottom:16px;">← Back to Menu</a>
+      <div class="product-detail">
+        <div class="product-detail__img" id="pd-img"></div>
+        <div class="product-detail__info">
+          <span class="badge badge--muted">${LCP_NAV.escapeHtml(product.categories?.name || "")}</span>
+          <h1>${LCP_NAV.escapeHtml(product.name)}</h1>
+          <p>${LCP_NAV.escapeHtml(product.description || "")}</p>
+          ${!product.available ? '<div class="notice-box">This item is currently unavailable.</div>' : ""}
+          <div id="pd-sizes"></div>
+          <div class="row gap-16" style="align-items:center; margin:18px 0;">
+            <span class="price" id="pd-price" style="font-size:24px;"></span>
+            <div class="qty-stepper" id="pd-qty-stepper">
+              <button type="button" id="pd-qty-minus">−</button>
+              <span id="pd-qty-value">1</span>
+              <button type="button" id="pd-qty-plus">+</button>
+            </div>
+          </div>
+          <button class="btn btn--primary btn--block" id="pd-add-btn" ${!product.available ? "disabled" : ""}>
+            ${product.available ? "Add to Bucket" : "Currently Unavailable"}
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Image (large) — same real-photo-or-placeholder logic as the grid card.
+    const imgHost = document.getElementById("pd-img");
+    if (product.image_url) {
+      imgHost.appendChild(
+        LCP_UTIL.el("img", { src: product.image_url, alt: product.name }),
+      );
+    } else {
+      imgHost.appendChild(LCP_UTIL.el("span", {}, product.name));
+    }
+
+    const priceEl = document.getElementById("pd-price");
+    function updatePrice() {
+      priceEl.textContent = LCP_UTIL.pkr(
+        hasSizes ? product.sizes[selectedSize] : product.price,
+      );
+    }
+    updatePrice();
+
+    if (hasSizes) {
+      const sizeHost = document.getElementById("pd-sizes");
+      const row = LCP_UTIL.el("div", {
+        class: "size-picker",
+        style: "margin:14px 0;",
+      });
+      sizeKeys.forEach((sz, i) => {
+        const b = LCP_UTIL.el(
+          "button",
+          { type: "button", class: i === 0 ? "active" : "" },
+          `${sz} · ${LCP_UTIL.pkr(product.sizes[sz])}`,
+        );
+        b.addEventListener("click", () => {
+          selectedSize = sz;
+          LCP_UTIL.qsa("button", row).forEach((x) =>
+            x.classList.remove("active"),
+          );
+          b.classList.add("active");
+          updatePrice();
+        });
+        row.appendChild(b);
+      });
+      sizeHost.appendChild(row);
+    }
+
+    const qtyValueEl = document.getElementById("pd-qty-value");
+    document.getElementById("pd-qty-minus").addEventListener("click", () => {
+      qty = Math.max(1, qty - 1);
+      qtyValueEl.textContent = qty;
+    });
+    document.getElementById("pd-qty-plus").addEventListener("click", () => {
+      qty = Math.min(50, qty + 1);
+      qtyValueEl.textContent = qty;
+    });
+
+    document.getElementById("pd-add-btn").addEventListener("click", (e) => {
+      LCP_CART.addProduct(product, selectedSize, qty);
+      LCP_UTIL.toast(`${product.name} added to your bucket.`, "success");
+      const btn = e.currentTarget;
+      const original = btn.textContent;
+      btn.textContent = "Added ✓";
+      setTimeout(() => {
+        btn.textContent = original;
+      }, 900);
+    });
+  }
+
+  return {
+    productCard,
+    dealCard,
+    initMenuPage,
+    initDealsPage,
+    renderFeatured,
+    initProductPage,
+  };
 })();
