@@ -34,14 +34,16 @@
           </div>
         </div>
         <div class="hero__art">
-          <!-- IMAGE PROMPT:
-           Professional high-end photo of a freshly baked Little Chef style
-           pizza fresh out of the oven, melted cheese, dark restaurant
-           background, warm golden lighting, realistic food photography, 4K.
-      -->
-          <span class="muted" style="color: #7a7263"
-            >Hero image placeholder — assets/images/hero/pizza-hero.webp</span
-          >
+          <video
+            id="hero-video"
+            class="hero__video"
+            autoplay
+            muted
+            loop
+            playsinline
+            poster="../assets/images/hero/pizza-hero-poster.jpg"
+            aria-hidden="true"
+          ></video>
         </div>
       </div>
     </section>
@@ -104,6 +106,21 @@
     <script src="../js/cart.js"></script>
     <script src="../js/menu.js"></script>
     <script src="../js/nav.js"></script>
+    <script>
+      // Only load the hero video's actual bytes if the visitor hasn't asked for
+      // reduced motion — otherwise the poster frame alone is shown (see the
+      // matching CSS rule in customer.css), and no video is downloaded at all.
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        const heroVideo = document.getElementById("hero-video");
+        if (heroVideo) {
+          const source = document.createElement("source");
+          source.src = "../assets/videos/hero/pizza-hero.mp4";
+          source.type = "video/mp4";
+          heroVideo.appendChild(source);
+          heroVideo.load();
+        }
+      }
+    </script>
     <script>
       (async () => {
         await LCP_NAV.mountCustomer("home");
