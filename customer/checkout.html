@@ -1,112 +1,176 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Checkout — Little Chef Pizza</title>
-<link rel="icon" type="image/svg+xml" href="../assets/images/logo/favicon.svg">
-<link rel="stylesheet" href="../css/global.css">
-<link rel="stylesheet" href="../css/customer.css">
-<link rel="stylesheet" href="../css/responsive.css">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout — Little Chef Pizza</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="../assets/images/logo/favicon.svg"
+    />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/customer.css" />
+    <link rel="stylesheet" href="../css/responsive.css" />
+  </head>
+  <body>
+    <section class="section container" style="max-width: 700px">
+      <h1>Checkout</h1>
 
-<section class="section container" style="max-width:700px;">
-  <h1>Checkout</h1>
-
-  <div class="checkout-steps">
-    <div class="checkout-steps__step active" data-step-label="1">1. Order Type</div>
-    <div class="checkout-steps__step" data-step-label="2">2. Your Details</div>
-    <div class="checkout-steps__step" data-step-label="3">3. Confirmation</div>
-  </div>
-
-  <!-- STEP 1: ORDER TYPE -->
-  <div class="checkout-panel" data-panel="1">
-    <div class="order-type-grid">
-      <div class="order-type-card" data-type="delivery">
-        <div class="order-type-card__icon">🚚</div><strong>Delivery</strong>
-        <p class="muted">Up to 40 minutes · Gujrat city only</p>
+      <div class="checkout-steps">
+        <div class="checkout-steps__step active" data-step-label="1">
+          1. Order Type
+        </div>
+        <div class="checkout-steps__step" data-step-label="2">
+          2. Your Details
+        </div>
+        <div class="checkout-steps__step" data-step-label="3">
+          3. Confirmation
+        </div>
       </div>
-      <div class="order-type-card" data-type="takeaway">
-        <div class="order-type-card__icon">🥡</div><strong>Takeaway</strong>
-        <p class="muted">Ready in up to 20 minutes</p>
-      </div>
-      <div class="order-type-card" data-type="dine-in">
-        <div class="order-type-card__icon">🍽️</div><strong>Dine-In</strong>
-        <p class="muted">No table booking needed</p>
-      </div>
-    </div>
-    <button class="btn btn--primary btn--block" id="step1-next" style="margin-top:24px;" disabled>Continue</button>
-  </div>
 
-  <!-- STEP 2: DETAILS -->
-  <div class="checkout-panel" data-panel="2" hidden>
-    <div class="card">
-      <form id="checkout-form" novalidate>
-        <div class="field"><label for="co-name">Full Name</label><input id="co-name" required></div>
-        <div class="field"><label for="co-phone">Phone Number</label><input id="co-phone" type="tel" required>
-          <span class="field__hint">The rider or restaurant may call this number about your order.</span></div>
-
-        <div id="delivery-fields" hidden>
-          <div class="field">
-            <label for="co-area">Delivery Area (Gujrat city only)</label>
-            <select id="co-area">
-              <option value="">Select your area</option>
-            </select>
-            <span class="field__hint" id="co-area-hint"></span>
+      <!-- STEP 1: ORDER TYPE -->
+      <div class="checkout-panel" data-panel="1">
+        <div class="order-type-grid">
+          <div class="order-type-card" data-type="delivery">
+            <div class="order-type-card__icon">🚚</div>
+            <strong>Delivery</strong>
+            <p class="muted">Up to 40 minutes · Gujrat city only</p>
           </div>
-          <div class="field"><label for="co-address">Address</label>
-            <textarea id="co-address" placeholder="House / street / mohalla / landmark"></textarea>
+          <div class="order-type-card" data-type="takeaway">
+            <div class="order-type-card__icon">🥡</div>
+            <strong>Takeaway</strong>
+            <p class="muted">Ready in up to 20 minutes</p>
+          </div>
+          <div class="order-type-card" data-type="dine-in">
+            <div class="order-type-card__icon">🍽️</div>
+            <strong>Dine-In</strong>
+            <p class="muted">No table booking needed</p>
           </div>
         </div>
-
-        <div class="hr"></div>
-        <h3>Review Your Order</h3>
-        <div id="review-lines" class="stack"></div>
-        <div class="summary-row"><span>Subtotal</span><span id="rv-subtotal"></span></div>
-        <div class="summary-row"><span>Delivery Charges</span><span id="rv-delivery">—</span></div>
-        <div class="summary-row summary-row--total"><span>Total</span><span id="rv-total"></span></div>
-
-        <div class="notice-box" id="cancellation-notice"></div>
-        <label class="field field--check">
-          <input type="checkbox" id="co-ack" required>
-          <span id="co-ack-text">I understand that this order cannot be cancelled after placement.</span>
-        </label>
-
-        <div class="row gap-12">
-          <button type="button" class="btn btn--ghost" id="step2-back">Back</button>
-          <button type="submit" class="btn btn--primary flex-1" id="place-order-btn" disabled>Place Order</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- STEP 3: SUCCESS -->
-  <div class="checkout-panel" data-panel="3" hidden>
-    <div class="success-wrap">
-      <div class="success-check">✓</div>
-      <h2>Order Placed Successfully!</h2>
-      <p>Order Number</p>
-      <div class="success-num" id="success-order-number"></div>
-      <p id="success-meta"></p>
-      <p class="muted">Your order cannot be cancelled after placement.</p>
-      <div class="row gap-12" style="justify-content:center; margin-top:20px;">
-        <a href="orders.html" class="btn btn--primary" id="success-view-orders">View My Orders</a>
-        <a href="home.html" class="btn btn--ghost" id="success-continue" hidden>Continue Browsing</a>
+        <button
+          class="btn btn--primary btn--block"
+          id="step1-next"
+          style="margin-top: 24px"
+          disabled
+        >
+          Continue
+        </button>
       </div>
-    </div>
-  </div>
-</section>
 
-<script src="../js/seed-data.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/config.js"></script>
-<script src="../js/db.js"></script>
-<script src="../js/utils.js"></script>
-<script src="../js/validation.js"></script>
-<script src="../js/cart.js"></script>
-<script src="../js/menu.js"></script>
-<script src="../js/nav.js"></script>
-<script src="../js/checkout.js"></script>
-</body>
+      <!-- STEP 2: DETAILS -->
+      <div class="checkout-panel" data-panel="2" hidden>
+        <div class="card">
+          <form id="checkout-form" novalidate>
+            <div class="field">
+              <label for="co-name">Full Name</label
+              ><input id="co-name" required />
+            </div>
+            <div class="field">
+              <label for="co-phone">Phone Number</label
+              ><input id="co-phone" type="tel" required />
+              <span class="field__hint"
+                >The rider or restaurant may call this number about your
+                order.</span
+              >
+            </div>
+
+            <div id="delivery-fields" hidden>
+              <div class="field">
+                <label for="co-area">Delivery Area (Gujrat city only)</label>
+                <select id="co-area">
+                  <option value="">Select your area</option>
+                </select>
+                <span class="field__hint" id="co-area-hint"></span>
+              </div>
+              <div class="field">
+                <label for="co-address">Address</label>
+                <textarea
+                  id="co-address"
+                  placeholder="House / street / mohalla / landmark"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="hr"></div>
+            <h3>Review Your Order</h3>
+            <div id="review-lines" class="stack"></div>
+            <div class="summary-row">
+              <span>Subtotal</span><span id="rv-subtotal"></span>
+            </div>
+            <div class="summary-row">
+              <span>Delivery Charges</span><span id="rv-delivery">—</span>
+            </div>
+            <div class="summary-row summary-row--total">
+              <span>Total</span><span id="rv-total"></span>
+            </div>
+
+            <div class="notice-box" id="cancellation-notice"></div>
+            <label class="field field--check">
+              <input type="checkbox" id="co-ack" required />
+              <span id="co-ack-text"
+                >I understand that this order cannot be cancelled after
+                placement.</span
+              >
+            </label>
+
+            <div class="row gap-12">
+              <button type="button" class="btn btn--ghost" id="step2-back">
+                Back
+              </button>
+              <button
+                type="submit"
+                class="btn btn--primary flex-1"
+                id="place-order-btn"
+                disabled
+              >
+                Place Order
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- STEP 3: SUCCESS -->
+      <div class="checkout-panel" data-panel="3" hidden>
+        <div class="success-wrap">
+          <div class="success-check">✓</div>
+          <h2>Order Placed Successfully!</h2>
+          <p>Order Number</p>
+          <div class="success-num" id="success-order-number"></div>
+          <p id="success-meta"></p>
+          <p class="muted">Your order cannot be cancelled after placement.</p>
+          <div
+            class="row gap-12"
+            style="justify-content: center; margin-top: 20px"
+          >
+            <a
+              href="orders.html"
+              class="btn btn--primary"
+              id="success-view-orders"
+              >View My Orders</a
+            >
+            <a
+              href="home.html"
+              class="btn btn--ghost"
+              id="success-continue"
+              hidden
+              >Continue Browsing</a
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script src="../js/seed-data.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/db.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/validation.js"></script>
+    <script src="../js/cart.js"></script>
+    <script src="../js/menu.js"></script>
+    <script src="../js/nav.js"></script>
+    <script src="../js/checkout.js"></script>
+  </body>
 </html>

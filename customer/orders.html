@@ -1,61 +1,82 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Orders — Little Chef Pizza</title>
-<link rel="icon" type="image/svg+xml" href="../assets/images/logo/favicon.svg">
-<link rel="stylesheet" href="../css/global.css">
-<link rel="stylesheet" href="../css/customer.css">
-<link rel="stylesheet" href="../css/responsive.css">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Orders — Little Chef Pizza</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="../assets/images/logo/favicon.svg"
+    />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/customer.css" />
+    <link rel="stylesheet" href="../css/responsive.css" />
+  </head>
+  <body>
+    <section class="section container" style="max-width: 760px">
+      <h1>My Orders</h1>
 
-<section class="section container" style="max-width:760px;">
-  <h1>My Orders</h1>
+      <div id="guest-block" class="empty-state" hidden>
+        <div class="empty-state__icon">🔒</div>
+        <h3>Create an account to see your order history</h3>
+        <p>
+          Guest orders are still received by the restaurant, but only registered
+          customers can view past orders here.
+        </p>
+        <a
+          href="../index.html"
+          class="btn btn--primary"
+          style="margin-top: 14px"
+          >Login / Create Account</a
+        >
+      </div>
 
-  <div id="guest-block" class="empty-state" hidden>
-    <div class="empty-state__icon">🔒</div>
-    <h3>Create an account to see your order history</h3>
-    <p>Guest orders are still received by the restaurant, but only registered customers can view past orders here.</p>
-    <a href="../index.html" class="btn btn--primary" style="margin-top:14px;">Login / Create Account</a>
-  </div>
+      <div id="orders-list"></div>
+      <div class="empty-state" id="orders-empty" hidden>
+        <div class="empty-state__icon">🧾</div>
+        <h3>No orders yet</h3>
+        <p>Once you place an order, it will show up here.</p>
+        <a href="menu.html" class="btn btn--primary" style="margin-top: 14px"
+          >Browse Menu</a
+        >
+      </div>
+    </section>
 
-  <div id="orders-list"></div>
-  <div class="empty-state" id="orders-empty" hidden>
-    <div class="empty-state__icon">🧾</div>
-    <h3>No orders yet</h3>
-    <p>Once you place an order, it will show up here.</p>
-    <a href="menu.html" class="btn btn--primary" style="margin-top:14px;">Browse Menu</a>
-  </div>
-</section>
+    <script src="../js/seed-data.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/db.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/validation.js"></script>
+    <script src="../js/cart.js"></script>
+    <script src="../js/nav.js"></script>
+    <script>
+      (async () => {
+        const user = await LCP_NAV.mountCustomer("orders");
 
-<script src="../js/seed-data.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/config.js"></script>
-<script src="../js/db.js"></script>
-<script src="../js/utils.js"></script>
-<script src="../js/validation.js"></script>
-<script src="../js/cart.js"></script>
-<script src="../js/nav.js"></script>
-<script>
-  (async () => {
-    const user = await LCP_NAV.mountCustomer("orders");
+        if (!user) {
+          document.getElementById("guest-block").hidden = false;
+          return;
+        }
 
-    if (!user) {
-      document.getElementById("guest-block").hidden = false;
-      return;
-    }
-
-    const { data } = await LCP_DB.orders.listForUser(user.id);
-    const list = document.getElementById("orders-list");
-    document.getElementById("orders-empty").hidden = data.length > 0;
-    data.forEach((o) => {
-      const statusBadge = o.status === "delivered"
-        ? `<span class="badge badge--success">Delivered</span>`
-        : `<span class="badge badge--warn">Pending</span>`;
-      const itemsText = [...o.items, ...o.deals].map((l) => `${l.product_name_snapshot || l.deal_name_snapshot} × ${l.quantity}`).join(", ");
-      list.insertAdjacentHTML("beforeend", `
+        const { data } = await LCP_DB.orders.listForUser(user.id);
+        const list = document.getElementById("orders-list");
+        document.getElementById("orders-empty").hidden = data.length > 0;
+        data.forEach((o) => {
+          const statusBadge =
+            o.status === "delivered"
+              ? `<span class="badge badge--success">Delivered</span>`
+              : `<span class="badge badge--warn">Pending</span>`;
+          const itemsText = [...o.items, ...o.deals]
+            .map(
+              (l) =>
+                `${l.product_name_snapshot || l.deal_name_snapshot} × ${l.quantity}`,
+            )
+            .join(", ");
+          list.insertAdjacentHTML(
+            "beforeend",
+            `
         <div class="order-card">
           <div class="order-card__top">
             <span class="order-card__num">${o.order_number}</span>
@@ -65,9 +86,10 @@
           <div class="order-card__items">${LCP_NAV.escapeHtml(itemsText)}</div>
           <div class="summary-row summary-row--total"><span>Total</span><span>${LCP_UTIL.pkr(o.total)}</span></div>
         </div>
-      `);
-    });
-  })();
-</script>
-</body>
+      `,
+          );
+        });
+      })();
+    </script>
+  </body>
 </html>

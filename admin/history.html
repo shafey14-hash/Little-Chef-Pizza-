@@ -1,28 +1,32 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Order History — Admin</title>
-<link rel="icon" type="image/svg+xml" href="../assets/images/logo/favicon.svg">
-<link rel="stylesheet" href="../css/global.css">
-<link rel="stylesheet" href="../css/admin.css">
-<link rel="stylesheet" href="../css/responsive.css">
-</head>
-<body>
-<script src="../js/seed-data.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/config.js"></script>
-<script src="../js/db.js"></script>
-<script src="../js/utils.js"></script>
-<script src="../js/cart.js"></script>
-<script src="../js/nav.js"></script>
-<script src="../js/admin.js"></script>
-<script>
-  (async () => {
-    const admin = await LCP_NAV.mountAdmin("history");
-    if (admin) LCP_ADMIN.initHistory();
-  })();
-</script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Order History — Admin</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="../assets/images/logo/favicon.svg"
+    />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
+    <link rel="stylesheet" href="../css/responsive.css" />
+  </head>
+  <body>
+    <script src="../js/seed-data.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/db.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/cart.js"></script>
+    <script src="../js/nav.js"></script>
+    <script src="../js/admin.js"></script>
+    <script>
+      (async () => {
+        const admin = await LCP_NAV.mountAdmin("history");
+        if (admin) LCP_ADMIN.initHistory();
+      })();
+    </script>
+  </body>
 </html>
