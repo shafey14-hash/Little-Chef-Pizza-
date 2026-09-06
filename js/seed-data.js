@@ -2,13 +2,29 @@
  * seed-data.js
  * -----------------------------------------------------------------------
  * Initial menu data extracted from the physical Little Chef Pizza menu
- * (reference photos supplied by the restaurant).
+ * (reference photos supplied by the restaurant). This is the SAME data
+ * that was inserted into Supabase via supabase/seed.sql.
  *
- * Every item includes `verified: true|false`.
+ * ⚠️ NOW THAT THE APP IS WIRED TO REAL SUPABASE (js/db.js), the
+ * `products`, `categories`, and `deals` arrays below are NO LONGER read
+ * by the site — the live menu/deals/prices/availability all come from
+ * the database now, and admin edits there take effect immediately. Those
+ * arrays are kept here only as the historical record of what was seeded
+ * and for reference if you ever need to re-seed.
+ *
+ * STILL ACTIVELY USED by the site: `restaurant` (footer/contact info) and
+ * `delivery_areas` (the checkout area dropdown) — both are simple, mostly
+ * static reference data, read directly from this file for convenience.
+ * (They also exist in `public.site_settings` / `public.delivery_areas` in
+ * Supabase if you'd rather manage them from the database instead.)
+ *
+ * Every item below includes `verified: true|false`.
  * `verified: false` means the name/price/description on the printed menu
  * was partially unclear in the photo and MUST be manually checked against
  * the original menu before going live. These items also carry a
  * `// TODO: VERIFY THIS MENU ITEM/PRICE AGAINST ORIGINAL MENU IMAGE` note.
+ * (In the live database, the same flag is the `verified` column on
+ * `products`/`deals` — shown as a "Verify" badge in the admin panel.)
  *
  * Prices are in PKR (integers, no decimals).
  * Sizes: S = Small, M = Medium, L = Large, F = Family

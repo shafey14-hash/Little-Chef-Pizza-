@@ -11,13 +11,18 @@
 </head>
 <body>
 <script src="../js/seed-data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
 <script src="../js/db.js"></script>
 <script src="../js/utils.js"></script>
 <script src="../js/cart.js"></script>
 <script src="../js/nav.js"></script>
 <script src="../js/admin.js"></script>
 <script>
-  if (LCP_NAV.mountAdmin("history")) LCP_ADMIN.initHistory();
+  (async () => {
+    const admin = await LCP_NAV.mountAdmin("history");
+    if (admin) LCP_ADMIN.initHistory();
+  })();
 </script>
 </body>
 </html>

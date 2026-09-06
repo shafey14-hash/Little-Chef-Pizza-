@@ -35,14 +35,16 @@
 </section>
 
 <script src="../js/seed-data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
 <script src="../js/db.js"></script>
 <script src="../js/utils.js"></script>
 <script src="../js/validation.js"></script>
 <script src="../js/cart.js"></script>
 <script src="../js/nav.js"></script>
 <script>
-  LCP_NAV.mountCustomer("profile");
-  const user = LCP_NAV.currentUser();
+(async () => {
+  const user = await LCP_NAV.mountCustomer("profile");
   if (!user) {
     document.getElementById("guest-block").hidden = false;
   } else {
@@ -79,6 +81,7 @@
       LCP_UTIL.toast("Profile updated.", "success");
     });
   }
+})();
 </script>
 </body>
 </html>

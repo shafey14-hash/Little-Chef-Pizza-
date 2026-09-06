@@ -98,13 +98,14 @@ const LCP_NAV = (() => {
     `);
   }
 
-  function doLogout() {
-    LCP_DB.auth.signOut();
+  async function doLogout() {
+    await LCP_DB.auth.signOut();
     sessionStorage.removeItem("lcp_guest");
-    window.location.href = (window.location.pathname.includes("/customer/") ? "../index.html" : "index.html");
+    window.location.href = (window.location.pathname.includes("/customer/") || window.location.pathname.includes("/admin/") ? "../index.html" : "index.html");
   }
 
-  function mountCustomer(activePage) {
+  async function mountCustomer(activePage) {
+    await LCP_DB.auth.init(); // wait for the real Supabase session before rendering who's logged in
     LCP_UTIL.flashPop();
     customerHeader(activePage);
     customerFooter();
@@ -113,6 +114,7 @@ const LCP_NAV = (() => {
       const pill = document.querySelector(".bucket-pill__count");
       if (pill) pill.textContent = LCP_CART.getState().itemCount;
     });
+    return currentUser();
   }
 
   // ---------------------------------------------------------------- admin
@@ -126,7 +128,8 @@ const LCP_NAV = (() => {
     return user;
   }
 
-  function mountAdmin(activePage) {
+  async function mountAdmin(activePage) {
+    await LCP_DB.auth.init(); // wait for the real Supabase session before checking the role
     const admin = requireAdmin();
     if (!admin) return null;
     const links = [

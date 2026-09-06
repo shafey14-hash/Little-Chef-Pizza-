@@ -13,6 +13,7 @@
  * js/db.js + localStorage — nothing breaks.
  */
 const LCP_CONFIG = {
-  SUPABASE_URL: "",       // e.g. "https://abcd1234.supabase.co"
-  SUPABASE_ANON_KEY: "",  // the "anon public" key from Project Settings → API
+  SUPABASE_URL: "https://lambfbjicnvqjrraerur.supabase.co", // e.g. "https://lambfbjicnvqjrraerur.supabase.co"
+  SUPABASE_ANON_KEY:
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhbWJmYmppY252cWpycmFlcnVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg2MDAyNzYsImV4cCI6MjEwNDE3NjI3Nn0.xJEDNyC8gyE5vYYmY4JjmtJr05AJnzrBkQoI_3Z6KSE", // the "anon public" key from Project Settings → API
 };

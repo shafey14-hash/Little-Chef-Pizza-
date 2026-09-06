@@ -4,16 +4,28 @@ A complete, production-style restaurant ordering website for **Little Chef Pizza
 (Machli Chowk, Opp. Imam Bargah, East Circular Road, Gujrat), built with plain
 HTML, CSS and vanilla JavaScript — no frameworks, no build step.
 
-## Running it right now
+## Running it — this is now wired to real Supabase
 
-No installation needed. Just open `index.html` in a browser (or serve the
-folder with any static server, e.g. `npx serve .` / VS Code "Live Server").
-Everything works immediately using the browser's `localStorage` as a stand-in
-database, pre-seeded with the real Little Chef Pizza menu.
+This is the production version: `js/db.js` talks to a real Supabase
+project (Postgres + Auth) via `supabase-js`, loaded from a CDN — there is
+no build step. Before anything will work you must:
 
-**Demo admin login:** username `admin`, password `admin123`
-(shown on the admin login screen for convenience — change this before any
-real deployment; see "Going to production" below).
+1. Run `supabase/schema.sql` → `supabase/seed.sql` → `supabase/policies.sql`
+   → `supabase/auth_and_admin.sql`, in that exact order, in your Supabase
+   project's SQL Editor.
+2. In **Authentication → Providers → Email**, turn **OFF** "Confirm email".
+   This app logs customers in with a username, mapped internally to a
+   fake address like `alibaba@users.littlechefpizza.local` — no real inbox
+   exists to click a confirmation link in, so confirmation must stay off.
+3. Fill in `js/config.js` with your project's URL and **anon/public** key
+   (Project Settings → API). This key is safe to commit — see the comment
+   in that file for why.
+4. Create the admin account exactly as described at the top of
+   `supabase/auth_and_admin.sql`.
+
+Then just open `index.html` (or deploy — see below). No `localStorage`
+demo mode is left in this version; every signup, order, and admin action
+hits the real database.
 
 ## What's inside
 
@@ -38,16 +50,30 @@ supabase/
 The whole app is written against one internal API, `LCP_DB` (in `js/db.js`).
 Every function in it — `auth.signUp`, `auth.signIn`, `catalog.listProducts`,
 `orders.create`, `orders.markDelivered`, etc. — is `async` and returns
-`{ data }` or `{ error }`, exactly like a Supabase client call would. Today
-those functions read/write `localStorage`; in production you point them at
-Supabase instead. No page or component talks to `localStorage` directly, so
-swapping the implementation is a change in one file.
+`{ data }` or `{ error }`. No page talks to Supabase directly; they all go
+through this one file, so the rest of the codebase never changes even if
+the backend does.
 
-**Order totals are never trusted from the browser.** `LCP_DB.orders.create()`
-re-derives every price and validates availability from the current catalog
-before writing an order — the exact same logic is mirrored server-side in
-`supabase/policies.sql` as the `create_order()` Postgres function, which is
-the *only* way a real Supabase deployment ever writes to the `orders` table.
+**Order totals are never trusted from the browser.** `orders.create()` is a
+thin wrapper around Postgres RPC `create_order()` (see
+`supabase/policies.sql`), which re-derives every price and validates
+availability from the current catalog *inside the database* before writing
+anything. That function — running with elevated `SECURITY DEFINER`
+privileges — is the *only* way a row is ever written to `orders`; there is
+no public INSERT policy on that table at all, by design.
+
+**Sessions are async.** Supabase's `getSession()` is a Promise, so every
+page calls `await LCP_NAV.mountCustomer(...)` / `await LCP_NAV.mountAdmin(...)`
+before reading `currentUser()`. If you add a new page, follow that same
+pattern (see any file in `customer/` or `admin/` for the exact wrapper).
+
+**Username-only login** is implemented by deterministically mapping every
+username to an internal address, `<username>@users.littlechefpizza.local`,
+which Supabase Auth uses for real underneath. The browser never shows this
+address. A Postgres trigger (`handle_new_user` in
+`supabase/auth_and_admin.sql`) automatically creates the matching
+`public.profiles` row — with `role` read from signup metadata — every time
+someone signs up, so the client never inserts into `profiles` directly.
 
 ## Menu extraction notes
 
@@ -75,25 +101,23 @@ have real images, add an `image_url` to the matching product/deal in
 `seed-data.js` (or the `products`/`deals` table) and swap the placeholder
 `<span>` in `productCard()` for an `<img>`.
 
-## Going to production with Supabase
+## Changing the admin username / password
 
-1. Create a Supabase project.
-2. Run `supabase/schema.sql`, then `supabase/seed.sql`, then `supabase/policies.sql` in the SQL editor, in that order.
-3. Create the admin account via **Dashboard → Authentication → Add user**
-   (internal email like `admin@users.littlechefpizza.local`), then insert the
-   matching `profiles` row as shown in the comment at the bottom of `seed.sql`.
-   There is intentionally no admin signup anywhere in the app.
-4. For username/password customer auth (no email field in the UI), map each
-   username to an internal synthetic email (`username@users.littlechefpizza.local`)
-   in a small Edge Function that wraps Supabase Auth's sign-up/sign-in calls —
-   the browser never sees or stores that internal email.
-5. Replace the bodies of the functions in `js/db.js` with calls to
-   `supabase-js` (`supabase.from('products').select()`, `supabase.rpc('create_order', {...})`,
-   etc.) using only the **anon/public** key in the browser — never the
-   service role key.
-6. Set the real delivery charge by updating the `delivery_charge` row in
-   `site_settings` once the restaurant finalizes it (currently `TBD`
-   everywhere, exactly as specified).
+See `supabase/auth_and_admin.sql` — it has ready-to-run queries for:
+- changing the admin's username (updates both `profiles` and the matching
+  internal auth email, since login derives one from the other),
+- changing the admin's password (a direct, safe SQL statement using
+  `pgcrypto`, or the Dashboard UI as an alternative),
+- changing the admin's full name / phone.
+
+## Setting the real delivery charge
+
+Currently `TBD` everywhere (per the brief). Once finalized, update it without
+touching any code:
+
+```sql
+update public.site_settings set value = '150' where key = 'delivery_charge';
+```
 
 ## What's deliberately NOT included
 

@@ -2,7 +2,7 @@
  * checkout.js — drives customer/checkout.html end to end.
  */
 (async function () {
-  LCP_NAV.mountCustomer(null);
+  await LCP_NAV.mountCustomer(null);
 
   const state = LCP_CART.getState();
   if (state.items.length === 0 && state.deals.length === 0) {

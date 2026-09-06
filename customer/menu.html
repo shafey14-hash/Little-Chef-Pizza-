@@ -34,6 +34,8 @@
 </section>
 
 <script src="../js/seed-data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
 <script src="../js/db.js"></script>
 <script src="../js/utils.js"></script>
 <script src="../js/validation.js"></script>
@@ -41,8 +43,10 @@
 <script src="../js/menu.js"></script>
 <script src="../js/nav.js"></script>
 <script>
-  LCP_NAV.mountCustomer("menu");
-  LCP_MENU.initMenuPage();
+  (async () => {
+    await LCP_NAV.mountCustomer("menu");
+    LCP_MENU.initMenuPage();
+  })();
 </script>
 </body>
 </html>

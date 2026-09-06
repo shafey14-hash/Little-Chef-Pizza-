@@ -2,9 +2,9 @@
  * auth.js — drives index.html: the welcome modal, customer login/signup,
  * admin login, and guest mode. Redirects on success.
  */
-(function () {
+(async function () {
   // If already logged in, skip the modal straight to the right portal.
-  const existing = LCP_DB.auth.currentUser();
+  const existing = await LCP_DB.auth.init();
   if (existing) {
     window.location.href = existing.role === "admin" ? "admin/index.html" : "customer/home.html";
     return;
