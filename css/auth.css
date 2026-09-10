@@ -1,38 +1,159 @@
-.auth-body{
-  background:var(--black);
-  min-height:100vh;
-  display:flex; align-items:center; justify-content:center;
-  overflow-x:hidden;
+.auth-body {
+  background: var(--black);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: hidden;
 }
-.auth-backdrop{ position:fixed; inset:0; z-index:0; overflow:hidden; }
-.auth-backdrop__glow{
-  position:absolute; top:-20%; left:50%; transform:translateX(-50%);
-  width:900px; height:900px; border-radius:50%;
-  background:radial-gradient(circle, rgba(231,185,63,.16), transparent 60%);
+.auth-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
 }
-.auth-backdrop__pizza{ position:absolute; top:12%; left:8%; animation:float-slow 10s ease-in-out infinite; }
-.auth-backdrop__pizza--2{ top:auto; bottom:10%; right:8%; left:auto; animation:float-slow 13s ease-in-out infinite reverse; }
-@keyframes float-slow{
-  0%,100%{ transform:translateY(0) rotate(0deg); }
-  50%{ transform:translateY(-22px) rotate(8deg); }
+.auth-backdrop__glow {
+  position: absolute;
+  top: -20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 900px;
+  height: 900px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(231, 185, 63, 0.16),
+    transparent 60%
+  );
 }
-@media (prefers-reduced-motion: reduce){ .auth-backdrop__pizza{ animation:none; } }
+.auth-backdrop__pizza {
+  position: absolute;
+  top: 12%;
+  left: 8%;
+  animation: float-slow 10s ease-in-out infinite;
+}
+.auth-backdrop__pizza--2 {
+  top: auto;
+  bottom: 10%;
+  right: 8%;
+  left: auto;
+  animation: float-slow 13s ease-in-out infinite reverse;
+}
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-22px) rotate(8deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-backdrop__pizza {
+    animation: none;
+  }
+}
 
-.auth-stage{ position:relative; z-index:1; width:100%; padding:32px 16px; }
-.auth-modal{
-  background:#fff; max-width:420px; margin:0 auto; border-radius:var(--radius-l);
-  padding:36px 32px; box-shadow:0 30px 80px rgba(0,0,0,.5);
-  animation:modal-in .5s cubic-bezier(.2,.8,.2,1);
+.auth-stage {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 32px 16px;
 }
-@keyframes modal-in{ from{ opacity:0; transform:translateY(18px) scale(.98);} to{ opacity:1; transform:translateY(0) scale(1);} }
-@media (prefers-reduced-motion: reduce){ .auth-modal{ animation:none; } }
+.auth-modal {
+  background: #fff;
+  max-width: 420px;
+  margin: 0 auto;
+  border-radius: var(--radius-l);
+  padding: 36px 32px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+  animation: modal-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-modal {
+    animation: none;
+  }
+}
 
-.auth-modal__brand{ text-align:center; margin-bottom:6px; }
-.auth-modal__brand .brand__mark{ margin:0 auto 10px; }
-.auth-modal__title{ font-size:24px; margin-bottom:2px; }
-.auth-modal__tag{ letter-spacing:2px; font-size:11px; color:var(--ink-soft); margin-bottom:18px; }
-.auth-welcome-line{ text-align:center; margin-bottom:22px; }
-.auth-actions{ display:flex; flex-direction:column; gap:12px; }
-.auth-signup-line{ text-align:center; margin:18px 0 0; font-size:14px; }
-.auth-signup-line a{ color:var(--red); font-weight:700; }
-.auth-back{ background:none; border:none; color:var(--ink-soft); font-weight:600; margin-bottom:10px; padding:0; }
+.auth-modal__brand {
+  text-align: center;
+  margin-bottom: 6px;
+}
+.auth-modal__brand .brand__mark {
+  margin: 0 auto 10px;
+}
+.auth-modal__title {
+  font-size: 24px;
+  margin-bottom: 2px;
+}
+.auth-modal__tag {
+  letter-spacing: 2px;
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-bottom: 18px;
+}
+.auth-welcome-line {
+  text-align: center;
+  margin-bottom: 22px;
+}
+.auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.auth-signup-line {
+  text-align: center;
+  margin: 18px 0 0;
+  font-size: 14px;
+}
+.auth-signup-line a {
+  color: var(--red);
+  font-weight: 700;
+}
+.auth-back {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  font-weight: 600;
+  margin-bottom: 10px;
+  padding: 0;
+}
+
+/* ---------------------------------------------------------------- location gate */
+.location-gate .auth-modal__brand {
+  margin-bottom: 0;
+}
+.location-map {
+  height: 200px;
+  border-radius: var(--radius-m);
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 1px solid var(--line);
+  z-index: 0;
+}
+.location-status {
+  min-height: 20px;
+  margin: 10px 0;
+  font-size: 13.5px;
+}
+.location-status--ok {
+  color: var(--success);
+  font-weight: 600;
+}
+.location-status--error {
+  color: var(--danger);
+  font-weight: 600;
+  background: var(--danger-bg);
+  padding: 10px 12px;
+  border-radius: 8px;
+}

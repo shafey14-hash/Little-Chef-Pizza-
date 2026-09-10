@@ -50,6 +50,7 @@
     <script src="../js/utils.js"></script>
     <script src="../js/validation.js"></script>
     <script src="../js/cart.js"></script>
+    <script src="../js/cart-ui.js"></script>
     <script src="../js/nav.js"></script>
     <script>
       (async () => {
@@ -60,14 +61,26 @@
           return;
         }
 
+        const STATUS_LABEL = {
+          payment_verification: "Payment Verification",
+          pending: "Pending",
+          out_for_delivery: "Out for Delivery",
+          delivered: "Delivered",
+          rejected: "Rejected",
+        };
+        const STATUS_BADGE = {
+          payment_verification: "badge--warn",
+          pending: "badge--gold",
+          out_for_delivery: "badge--warn",
+          delivered: "badge--success",
+          rejected: "badge--danger",
+        };
+
         const { data } = await LCP_DB.orders.listForUser(user.id);
         const list = document.getElementById("orders-list");
         document.getElementById("orders-empty").hidden = data.length > 0;
         data.forEach((o) => {
-          const statusBadge =
-            o.status === "delivered"
-              ? `<span class="badge badge--success">Delivered</span>`
-              : `<span class="badge badge--warn">Pending</span>`;
+          const statusBadge = `<span class="badge ${STATUS_BADGE[o.status] || "badge--muted"}">${STATUS_LABEL[o.status] || o.status}</span>`;
           const itemsText = [...o.items, ...o.deals]
             .map(
               (l) =>

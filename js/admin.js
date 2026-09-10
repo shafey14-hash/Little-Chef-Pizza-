@@ -123,7 +123,13 @@ const LCP_ADMIN = (() => {
 
     const todays = orders.filter((o) => isToday(o.created_at));
     const revenueToday = todays.reduce((s, o) => s + o.total, 0);
+    const awaitingPayment = orders.filter(
+      (o) => o.status === "payment_verification",
+    );
     const pending = orders.filter((o) => o.status === "pending");
+    const outForDelivery = orders.filter(
+      (o) => o.status === "out_for_delivery",
+    );
     const delivered = orders.filter((o) => o.status === "delivered");
     const customers = new Set(
       orders.filter((o) => o.user_id).map((o) => o.user_id),
@@ -132,7 +138,9 @@ const LCP_ADMIN = (() => {
     const kpis = [
       ["Today's Orders", todays.length],
       ["Today's Revenue", LCP_UTIL.pkr(revenueToday)],
+      ["Awaiting Payment Verification", awaitingPayment.length],
       ["Pending Orders", pending.length],
+      ["Out for Delivery", outForDelivery.length],
       ["Delivered Orders", delivered.length],
       ["Total Customers", customers],
     ];
@@ -151,7 +159,7 @@ const LCP_ADMIN = (() => {
       <div class="order-card" style="margin-bottom:10px;">
         <div class="order-card__top">
           <span class="order-card__num">${o.order_number}</span>
-          <span class="badge ${o.status === "delivered" ? "badge--success" : "badge--warn"}">${o.status}</span>
+          <span class="badge ${statusBadgeClass(o.status)}">${statusLabel(o.status)}</span>
         </div>
         <div class="muted">${LCP_UTIL.fmtDate(o.created_at)} · ${o.customer_name} · ${o.order_type}</div>
         <div class="summary-row" style="margin-top:6px;"><span></span><strong>${LCP_UTIL.pkr(o.total)}</strong></div>
@@ -180,51 +188,156 @@ const LCP_ADMIN = (() => {
       : `<p class="muted">No sales data yet.</p>`;
   }
 
+  function statusLabel(s) {
+    return (
+      {
+        payment_verification: "Payment Verification",
+        pending: "Pending",
+        out_for_delivery: "Out for Delivery",
+        delivered: "Delivered",
+        rejected: "Rejected",
+      }[s] || s
+    );
+  }
+  function statusBadgeClass(s) {
+    return (
+      {
+        payment_verification: "badge--warn",
+        pending: "badge--gold",
+        out_for_delivery: "badge--warn",
+        delivered: "badge--success",
+        rejected: "badge--danger",
+      }[s] || "badge--muted"
+    );
+  }
+
   async function initOrders() {
     const host = document.getElementById("admin-content");
     host.innerHTML = `
-      <div class="admin-toolbar">
-        <h2 style="margin:0;">Orders</h2>
-        <div class="chip-row" style="margin:0;" id="order-filter-chips">
-          <button class="chip active" data-filter="all">All</button>
-          <button class="chip" data-filter="pending">Pending</button>
-          <button class="chip" data-filter="delivered">Delivered</button>
-        </div>
+      <div class="admin-toolbar"><h2 style="margin:0;">Orders</h2></div>
+      <div class="chip-row" id="order-section-chips">
+        <button class="chip active" data-section="payment_verification">Payment Verification</button>
+        <button class="chip" data-section="pending">Pending Orders</button>
+        <button class="chip" data-section="out_for_delivery">Out for Delivery</button>
+        <button class="chip" data-section="delivered">Delivered</button>
+        <button class="chip" data-section="rejected">Rejected Orders</button>
       </div>
-      <div id="orders-table-wrap"></div>`;
+      <div id="orders-section-wrap"></div>`;
 
     const { data: orders } = await LCP_DB.orders.listAll();
-    let filter = "all";
+    let activeSection = "payment_verification";
 
-    function render() {
-      const rows = orders.filter(
-        (o) => filter === "all" || o.status === filter,
-      );
-      const wrap = document.getElementById("orders-table-wrap");
-      if (!rows.length) {
-        wrap.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🧾</div><h3>No orders</h3></div>`;
-        return;
+    function orderCard(o) {
+      const itemsText = [...o.items, ...o.deals]
+        .map(
+          (l) =>
+            `${l.product_name_snapshot || l.deal_name_snapshot} × ${l.quantity} (${LCP_UTIL.pkr(l.line_total)})`,
+        )
+        .join(", ");
+      const card = document.createElement("div");
+      card.className = "order-card";
+      card.innerHTML = `
+        <div class="order-card__top">
+          <span class="order-card__num">${o.order_number}</span>
+          <span class="badge ${statusBadgeClass(o.status)}">${statusLabel(o.status)}</span>
+        </div>
+        <div class="muted">${LCP_UTIL.fmtDate(o.created_at)} · ${o.order_type.toUpperCase()}${o.delivery_address ? " · " + LCP_NAV.escapeHtml(o.delivery_address) : ""}</div>
+        <div style="margin:8px 0;">
+          <div><strong>${LCP_NAV.escapeHtml(o.customer_name)}</strong> <span class="badge badge--muted">${o.customer_type}</span></div>
+          <div class="muted">📞 ${o.customer_phone}${o.alt_contact_phone ? " · Alt: " + LCP_NAV.escapeHtml(o.alt_contact_phone) : ""}${o.customer_email ? " · " + LCP_NAV.escapeHtml(o.customer_email) : ""}</div>
+          ${o.special_instructions ? `<div class="muted">📝 ${LCP_NAV.escapeHtml(o.special_instructions)}</div>` : ""}
+        </div>
+        <div class="order-card__items">${LCP_NAV.escapeHtml(itemsText)}</div>
+        <div class="summary-row"><span>Subtotal</span><span>${LCP_UTIL.pkr(o.subtotal)}</span></div>
+        <div class="summary-row"><span>Delivery Charges</span><span>${o.delivery_charge ? LCP_UTIL.pkr(o.delivery_charge) : "—"}</span></div>
+        <div class="summary-row summary-row--total"><span>Total</span><span>${LCP_UTIL.pkr(o.total)}</span></div>
+        <div style="margin:8px 0;"><span class="badge badge--muted">${o.payment_method === "easypaisa" ? "EasyPaisa" : "Cash on Delivery"}</span></div>
+        <div data-actions class="row gap-8" style="flex-wrap:wrap; margin-top:10px;"></div>`;
+
+      const actionsHost = card.querySelector("[data-actions]");
+
+      function screenshotButton(label = "View Screenshot") {
+        const btn = document.createElement("button");
+        btn.className = "btn btn--sm btn--ghost";
+        btn.textContent = label;
+        btn.addEventListener("click", async () => {
+          LCP_UTIL.setLoading(btn, true, "Loading…");
+          const { data: url, error } = await LCP_DB.orders.getScreenshotUrl(
+            o.payment_screenshot_path,
+          );
+          LCP_UTIL.setLoading(btn, false);
+          if (error || !url)
+            return LCP_UTIL.toast("Could not load screenshot.", "error");
+          window.open(url, "_blank", "noopener");
+        });
+        return btn;
       }
-      wrap.innerHTML = `<table class="admin-table">
-        <thead><tr><th>Order #</th><th>Date</th><th>Customer</th><th>Phone</th><th>Type</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr></thead>
-        <tbody>${rows
-          .map(
-            (o) => `
-          <tr>
-            <td><strong>${o.order_number}</strong></td>
-            <td>${LCP_UTIL.fmtDate(o.created_at)}</td>
-            <td>${LCP_NAV.escapeHtml(o.customer_name)} <span class="badge badge--muted">${o.customer_type}</span></td>
-            <td>${o.customer_phone}</td>
-            <td>${o.order_type}${o.delivery_area ? " · " + o.delivery_area : ""}</td>
-            <td>${[...o.items, ...o.deals].map((l) => (l.product_name_snapshot || l.deal_name_snapshot) + " ×" + l.quantity).join(", ")}</td>
-            <td><strong>${LCP_UTIL.pkr(o.total)}</strong></td>
-            <td><span class="badge ${o.status === "delivered" ? "badge--success" : "badge--warn"}">${o.status}</span></td>
-            <td>${o.status === "pending" ? `<button class="btn btn--sm btn--primary" data-mark="${o.id}">Mark as Delivered</button>` : ""}</td>
-          </tr>`,
-          )
-          .join("")}</tbody></table>`;
 
-      LCP_UTIL.qsa("[data-mark]").forEach((btn) =>
+      if (o.status === "payment_verification") {
+        if (o.payment_screenshot_path)
+          actionsHost.appendChild(screenshotButton());
+        const approveBtn = document.createElement("button");
+        approveBtn.className = "btn btn--sm btn--primary";
+        approveBtn.textContent = "Approve";
+        approveBtn.addEventListener("click", async () => {
+          const ok = await LCP_UTIL.confirmDialog(
+            "Approve this payment? The order will move to Pending Orders.",
+            { confirmText: "Approve" },
+          );
+          if (!ok) return;
+          LCP_UTIL.setLoading(approveBtn, true, "Approving…");
+          const { data, error } = await LCP_DB.orders.approvePayment(o.id);
+          LCP_UTIL.setLoading(approveBtn, false);
+          if (error)
+            return LCP_UTIL.toast(LCP_UTIL.friendlyError(error), "error");
+          Object.assign(o, data);
+          LCP_UTIL.toast(
+            `${o.order_number} approved — moved to Pending Orders.`,
+            "success",
+          );
+          render();
+        });
+        const rejectBtn = document.createElement("button");
+        rejectBtn.className = "btn btn--sm btn--danger";
+        rejectBtn.textContent = "Reject";
+        rejectBtn.addEventListener("click", async () => {
+          const ok = await LCP_UTIL.confirmDialog(
+            "Reject this payment? The order will move to Rejected Orders.",
+            { confirmText: "Reject", danger: true },
+          );
+          if (!ok) return;
+          LCP_UTIL.setLoading(rejectBtn, true, "Rejecting…");
+          const { data, error } = await LCP_DB.orders.rejectPayment(o.id);
+          LCP_UTIL.setLoading(rejectBtn, false);
+          if (error)
+            return LCP_UTIL.toast(LCP_UTIL.friendlyError(error), "error");
+          Object.assign(o, data);
+          LCP_UTIL.toast(`${o.order_number} rejected.`, "success");
+          render();
+        });
+        actionsHost.append(approveBtn, rejectBtn);
+      } else if (o.status === "pending") {
+        const btn = document.createElement("button");
+        btn.className = "btn btn--sm btn--primary";
+        btn.textContent = "Out for Delivery";
+        btn.addEventListener("click", async () => {
+          LCP_UTIL.setLoading(btn, true, "Updating…");
+          const { data, error } = await LCP_DB.orders.markOutForDelivery(o.id);
+          LCP_UTIL.setLoading(btn, false);
+          if (error)
+            return LCP_UTIL.toast(LCP_UTIL.friendlyError(error), "error");
+          Object.assign(o, data);
+          LCP_UTIL.toast(
+            `${o.order_number} is now out for delivery.`,
+            "success",
+          );
+          render();
+        });
+        actionsHost.appendChild(btn);
+      } else if (o.status === "out_for_delivery") {
+        const btn = document.createElement("button");
+        btn.className = "btn btn--sm btn--primary";
+        btn.textContent = "Marked as Delivered";
         btn.addEventListener("click", async () => {
           const ok = await LCP_UTIL.confirmDialog(
             "Mark this order as delivered?",
@@ -232,34 +345,39 @@ const LCP_ADMIN = (() => {
           );
           if (!ok) return;
           LCP_UTIL.setLoading(btn, true, "Updating…");
-          const { data, error } = await LCP_DB.orders.markDelivered(
-            btn.dataset.mark,
-          );
-          if (error) {
-            LCP_UTIL.toast(LCP_UTIL.friendlyError(error), "error");
-            LCP_UTIL.setLoading(btn, false);
-            return;
-          }
-          Object.assign(
-            orders.find((o) => o.id === data.id),
-            data,
-          );
-          LCP_UTIL.toast(
-            `${data.order_number} marked as delivered.`,
-            "success",
-          );
+          const { data, error } = await LCP_DB.orders.markDelivered(o.id);
+          LCP_UTIL.setLoading(btn, false);
+          if (error)
+            return LCP_UTIL.toast(LCP_UTIL.friendlyError(error), "error");
+          Object.assign(o, data);
+          LCP_UTIL.toast(`${o.order_number} marked as delivered.`, "success");
           render();
-        }),
-      );
+        });
+        actionsHost.appendChild(btn);
+      } else if (o.status === "rejected" && o.payment_screenshot_path) {
+        actionsHost.appendChild(screenshotButton());
+      }
+      return card;
     }
 
-    LCP_UTIL.qsa("#order-filter-chips .chip").forEach((c) =>
+    function render() {
+      const wrap = document.getElementById("orders-section-wrap");
+      const list = orders.filter((o) => o.status === activeSection);
+      wrap.innerHTML = "";
+      if (!list.length) {
+        wrap.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🧾</div><h3>Nothing here</h3><p>No orders in ${statusLabel(activeSection).toLowerCase()} right now.</p></div>`;
+        return;
+      }
+      list.forEach((o) => wrap.appendChild(orderCard(o)));
+    }
+
+    LCP_UTIL.qsa("#order-section-chips .chip").forEach((c) =>
       c.addEventListener("click", () => {
-        LCP_UTIL.qsa("#order-filter-chips .chip").forEach((x) =>
+        LCP_UTIL.qsa("#order-section-chips .chip").forEach((x) =>
           x.classList.remove("active"),
         );
         c.classList.add("active");
-        filter = c.dataset.filter;
+        activeSection = c.dataset.section;
         render();
       }),
     );
@@ -442,37 +560,41 @@ const LCP_ADMIN = (() => {
     const host = document.getElementById("admin-content");
     host.innerHTML = `
       <h2>Order History</h2>
+      <p class="muted">Delivered and rejected orders — permanently retained.</p>
       <div class="admin-toolbar">
         <input type="text" id="history-search" placeholder="Search by order #, customer or phone…" style="height:44px; border-radius:10px; border:1.5px solid var(--line); padding:0 14px; min-width:280px;">
       </div>
       <div id="history-list"></div>`;
     const { data: orders } = await LCP_DB.orders.listAll();
-    const delivered = orders.filter((o) => o.status === "delivered");
+    const finished = orders.filter(
+      (o) => o.status === "delivered" || o.status === "rejected",
+    );
 
     function render(list) {
       const wrap = document.getElementById("history-list");
       if (!list.length) {
-        wrap.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🗂️</div><h3>No delivered orders yet</h3></div>`;
+        wrap.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🗂️</div><h3>No finished orders yet</h3></div>`;
         return;
       }
       wrap.innerHTML = `<table class="admin-table">
-        <thead><tr><th>Order #</th><th>Date</th><th>Customer</th><th>Phone</th><th>Type</th><th>Total</th></tr></thead>
+        <thead><tr><th>Order #</th><th>Date</th><th>Customer</th><th>Phone</th><th>Type</th><th>Total</th><th>Status</th></tr></thead>
         <tbody>${list
           .map(
             (
               o,
-            ) => `<tr><td><strong>${o.order_number}</strong></td><td>${LCP_UTIL.fmtDate(o.delivered_at || o.created_at)}</td>
-          <td>${LCP_NAV.escapeHtml(o.customer_name)}</td><td>${o.customer_phone}</td><td>${o.order_type}</td><td>${LCP_UTIL.pkr(o.total)}</td></tr>`,
+            ) => `<tr><td><strong>${o.order_number}</strong></td><td>${LCP_UTIL.fmtDate(o.delivered_at || o.rejected_at || o.created_at)}</td>
+          <td>${LCP_NAV.escapeHtml(o.customer_name)}</td><td>${o.customer_phone}</td><td>${o.order_type}</td><td>${LCP_UTIL.pkr(o.total)}</td>
+          <td><span class="badge ${statusBadgeClass(o.status)}">${statusLabel(o.status)}</span></td></tr>`,
           )
           .join("")}</tbody></table>`;
     }
-    render(delivered);
+    render(finished);
     document.getElementById("history-search").addEventListener(
       "input",
       LCP_UTIL.debounce((e) => {
         const q = e.target.value.trim().toLowerCase();
         render(
-          delivered.filter(
+          finished.filter(
             (o) =>
               !q ||
               o.order_number.toLowerCase().includes(q) ||

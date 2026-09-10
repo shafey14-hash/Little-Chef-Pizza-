@@ -21,30 +21,22 @@
  * it's purely an implementation detail Supabase requires.
  */
 const LCP_DB = (() => {
+
   if (!window.supabase) {
-    console.error(
-      "Supabase JS library did not load — check the <script> tag order in this page.",
-    );
+    console.error("Supabase JS library did not load — check the <script> tag order in this page.");
   }
-  const CONFIGURED = !!(
-    LCP_CONFIG &&
-    LCP_CONFIG.SUPABASE_URL &&
-    LCP_CONFIG.SUPABASE_ANON_KEY
-  );
+  const CONFIGURED = !!(LCP_CONFIG && LCP_CONFIG.SUPABASE_URL && LCP_CONFIG.SUPABASE_ANON_KEY);
   if (!CONFIGURED) {
-    console.error(
-      "js/config.js is missing your Supabase URL/anon key — fill it in before using this site.",
-    );
+    console.error("js/config.js is missing your Supabase URL/anon key — fill it in before using this site.");
   }
   // A dummy URL/key lets createClient() succeed (so the page doesn't hard-crash
   // on load) even before config.js is filled in; every real call below still
   // fails safely with a friendly error via NOT_CONFIGURED_MSG.
   const sb = window.supabase.createClient(
     LCP_CONFIG.SUPABASE_URL || "https://placeholder.supabase.co",
-    LCP_CONFIG.SUPABASE_ANON_KEY || "placeholder-key",
+    LCP_CONFIG.SUPABASE_ANON_KEY || "placeholder-key"
   );
-  const NOT_CONFIGURED_MSG =
-    "The site isn't connected to a database yet. Please fill in js/config.js.";
+  const NOT_CONFIGURED_MSG = "The site isn't connected to a database yet. Please fill in js/config.js.";
 
   const EMAIL_DOMAIN = "users.littlechefpizza.local";
   const usernameToEmail = (u) => u.trim().toLowerCase() + "@" + EMAIL_DOMAIN;
@@ -59,22 +51,10 @@ const LCP_DB = (() => {
   let _profile = null; // cached row from public.profiles for the signed-in user, or null
 
   async function loadProfile() {
-    if (!CONFIGURED) {
-      _profile = null;
-      return null;
-    }
-    const {
-      data: { session },
-    } = await sb.auth.getSession();
-    if (!session) {
-      _profile = null;
-      return null;
-    }
-    const { data, error } = await sb
-      .from("profiles")
-      .select("*")
-      .eq("auth_user_id", session.user.id)
-      .single();
+    if (!CONFIGURED) { _profile = null; return null; }
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { _profile = null; return null; }
+    const { data, error } = await sb.from("profiles").select("*").eq("auth_user_id", session.user.id).single();
     _profile = error ? null : data;
     return _profile;
   }
@@ -82,35 +62,25 @@ const LCP_DB = (() => {
   // ---------------------------------------------------------------- auth
   const auth = {
     /** Must be awaited once per page load, before mountCustomer/mountAdmin/currentUser(). */
-    async init() {
-      return loadProfile();
-    },
+    async init() { return loadProfile(); },
 
-    currentUser() {
-      return _profile;
-    },
+    currentUser() { return _profile; },
 
-    async signUp({ username, password, full_name, phone, area, address }) {
+    async signUp({ username, password, full_name, phone, email, area, address }) {
       if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
       username = username.trim().toLowerCase();
 
-      const { data: taken, error: checkErr } = await sb.rpc(
-        "is_username_taken",
-        { p_username: username },
-      );
+      const { data: taken, error: checkErr } = await sb.rpc("is_username_taken", { p_username: username });
       if (checkErr) return { error: friendlyDbError(checkErr) };
       if (taken) return { error: "Username already exists." };
 
       const { error } = await sb.auth.signUp({
         email: usernameToEmail(username),
         password,
-        options: {
-          data: { username, full_name, phone, area, address, role: "customer" },
-        },
+        options: { data: { username, full_name, phone, email, area, address, role: "customer" } },
       });
       if (error) {
-        if (/registered|exists/i.test(error.message))
-          return { error: "Username already exists." };
+        if (/registered|exists/i.test(error.message)) return { error: "Username already exists." };
         return { error: "Something went wrong. Please try again." };
       }
       // The on_auth_user_created trigger (see supabase/auth_and_admin.sql)
@@ -141,12 +111,7 @@ const LCP_DB = (() => {
 
     async updateProfile(userId, patch) {
       delete patch.role; // role can never be changed through this path — also blocked server-side by RLS
-      const { data, error } = await sb
-        .from("profiles")
-        .update(patch)
-        .eq("id", userId)
-        .select()
-        .single();
+      const { data, error } = await sb.from("profiles").update(patch).eq("id", userId).select().single();
       if (error) return { error: friendlyDbError(error) };
       _profile = data;
       return { data };
@@ -157,65 +122,45 @@ const LCP_DB = (() => {
   const catalog = {
     async listCategories() {
       if (!CONFIGURED) return { data: [] };
-      const { data, error } = await sb
-        .from("categories")
-        .select("*")
-        .order("sort_order");
+      const { data, error } = await sb.from("categories").select("*").order("sort_order");
       return error ? { error: friendlyDbError(error) } : { data };
     },
     async listProducts() {
       if (!CONFIGURED) return { data: [] };
-      const { data, error } = await sb
-        .from("products")
-        .select("*")
-        .order("sort_order");
+      const { data, error } = await sb.from("products").select("*").order("sort_order");
       return error ? { error: friendlyDbError(error) } : { data };
     },
     async getProduct(id) {
       if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
-      const { data, error } = await sb
-        .from("products")
-        .select("*, categories(name)")
-        .eq("id", id)
-        .single();
+      const { data, error } = await sb.from("products").select("*, categories(name)").eq("id", id).single();
       return error ? { error: "Product not found." } : { data };
     },
     async listDeals() {
       if (!CONFIGURED) return { data: [] };
-      const { data, error } = await sb
-        .from("deals")
-        .select("*")
-        .order("created_at");
+      const { data, error } = await sb.from("deals").select("*").order("created_at");
       return error ? { error: friendlyDbError(error) } : { data };
     },
     async updateProduct(id, patch) {
-      const { data, error } = await sb
-        .from("products")
-        .update(patch)
-        .eq("id", id)
-        .select()
-        .single();
+      const { data, error } = await sb.from("products").update(patch).eq("id", id).select().single();
       return error ? { error: friendlyDbError(error) } : { data };
     },
     async createDeal(deal) {
-      const { data, error } = await sb
-        .from("deals")
-        .insert(deal)
-        .select()
-        .single();
+      const { data, error } = await sb.from("deals").insert(deal).select().single();
       return error ? { error: friendlyDbError(error) } : { data };
     },
     async updateDeal(id, patch) {
-      const { data, error } = await sb
-        .from("deals")
-        .update(patch)
-        .eq("id", id)
-        .select()
-        .single();
+      const { data, error } = await sb.from("deals").update(patch).eq("id", id).select().single();
       return error ? { error: friendlyDbError(error) } : { data };
     },
-    async deactivateDeal(id) {
-      return catalog.updateDeal(id, { available: false });
+    async deactivateDeal(id) { return catalog.updateDeal(id, { available: false }); },
+  };
+
+  // ---------------------------------------------------------- settings
+  const settings = {
+    async get(key) {
+      if (!CONFIGURED) return { data: null };
+      const { data, error } = await sb.from("site_settings").select("value").eq("key", key).single();
+      return error ? { data: null } : { data: data.value };
     },
   };
 
@@ -233,20 +178,13 @@ const LCP_DB = (() => {
     /** folder: "products" | "deals" — just keeps the bucket tidy. */
     async uploadImage(file, folder) {
       if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
-      if (!file.type.startsWith("image/"))
-        return { error: "Please choose an image file." };
-      if (file.size > MAX_IMAGE_BYTES)
-        return { error: "Image must be 5MB or smaller." };
+      if (!file.type.startsWith("image/")) return { error: "Please choose an image file." };
+      if (file.size > MAX_IMAGE_BYTES) return { error: "Image must be 5MB or smaller." };
 
-      const ext =
-        (file.name.split(".").pop() || "jpg")
-          .toLowerCase()
-          .replace(/[^a-z0-9]/g, "") || "jpg";
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
       const path = `${folder}/${crypto.randomUUID()}.${ext}`;
 
-      const { error: upErr } = await sb.storage
-        .from(BUCKET)
-        .upload(path, file, { cacheControl: "3600", upsert: false });
+      const { error: upErr } = await sb.storage.from(BUCKET).upload(path, file, { cacheControl: "3600", upsert: false });
       if (upErr) return { error: friendlyDbError(upErr) };
 
       const { data } = sb.storage.from(BUCKET).getPublicUrl(path);
@@ -256,24 +194,35 @@ const LCP_DB = (() => {
     /** Accepts either a storage path or a full public URL. */
     async removeImage(pathOrUrl) {
       if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
-      const path =
-        pathOrUrl && pathOrUrl.startsWith("http")
-          ? pathFromPublicUrl(pathOrUrl)
-          : pathOrUrl;
+      const path = pathOrUrl && pathOrUrl.startsWith("http") ? pathFromPublicUrl(pathOrUrl) : pathOrUrl;
       if (!path) return { data: true }; // nothing to remove
       const { error } = await sb.storage.from(BUCKET).remove([path]);
       return error ? { error: friendlyDbError(error) } : { data: true };
+    },
+
+    /**
+     * EasyPaisa payment screenshots go to a SEPARATE, private bucket
+     * (financial proof — never publicly readable). Only image files,
+     * max 5MB. Returns the storage path (not a public URL, since the
+     * bucket isn't public) — admin views it later via a signed URL.
+     */
+    async uploadPaymentScreenshot(file) {
+      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
+      if (!file.type.startsWith("image/")) return { error: "Please upload an image (screenshot) file." };
+      if (file.size > MAX_IMAGE_BYTES) return { error: "Screenshot must be 5MB or smaller." };
+
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+      const path = `${crypto.randomUUID()}.${ext}`;
+      const { error } = await sb.storage.from("payment-screenshots").upload(path, file, { cacheControl: "3600", upsert: false });
+      if (error) return { error: friendlyDbError(error) };
+      return { data: { path } };
     },
   };
 
   function normalize(rows) {
     // order_items/order_deals (Postgres foreign-table names) -> items/deals,
     // matching what the UI (orders.html, admin.js) already expects.
-    return (rows || []).map((r) => ({
-      ...r,
-      items: r.order_items || [],
-      deals: r.order_deals || [],
-    }));
+    return (rows || []).map((r) => ({ ...r, items: r.order_items || [], deals: r.order_deals || [] }));
   }
 
   const orders = {
@@ -284,47 +233,62 @@ const LCP_DB = (() => {
         p_deals: payload.deals || [],
         p_customer_name: payload.customer_name,
         p_customer_phone: payload.customer_phone,
+        p_alt_contact_phone: payload.alt_contact_phone || null,
+        p_customer_email: payload.customer_email || null,
         p_order_type: payload.order_type,
-        p_delivery_area: payload.delivery_area,
         p_delivery_address: payload.delivery_address,
+        p_delivery_lat: payload.delivery_lat ?? null,
+        p_delivery_lng: payload.delivery_lng ?? null,
+        p_special_instructions: payload.special_instructions || null,
+        p_payment_method: payload.payment_method,
+        p_payment_screenshot_path: payload.payment_screenshot_path || null,
         p_cancellation_acknowledged: payload.cancellation_acknowledged,
       });
-      if (error)
-        return {
-          error:
-            error.message?.replace(/^.*ERROR:\s*/i, "") ||
-            friendlyDbError(error),
-        };
+      if (error) return { error: error.message?.replace(/^.*ERROR:\s*/i, "") || friendlyDbError(error) };
       return { data };
     },
     async listAll() {
       if (!CONFIGURED) return { data: [] };
-      const { data, error } = await sb
-        .from("orders")
+      const { data, error } = await sb.from("orders")
         .select("*, order_items(*), order_deals(*)")
         .order("created_at", { ascending: false });
-      return error
-        ? { error: friendlyDbError(error) }
-        : { data: normalize(data) };
+      return error ? { error: friendlyDbError(error) } : { data: normalize(data) };
     },
     async listForUser(userId) {
       if (!CONFIGURED) return { data: [] };
-      const { data, error } = await sb
-        .from("orders")
+      const { data, error } = await sb.from("orders")
         .select("*, order_items(*), order_deals(*)")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
-      return error
-        ? { error: friendlyDbError(error) }
-        : { data: normalize(data) };
+      return error ? { error: friendlyDbError(error) } : { data: normalize(data) };
+    },
+    // Admin-only transitions — each is enforced server-side by its own
+    // SECURITY DEFINER function (see supabase/location_and_payments.sql),
+    // which independently checks public.is_admin() and the current status
+    // before allowing the move. The frontend buttons are just UI.
+    async approvePayment(orderId) {
+      const { data, error } = await sb.rpc("approve_payment", { p_order_id: orderId });
+      return error ? { error: friendlyDbError(error) } : { data };
+    },
+    async rejectPayment(orderId) {
+      const { data, error } = await sb.rpc("reject_payment", { p_order_id: orderId });
+      return error ? { error: friendlyDbError(error) } : { data };
+    },
+    async markOutForDelivery(orderId) {
+      const { data, error } = await sb.rpc("mark_out_for_delivery", { p_order_id: orderId });
+      return error ? { error: friendlyDbError(error) } : { data };
     },
     async markDelivered(orderId) {
-      const { data, error } = await sb.rpc("mark_order_delivered", {
-        p_order_id: orderId,
-      });
+      const { data, error } = await sb.rpc("mark_delivered", { p_order_id: orderId });
       return error ? { error: friendlyDbError(error) } : { data };
+    },
+    /** Admin-only: generates a short-lived signed URL to view a payment screenshot (bucket is private). */
+    async getScreenshotUrl(path) {
+      if (!CONFIGURED || !path) return { data: null };
+      const { data, error } = await sb.storage.from("payment-screenshots").createSignedUrl(path, 600);
+      return error ? { error: friendlyDbError(error) } : { data: data.signedUrl };
     },
   };
 
-  return { auth, catalog, orders, storage };
+  return { auth, catalog, orders, storage, settings };
 })();

@@ -22,7 +22,7 @@
           1. Order Type
         </div>
         <div class="checkout-steps__step" data-step-label="2">
-          2. Your Details
+          2. Details &amp; Payment
         </div>
         <div class="checkout-steps__step" data-step-label="3">
           3. Confirmation
@@ -35,7 +35,7 @@
           <div class="order-type-card" data-type="delivery">
             <div class="order-type-card__icon">🚚</div>
             <strong>Delivery</strong>
-            <p class="muted">Up to 40 minutes · Gujrat city only</p>
+            <p class="muted">Up to 40 minutes · within 5km of Gujrat</p>
           </div>
           <div class="order-type-card" data-type="takeaway">
             <div class="order-type-card__icon">🥡</div>
@@ -58,38 +58,94 @@
         </button>
       </div>
 
-      <!-- STEP 2: DETAILS -->
+      <!-- STEP 2: DETAILS + PAYMENT -->
       <div class="checkout-panel" data-panel="2" hidden>
         <div class="card">
           <form id="checkout-form" novalidate>
+            <h3>Your Details</h3>
             <div class="field">
-              <label for="co-name">Full Name</label
-              ><input id="co-name" required />
+              <label for="co-name">Name</label><input id="co-name" required />
             </div>
             <div class="field">
-              <label for="co-phone">Phone Number</label
+              <label for="co-email"
+                >Email <span class="muted">(optional)</span></label
+              ><input id="co-email" type="email" />
+            </div>
+            <div class="field">
+              <label for="co-phone">Contact Number</label
               ><input id="co-phone" type="tel" required />
-              <span class="field__hint"
-                >The rider or restaurant may call this number about your
-                order.</span
-              >
+            </div>
+            <div class="field">
+              <label for="co-alt-phone"
+                >Alternative Contact Number
+                <span class="muted">(optional)</span></label
+              ><input id="co-alt-phone" type="tel" />
             </div>
 
             <div id="delivery-fields" hidden>
               <div class="field">
-                <label for="co-area">Delivery Area (Gujrat city only)</label>
-                <select id="co-area">
-                  <option value="">Select your area</option>
-                </select>
-                <span class="field__hint" id="co-area-hint"></span>
-              </div>
-              <div class="field">
-                <label for="co-address">Address</label>
+                <label for="co-address">Delivery Address</label>
                 <textarea
                   id="co-address"
                   placeholder="House / street / mohalla / landmark"
                 ></textarea>
+                <span class="field__hint"
+                  >Pre-filled from the location you selected earlier — edit if
+                  needed.</span
+                >
               </div>
+            </div>
+            <div id="non-delivery-address-field" class="field" hidden>
+              <label for="co-address-simple"
+                >Address <span class="muted">(optional)</span></label
+              >
+              <input id="co-address-simple" />
+            </div>
+
+            <div class="field">
+              <label for="co-instructions"
+                >Special Instructions
+                <span class="muted">(optional)</span></label
+              >
+              <textarea
+                id="co-instructions"
+                placeholder="e.g. less spicy, ring the bell twice…"
+              ></textarea>
+            </div>
+
+            <div class="hr"></div>
+            <h3>Payment Method</h3>
+            <div class="payment-method-grid">
+              <label class="payment-method-card">
+                <input type="radio" name="payment-method" value="cod" checked />
+                <span class="payment-method-card__icon">💵</span>
+                <span>Cash on Delivery</span>
+              </label>
+              <label class="payment-method-card">
+                <input type="radio" name="payment-method" value="easypaisa" />
+                <span class="payment-method-card__icon">📱</span>
+                <span>EasyPaisa</span>
+              </label>
+            </div>
+
+            <div id="easypaisa-section" class="easypaisa-box" hidden>
+              <div class="summary-row">
+                <span>Account Number</span
+                ><strong id="ep-account-number">—</strong>
+              </div>
+              <div class="summary-row">
+                <span>Account Name</span><strong id="ep-account-name">—</strong>
+              </div>
+              <p class="muted" style="margin-top: 10px">
+                Send payment first, then take a screenshot and upload your
+                payment screenshot here.
+              </p>
+              <div class="field">
+                <label for="ep-screenshot">Payment Screenshot</label>
+                <input type="file" id="ep-screenshot" accept="image/*" />
+                <span class="field__hint">Image files only, max 5MB.</span>
+              </div>
+              <div id="ep-screenshot-preview"></div>
             </div>
 
             <div class="hr"></div>
@@ -134,12 +190,12 @@
       <!-- STEP 3: SUCCESS -->
       <div class="checkout-panel" data-panel="3" hidden>
         <div class="success-wrap">
-          <div class="success-check">✓</div>
-          <h2>Order Placed Successfully!</h2>
+          <div class="success-check" id="success-icon">✓</div>
+          <h2 id="success-title">Order Placed Successfully!</h2>
           <p>Order Number</p>
           <div class="success-num" id="success-order-number"></div>
           <p id="success-meta"></p>
-          <p class="muted">Your order cannot be cancelled after placement.</p>
+          <p id="success-note" class="muted"></p>
           <div
             class="row gap-12"
             style="justify-content: center; margin-top: 20px"
@@ -169,6 +225,8 @@
     <script src="../js/utils.js"></script>
     <script src="../js/validation.js"></script>
     <script src="../js/cart.js"></script>
+    <script src="../js/cart-ui.js"></script>
+    <script src="../js/location.js"></script>
     <script src="../js/menu.js"></script>
     <script src="../js/nav.js"></script>
     <script src="../js/checkout.js"></script>

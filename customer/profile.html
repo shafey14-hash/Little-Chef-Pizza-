@@ -42,10 +42,9 @@
           <label for="pf-phone">Phone</label><input id="pf-phone" required />
         </div>
         <div class="field">
-          <label for="pf-area">Saved Delivery Area</label>
-          <select id="pf-area">
-            <option value="">— None saved —</option>
-          </select>
+          <label for="pf-email"
+            >Email <span class="muted">(optional)</span></label
+          ><input id="pf-email" type="email" />
         </div>
         <div class="field">
           <label for="pf-address">Saved Address</label><input id="pf-address" />
@@ -63,6 +62,7 @@
     <script src="../js/utils.js"></script>
     <script src="../js/validation.js"></script>
     <script src="../js/cart.js"></script>
+    <script src="../js/cart-ui.js"></script>
     <script src="../js/nav.js"></script>
     <script>
       (async () => {
@@ -75,15 +75,8 @@
           document.getElementById("pf-username").value = user.username;
           document.getElementById("pf-fullname").value = user.full_name;
           document.getElementById("pf-phone").value = user.phone;
+          document.getElementById("pf-email").value = user.email || "";
           document.getElementById("pf-address").value = user.address || "";
-          const areaSel = document.getElementById("pf-area");
-          LCP_SEED.delivery_areas.forEach((a) => {
-            const opt = document.createElement("option");
-            opt.value = a;
-            opt.textContent = a;
-            if (a === user.area) opt.selected = true;
-            areaSel.appendChild(opt);
-          });
 
           form.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -92,7 +85,7 @@
               username: document.getElementById("pf-username").value.trim(),
               full_name: document.getElementById("pf-fullname").value.trim(),
               phone: document.getElementById("pf-phone").value.trim(),
-              area: areaSel.value || null,
+              email: document.getElementById("pf-email").value.trim() || null,
               address:
                 document.getElementById("pf-address").value.trim() || null,
             };
@@ -101,6 +94,10 @@
               LCP_VALID.fullName(patch.full_name),
               LCP_VALID.phone(patch.phone),
             ].filter(Boolean);
+            if (patch.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(patch.email))
+              errs.push(
+                "Please enter a valid email address, or leave it blank.",
+              );
             if (errs.length) return LCP_UTIL.toast(errs[0], "error");
             LCP_UTIL.setLoading(btn, true, "Saving…");
             const { error } = await LCP_DB.auth.updateProfile(user.id, patch);
