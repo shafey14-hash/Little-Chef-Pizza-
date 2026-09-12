@@ -16,6 +16,7 @@
 
   function showView(name) {
     LCP_UTIL.qsa(".auth-view", modal).forEach((v) => (v.hidden = v.dataset.view !== name));
+    modal.classList.toggle("auth-modal--wide", name === "location-gate");
   }
   LCP_UTIL.qsa("[data-goto]", modal).forEach((btn) => {
     btn.addEventListener("click", (e) => {
