@@ -3,9 +3,10 @@
  * Keeping this in one place means every page's navigation stays consistent.
  */
 const LCP_NAV = (() => {
-
   function isGuest() {
-    return !LCP_DB.auth.currentUser() && sessionStorage.getItem("lcp_guest") === "1";
+    return (
+      !LCP_DB.auth.currentUser() && sessionStorage.getItem("lcp_guest") === "1"
+    );
   }
   function currentUser() {
     return LCP_DB.auth.currentUser();
@@ -23,23 +24,32 @@ const LCP_NAV = (() => {
       ["profile", "Profile", "profile.html", "👤"],
     ];
 
-    const linkHtml = links.map(([key, label, href]) => {
-      const active = key === activePage ? "nav__link--active" : "";
-      return `<a class="nav__link ${active}" href="${href}">${label}</a>`;
-    }).join("");
+    const linkHtml = links
+      .map(([key, label, href]) => {
+        const active = key === activePage ? "nav__link--active" : "";
+        return `<a class="nav__link ${active}" href="${href}">${label}</a>`;
+      })
+      .join("");
 
-    const tabHtml = links.map(([key, label, href, icon]) => {
-      const active = key === activePage ? "mobile-tabbar__item--active" : "";
-      return `<a class="mobile-tabbar__item ${active}" href="${href}">
+    const tabHtml = links
+      .map(([key, label, href, icon]) => {
+        const active = key === activePage ? "mobile-tabbar__item--active" : "";
+        return `<a class="mobile-tabbar__item ${active}" href="${href}">
                 <span class="mobile-tabbar__icon" aria-hidden="true">${icon}</span>
                 <span class="mobile-tabbar__label">${label}</span>
               </a>`;
-    }).join("");
+      })
+      .join("");
 
-    const who = user ? `<span class="nav__who">Hi, ${escapeHtml(user.full_name.split(" ")[0])}</span>`
-                      : guest ? `<span class="nav__who nav__who--guest">Browsing as Guest</span>` : "";
+    const who = user
+      ? `<span class="nav__who">Hi, ${escapeHtml(user.full_name.split(" ")[0])}</span>`
+      : guest
+        ? `<span class="nav__who nav__who--guest">Browsing as Guest</span>`
+        : "";
 
-    document.body.insertAdjacentHTML("afterbegin", `
+    document.body.insertAdjacentHTML(
+      "afterbegin",
+      `
       <header class="topnav">
         <div class="container topnav__inner">
           <a href="home.html" class="brand">
@@ -60,14 +70,19 @@ const LCP_NAV = (() => {
         </div>
       </header>
       <nav class="mobile-tabbar" aria-label="Mobile navigation">${tabHtml}</nav>
-    `);
+    `,
+    );
 
-    document.getElementById("lcp-logout-icon")?.addEventListener("click", doLogout);
+    document
+      .getElementById("lcp-logout-icon")
+      ?.addEventListener("click", doLogout);
   }
 
   function customerFooter() {
     const r = LCP_SEED.restaurant;
-    document.body.insertAdjacentHTML("beforeend", `
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      `
       <footer class="site-footer">
         <div class="container footer__grid">
           <div>
@@ -95,13 +110,20 @@ const LCP_NAV = (() => {
         </div>
         <div class="footer__bottom">© ${new Date().getFullYear()} Little Chef Pizza. All rights reserved.</div>
       </footer>
-    `);
+    `,
+    );
   }
 
   async function doLogout() {
     await LCP_DB.auth.signOut();
     sessionStorage.removeItem("lcp_guest");
-    window.location.href = (window.location.pathname.includes("/customer/") || window.location.pathname.includes("/admin/") ? "../index.html" : "index.html");
+    if (window.location.pathname.includes("/admin/")) {
+      window.location.href = "login.html";
+    } else if (window.location.pathname.includes("/customer/")) {
+      window.location.href = "../index.html";
+    } else {
+      window.location.href = "index.html";
+    }
   }
 
   async function mountCustomer(activePage) {
@@ -117,8 +139,11 @@ const LCP_NAV = (() => {
   function requireAdmin() {
     const user = currentUser();
     if (!user || user.role !== "admin") {
-      sessionStorage.setItem("lcp_flash", "Please log in as admin to continue.");
-      window.location.href = "../index.html";
+      sessionStorage.setItem(
+        "lcp_flash",
+        "Please log in as admin to continue.",
+      );
+      window.location.href = "login.html";
       return null;
     }
     return user;
@@ -135,7 +160,9 @@ const LCP_NAV = (() => {
       ["deals", "Deals", "deals.html"],
       ["history", "Order History", "history.html"],
     ];
-    document.body.insertAdjacentHTML("afterbegin", `
+    document.body.insertAdjacentHTML(
+      "afterbegin",
+      `
       <div class="admin-shell">
         <aside class="admin-sidebar">
           <div class="brand brand--on-dark" style="padding:20px 18px 10px;">
@@ -143,7 +170,7 @@ const LCP_NAV = (() => {
             <span class="brand__text"><span class="brand__name">Little Chef</span><span class="brand__tag">ADMIN</span></span>
           </div>
           <nav class="admin-nav">
-            ${links.map(([k,l,h]) => `<a href="${h}" class="${k===activePage?'active':''}">${l}</a>`).join("")}
+            ${links.map(([k, l, h]) => `<a href="${h}" class="${k === activePage ? "active" : ""}">${l}</a>`).join("")}
           </nav>
           <button class="admin-logout" id="lcp-admin-logout">Log out</button>
         </aside>
@@ -151,21 +178,42 @@ const LCP_NAV = (() => {
           <header class="admin-topbar">
             <div>
               <strong>Little Chef Pizza — Admin</strong>
-              <span class="muted" style="margin-left:8px;">${new Date().toLocaleDateString("en-GB",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})}</span>
+              <span class="muted" style="margin-left:8px;">${new Date().toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}</span>
             </div>
             <span class="badge badge--gold">${escapeHtml(admin.full_name)}</span>
           </header>
           <main class="admin-content container" id="admin-content"></main>
         </div>
       </div>
-    `);
-    document.getElementById("lcp-admin-logout").addEventListener("click", doLogout);
+    `,
+    );
+    document
+      .getElementById("lcp-admin-logout")
+      .addEventListener("click", doLogout);
     return admin;
   }
 
   function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    return String(s).replace(
+      /[&<>"']/g,
+      (c) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[c],
+    );
   }
 
-  return { mountCustomer, mountAdmin, requireAdmin, currentUser, isGuest, doLogout, escapeHtml };
+  return {
+    mountCustomer,
+    mountAdmin,
+    requireAdmin,
+    currentUser,
+    isGuest,
+    doLogout,
+    escapeHtml,
+  };
 })();

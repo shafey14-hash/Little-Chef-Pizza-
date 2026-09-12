@@ -1,8 +1,71 @@
 /**
  * checkout.js — drives customer/checkout.html end to end.
  */
+
+// Standalone — deliberately does NOT reference any variable declared later
+// in the main IIFE below (panels/steps are `const`, so calling into logic
+// that touches them before that line runs would hit the temporal dead
+// zone and throw). Used both for a fresh order and for restoring the
+// confirmation screen after a refresh.
+function lcpRenderOrderSuccess(data, user) {
+  document
+    .querySelectorAll(".checkout-panel")
+    .forEach((p) => (p.hidden = Number(p.dataset.panel) !== 3));
+  document.querySelectorAll(".checkout-steps__step").forEach((s, i) => {
+    s.classList.toggle("active", i === 2);
+    s.classList.toggle("done", i < 2);
+  });
+  document.getElementById("success-order-number").textContent =
+    data.order_number;
+  const etaText =
+    data.order_type === "delivery"
+      ? "Estimated delivery: up to 40 minutes."
+      : data.order_type === "takeaway"
+        ? "Estimated preparation: up to 20 minutes."
+        : "Please proceed to your table — our staff will assist you.";
+
+  if (data.status === "payment_verification") {
+    document.getElementById("success-icon").textContent = "⏳";
+    document.getElementById("success-title").textContent = "Payment Submitted";
+    document.getElementById("success-meta").textContent =
+      `Your payment is being verified. ${data.order_type.toUpperCase()} · Rs. ${data.total}`;
+    document.getElementById("success-note").textContent =
+      "Please wait for payment verification. Verification usually takes about 2 minutes. Your order cannot be cancelled after placement.";
+  } else {
+    document.getElementById("success-icon").textContent = "✓";
+    document.getElementById("success-title").textContent =
+      "Order Placed Successfully!";
+    document.getElementById("success-meta").textContent =
+      `${data.order_type.toUpperCase()} · Rs. ${data.total} · ${etaText}`;
+    document.getElementById("success-note").textContent =
+      "Your order cannot be cancelled after placement.";
+  }
+  document.getElementById("success-view-orders").hidden = !user;
+  document.getElementById("success-continue").hidden = !!user;
+}
+
 (async function () {
   const user = await LCP_NAV.mountCustomer(null);
+
+  // If the page is refreshed right after a successful order (bucket is now
+  // empty because it was just cleared), show the confirmation again instead
+  // of bouncing to an "empty bucket" redirect and losing the order number.
+  const lastOrderRaw = sessionStorage.getItem("lcp_last_order");
+  if (lastOrderRaw) {
+    try {
+      const lastOrder = JSON.parse(lastOrderRaw);
+      const ageMs = Date.now() - lastOrder._savedAt;
+      const cartEmpty = LCP_CART.getState().itemCount === 0;
+      if (cartEmpty && ageMs < 10 * 60 * 1000) {
+        // still fresh (within 10 minutes)
+        lcpRenderOrderSuccess(lastOrder, user);
+        return;
+      }
+    } catch {
+      /* ignore corrupt/old data */
+    }
+    sessionStorage.removeItem("lcp_last_order");
+  }
 
   const state = LCP_CART.getState();
   if (state.items.length === 0 && state.deals.length === 0) {
@@ -284,38 +347,10 @@
       if (error) return LCP_UTIL.toast(LCP_UTIL.friendlyError(error), "error");
 
       LCP_CART.clear();
-      showSuccess(data);
+      sessionStorage.setItem(
+        "lcp_last_order",
+        JSON.stringify({ ...data, _savedAt: Date.now() }),
+      );
+      lcpRenderOrderSuccess(data, user);
     });
-
-  function showSuccess(data) {
-    document.getElementById("success-order-number").textContent =
-      data.order_number;
-    const etaText =
-      data.order_type === "delivery"
-        ? "Estimated delivery: up to 40 minutes."
-        : data.order_type === "takeaway"
-          ? "Estimated preparation: up to 20 minutes."
-          : "Please proceed to your table — our staff will assist you.";
-
-    if (data.status === "payment_verification") {
-      document.getElementById("success-icon").textContent = "⏳";
-      document.getElementById("success-title").textContent =
-        "Payment Submitted";
-      document.getElementById("success-meta").textContent =
-        `Your payment is being verified. ${data.order_type.toUpperCase()} · Rs. ${data.total}`;
-      document.getElementById("success-note").textContent =
-        "Please wait for payment verification. Verification usually takes about 2 minutes. Your order cannot be cancelled after placement.";
-    } else {
-      document.getElementById("success-icon").textContent = "✓";
-      document.getElementById("success-title").textContent =
-        "Order Placed Successfully!";
-      document.getElementById("success-meta").textContent =
-        `${data.order_type.toUpperCase()} · Rs. ${data.total} · ${etaText}`;
-      document.getElementById("success-note").textContent =
-        "Your order cannot be cancelled after placement.";
-    }
-    document.getElementById("success-view-orders").hidden = !user;
-    document.getElementById("success-continue").hidden = !!user;
-    goToStep(3);
-  }
 })();

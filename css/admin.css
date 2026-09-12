@@ -183,3 +183,33 @@
   justify-content: center;
   flex-shrink: 0;
 }
+
+/* ---------------------------------------------------------------- standalone admin login page */
+.admin-login-body {
+  background: var(--black);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.admin-login-card {
+  background: #161311;
+  border: 1px solid #2a2724;
+  border-radius: var(--radius-l);
+  padding: 36px 32px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+}
+.admin-login-card .field label {
+  color: #e8e2d6;
+}
+.admin-login-card .field input {
+  background: #0c0b0a;
+  border-color: #33302b;
+  color: #fff;
+}
+.admin-login-card .muted {
+  color: #a89f8f;
+}

@@ -15,6 +15,10 @@
     />
     <link rel="stylesheet" href="css/global.css" />
     <link rel="stylesheet" href="css/auth.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
   </head>
   <body class="auth-body">
     <div class="auth-backdrop" aria-hidden="true">
@@ -43,8 +47,63 @@
 
     <main class="auth-stage">
       <div class="auth-modal" id="auth-modal">
+        <!-- LOCATION GATE — shown first, before any login/signup/guest option -->
+        <section class="auth-view location-gate" data-view="location-gate">
+          <div class="auth-modal__brand">
+            <div
+              class="brand__mark"
+              style="width: 56px; height: 56px; font-size: 20px"
+            >
+              LC
+            </div>
+            <h2 class="text-center" style="margin-top: 8px">
+              Select Your Delivery Location
+            </h2>
+          </div>
+          <p class="muted text-center" style="margin-bottom: 14px">
+            We currently deliver within 5 km of Gujrat.
+          </p>
+
+          <div id="location-map" class="location-map"></div>
+
+          <div class="field">
+            <label for="loc-city">City</label>
+            <input id="loc-city" value="Gujrat, Punjab, Pakistan" disabled />
+          </div>
+          <div class="field">
+            <label for="loc-address">Choose Area</label>
+            <input
+              id="loc-address"
+              placeholder="Choose Area — type your street/area"
+            />
+          </div>
+          <button
+            type="button"
+            class="btn btn--ghost btn--block"
+            id="btn-locate-me"
+          >
+            📍 Locate Me
+          </button>
+
+          <div
+            id="location-status"
+            class="location-status"
+            aria-live="polite"
+          ></div>
+
+          <button
+            type="button"
+            class="btn btn--primary btn--block"
+            id="btn-location-continue"
+            disabled
+            style="margin-top: 14px"
+          >
+            Continue
+          </button>
+        </section>
+
         <!-- WELCOME VIEW -->
-        <section class="auth-view" data-view="welcome">
+        <section class="auth-view" data-view="welcome" hidden>
           <div class="auth-modal__brand">
             <div
               class="brand__mark"
@@ -66,15 +125,8 @@
             >
               Login as Customer
             </button>
-            <button
-              class="btn btn--ghost btn--block"
-              data-goto="guest"
-              id="btn-guest"
-            >
+            <button class="btn btn--ghost btn--block" id="btn-guest">
               Continue as Guest
-            </button>
-            <button class="btn btn--dark btn--block" data-goto="admin-login">
-              Login as Admin
             </button>
           </div>
 
@@ -148,7 +200,7 @@
           <h2 class="text-center">Create Your Account</h2>
           <form id="form-customer-signup" novalidate>
             <div class="field">
-              <label for="su-fullname">Full Name</label
+              <label for="su-fullname">Name</label
               ><input id="su-fullname" required />
             </div>
             <div class="field">
@@ -174,67 +226,32 @@
               </div>
             </div>
             <div class="field">
-              <label for="su-confirm">Confirm Password</label
-              ><input
-                id="su-confirm"
-                type="password"
-                autocomplete="new-password"
-                required
-              />
-            </div>
-            <div class="field">
-              <label for="su-phone">Phone Number</label
+              <label for="su-phone">Contact Number</label
               ><input id="su-phone" type="tel" required />
             </div>
             <div class="field">
-              <label for="su-area">Delivery Area</label>
-              <select id="su-area">
-                <option value="">Select your area (optional)</option>
-              </select>
+              <label for="su-email"
+                >Email <span class="muted">(optional)</span></label
+              ><input
+                id="su-email"
+                type="email"
+                placeholder="you@example.com"
+              />
             </div>
             <div class="field">
               <label for="su-address">Address</label>
-              <input id="su-address" placeholder="House / street / details" />
+              <input
+                id="su-address"
+                placeholder="House / street / details"
+                maxlength="400"
+              />
               <span class="field__hint"
-                >Your selected area is added automatically — just add
-                house/street details.</span
+                >Pre-filled from the location you selected — edit if
+                needed.</span
               >
             </div>
             <button type="submit" class="btn btn--primary btn--block">
               Create Account
-            </button>
-          </form>
-        </section>
-
-        <!-- ADMIN LOGIN -->
-        <section class="auth-view" data-view="admin-login" hidden>
-          <button class="auth-back" data-goto="welcome" aria-label="Back">
-            ← Back
-          </button>
-          <h2 class="text-center">Admin Login</h2>
-          <p class="muted text-center" style="margin-bottom: 18px">
-            Restaurant staff only. Admin accounts cannot be created here.
-          </p>
-          <form id="form-admin-login" novalidate>
-            <div class="field">
-              <label for="al-username">Username</label
-              ><input id="al-username" required />
-            </div>
-            <div class="field">
-              <label for="al-password">Password</label>
-              <div class="input-group">
-                <input id="al-password" type="password" required />
-                <button
-                  type="button"
-                  class="input-group__toggle"
-                  data-toggle="al-password"
-                >
-                  Show
-                </button>
-              </div>
-            </div>
-            <button type="submit" class="btn btn--dark btn--block">
-              Log In as Admin
             </button>
           </form>
         </section>
@@ -248,6 +265,8 @@
     <script src="js/utils.js"></script>
     <script src="js/validation.js"></script>
     <script src="js/cart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/location.js"></script>
     <script src="js/auth.js"></script>
   </body>
 </html>

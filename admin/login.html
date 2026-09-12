@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Login — Little Chef Pizza</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="../assets/images/logo/favicon.svg"
+    />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
+    <link rel="stylesheet" href="../css/responsive.css" />
+  </head>
+  <body class="admin-login-body">
+    <div class="admin-login-card">
+      <div
+        class="brand brand--on-dark"
+        style="justify-content: center; margin-bottom: 22px"
+      >
+        <span class="brand__mark">LC</span>
+        <span class="brand__text">
+          <span class="brand__name">Little Chef Pizza</span>
+          <span class="brand__tag">ADMIN PORTAL</span>
+        </span>
+      </div>
+
+      <h2 class="text-center" style="color: #fff">Admin Login</h2>
+      <p class="muted text-center" style="margin-bottom: 22px">
+        Restaurant staff only. Admin accounts cannot be created here.
+      </p>
+
+      <form id="form-admin-login" novalidate>
+        <div class="field">
+          <label for="al-username" style="color: #e8e2d6">Username</label>
+          <input id="al-username" required autocomplete="username" />
+        </div>
+        <div class="field">
+          <label for="al-password" style="color: #e8e2d6">Password</label>
+          <div class="input-group">
+            <input
+              id="al-password"
+              type="password"
+              required
+              autocomplete="current-password"
+            />
+            <button
+              type="button"
+              class="input-group__toggle"
+              data-toggle="al-password"
+            >
+              Show
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn--gold btn--block">Log In</button>
+      </form>
+
+      <p class="text-center" style="margin-top: 20px">
+        <a href="../index.html" style="color: #8a8172; font-size: 13px"
+          >← Back to customer site</a
+        >
+      </p>
+    </div>
+
+    <script src="../js/seed-data.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/db.js"></script>
+    <script src="../js/utils.js"></script>
+    <script>
+      (async function () {
+        LCP_UTIL.flashPop();
+
+        // If already authenticated as admin, skip straight to the dashboard.
+        // If authenticated as something else (a customer session), sign it out —
+        // this page is admin-only and must never silently inherit another role.
+        const existing = await LCP_DB.auth.init();
+        if (existing) {
+          if (existing.role === "admin") {
+            window.location.href = "index.html";
+            return;
+          }
+          await LCP_DB.auth.signOut();
+        }
+
+        LCP_UTIL.qsa("[data-toggle]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const input = document.getElementById(btn.dataset.toggle);
+            const isPwd = input.type === "password";
+            input.type = isPwd ? "text" : "password";
+            btn.textContent = isPwd ? "Hide" : "Show";
+          });
+        });
+
+        document
+          .getElementById("form-admin-login")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector("button[type=submit]");
+            const username = document
+              .getElementById("al-username")
+              .value.trim();
+            const password = document.getElementById("al-password").value;
+            if (!username || !password)
+              return LCP_UTIL.toast(
+                "Please enter your username and password.",
+                "error",
+              );
+            LCP_UTIL.setLoading(btn, true, "Logging in…");
+            const { data, error } = await LCP_DB.auth.signIn({
+              username,
+              password,
+              expectRole: "admin",
+            });
+            LCP_UTIL.setLoading(btn, false);
+            if (error) return LCP_UTIL.toast(error, "error");
+            window.location.href = "index.html";
+          });
+      })();
+    </script>
+  </body>
+</html>
