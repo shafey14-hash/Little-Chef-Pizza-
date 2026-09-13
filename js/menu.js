@@ -103,7 +103,7 @@ const LCP_MENU = (() => {
       LCP_CART.addProduct(product, selectedSize, 1);
       addBtn.textContent = "Added ✓";
       addBtn.classList.add("btn--gold");
-      LCP_UTIL.toast(`${product.name} added to your bucket.`, "success");
+      LCP_UTIL.toast(`1 × ${product.name} added to your bucket.`, "success");
       setTimeout(() => {
         addBtn.textContent = "Add to Bucket";
         addBtn.classList.remove("btn--gold");
@@ -161,11 +161,22 @@ const LCP_MENU = (() => {
     if (!deal.available) btn.disabled = true;
     btn.addEventListener("click", () => {
       LCP_CART.addDeal(deal, 1);
-      LCP_UTIL.toast(`${deal.name} added to your bucket.`, "success");
+      LCP_UTIL.toast(`1 × ${deal.name} added to your bucket.`, "success");
     });
     right.appendChild(btn);
     wrap.appendChild(right);
     return wrap;
+  }
+
+  function catalogErrorBanner() {
+    return LCP_UTIL.el(
+      "div",
+      {
+        class: "notice-box",
+        style: "border-color:#f0b0b0; background:#fdeaea; color:#a33;",
+      },
+      "Unable to load the menu right now. Please refresh the page, or check back shortly.",
+    );
   }
 
   async function initMenuPage() {
@@ -174,8 +185,14 @@ const LCP_MENU = (() => {
     const searchInput = document.getElementById("menu-search");
     const emptyState = document.getElementById("menu-empty");
 
-    await LCP_loadCatalogCache();
+    const loadError = await LCP_loadCatalogCache();
     const { products, categories } = LCP_CATALOG_CACHE;
+
+    if (loadError) {
+      grid.innerHTML = "";
+      grid.parentElement.insertBefore(catalogErrorBanner(), grid);
+      emptyState.hidden = true;
+    }
     const catById = Object.fromEntries(categories.map((c) => [c.id, c.name]));
 
     let activeCategory = "all";
@@ -241,8 +258,16 @@ const LCP_MENU = (() => {
 
   async function initDealsPage() {
     const list = document.getElementById("deals-list");
-    await LCP_loadCatalogCache();
+    const loadError = await LCP_loadCatalogCache();
     list.innerHTML = "";
+    if (loadError) {
+      list.appendChild(catalogErrorBanner());
+      return;
+    }
+    if (LCP_CATALOG_CACHE.deals.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🏷️</div><h3>No deals available right now</h3></div>`;
+      return;
+    }
     LCP_CATALOG_CACHE.deals.forEach((d) => list.appendChild(dealCard(d)));
   }
 
@@ -371,7 +396,10 @@ const LCP_MENU = (() => {
 
     document.getElementById("pd-add-btn").addEventListener("click", (e) => {
       LCP_CART.addProduct(product, selectedSize, qty);
-      LCP_UTIL.toast(`${product.name} added to your bucket.`, "success");
+      LCP_UTIL.toast(
+        `${qty} × ${product.name} added to your bucket.`,
+        "success",
+      );
       const btn = e.currentTarget;
       const original = btn.textContent;
       btn.textContent = "Added ✓";

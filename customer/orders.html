@@ -76,7 +76,9 @@
           rejected: "badge--danger",
         };
 
-        const { data } = await LCP_DB.orders.listForUser(user.id);
+        const { data, error } = await LCP_DB.orders.listForUser(user.id);
+        if (error)
+          LCP_UTIL.toast("Unable to load your orders: " + error, "error");
         const list = document.getElementById("orders-list");
         document.getElementById("orders-empty").hidden = data.length > 0;
         data.forEach((o) => {
