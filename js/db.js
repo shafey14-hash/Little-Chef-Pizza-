@@ -170,68 +170,83 @@ const LCP_DB = (() => {
   };
 
   // ------------------------------------------------------------ catalog
+  // Product/category/deal data (name, price, sizes, description) is
+  // HARDCODED in js/seed-data.js — always available, never depends on
+  // Supabase being configured/reachable. Only images are dynamic: admins
+  // upload them, they're stored in Supabase Storage + the
+  // menu_item_images table, and merged onto the hardcoded items below by
+  // matching seed-data.js's string `id` field.
+  async function imageMap() {
+    if (!CONFIGURED) return {};
+    const { data, error } = await sb
+      .from("menu_item_images")
+      .select("item_id, image_url");
+    if (error) {
+      console.error("Could not load menu images:", error);
+      return {};
+    }
+    return Object.fromEntries(
+      (data || []).map((r) => [r.item_id, r.image_url]),
+    );
+  }
   const catalog = {
     async listCategories() {
-      if (!CONFIGURED) return { data: [] };
-      const { data, error } = await sb
-        .from("categories")
-        .select("*")
-        .order("sort_order");
-      return error ? { error: friendlyDbError(error), data: [] } : { data };
+      return { data: LCP_SEED.categories };
     },
     async listProducts() {
-      if (!CONFIGURED) return { data: [] };
-      const { data, error } = await sb
-        .from("products")
-        .select("*")
-        .order("sort_order");
-      return error ? { error: friendlyDbError(error), data: [] } : { data };
+      const images = await imageMap();
+      return {
+        data: LCP_SEED.products.map((p) => ({
+          ...p,
+          image_url: images[p.id] || null,
+        })),
+      };
     },
     async getProduct(id) {
-      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
-      const { data, error } = await sb
-        .from("products")
-        .select("*, categories(name)")
-        .eq("id", id)
-        .single();
-      return error ? { error: "Product not found." } : { data };
+      const product = LCP_SEED.products.find((p) => p.id === id);
+      if (!product) return { error: "Product not found." };
+      const images = await imageMap();
+      const category = LCP_SEED.categories.find(
+        (c) => c.id === product.category_id,
+      );
+      return {
+        data: {
+          ...product,
+          image_url: images[id] || null,
+          categories: { name: category?.name },
+        },
+      };
     },
     async listDeals() {
-      if (!CONFIGURED) return { data: [] };
-      const { data, error } = await sb
-        .from("deals")
-        .select("*")
-        .order("created_at");
-      return error ? { error: friendlyDbError(error), data: [] } : { data };
+      const images = await imageMap();
+      return {
+        data: LCP_SEED.deals.map((d) => ({
+          ...d,
+          image_url: images[d.id] || null,
+        })),
+      };
     },
-    async updateProduct(id, patch) {
+    /** Admin-only: attach/replace the image for a hardcoded product or deal (matched by its seed-data.js id). */
+    async setMenuImage(itemId, imageUrl) {
+      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
       const { data, error } = await sb
-        .from("products")
-        .update(patch)
-        .eq("id", id)
+        .from("menu_item_images")
+        .upsert({
+          item_id: itemId,
+          image_url: imageUrl,
+          updated_at: new Date().toISOString(),
+        })
         .select()
         .single();
       return error ? { error: friendlyDbError(error) } : { data };
     },
-    async createDeal(deal) {
-      const { data, error } = await sb
-        .from("deals")
-        .insert(deal)
-        .select()
-        .single();
-      return error ? { error: friendlyDbError(error) } : { data };
-    },
-    async updateDeal(id, patch) {
-      const { data, error } = await sb
-        .from("deals")
-        .update(patch)
-        .eq("id", id)
-        .select()
-        .single();
-      return error ? { error: friendlyDbError(error) } : { data };
-    },
-    async deactivateDeal(id) {
-      return catalog.updateDeal(id, { available: false });
+    async removeMenuImage(itemId) {
+      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
+      const { error } = await sb
+        .from("menu_item_images")
+        .delete()
+        .eq("item_id", itemId);
+      return error ? { error: friendlyDbError(error) } : { data: true };
     },
   };
 

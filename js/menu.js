@@ -168,46 +168,14 @@ const LCP_MENU = (() => {
     return wrap;
   }
 
-  function catalogErrorBanner() {
-    return LCP_UTIL.el(
-      "div",
-      {
-        class: "notice-box",
-        style: "border-color:#f0b0b0; background:#fdeaea; color:#a33;",
-      },
-      "Unable to load the menu right now. Please refresh the page, or check back shortly.",
-    );
-  }
-
-  function notConfiguredBanner() {
-    return LCP_UTIL.el(
-      "div",
-      {
-        class: "notice-box",
-        style: "border-color:#e0c060; background:#fff8e0; color:#7a5c00;",
-      },
-      "This site isn't connected to its database yet (js/config.js is missing the Supabase URL/key). This is a setup issue, not missing menu data.",
-    );
-  }
-
   async function initMenuPage() {
     const grid = document.getElementById("menu-grid");
     const chipRow = document.getElementById("menu-categories");
     const searchInput = document.getElementById("menu-search");
     const emptyState = document.getElementById("menu-empty");
 
-    const loadError = await LCP_loadCatalogCache();
+    await LCP_loadCatalogCache();
     const { products, categories } = LCP_CATALOG_CACHE;
-
-    if (!LCP_DB.isConfigured) {
-      grid.innerHTML = "";
-      grid.parentElement.insertBefore(notConfiguredBanner(), grid);
-      emptyState.hidden = true;
-    } else if (loadError) {
-      grid.innerHTML = "";
-      grid.parentElement.insertBefore(catalogErrorBanner(), grid);
-      emptyState.hidden = true;
-    }
     const catById = Object.fromEntries(categories.map((c) => [c.id, c.name]));
 
     let activeCategory = "all";
@@ -273,12 +241,8 @@ const LCP_MENU = (() => {
 
   async function initDealsPage() {
     const list = document.getElementById("deals-list");
-    const loadError = await LCP_loadCatalogCache();
+    await LCP_loadCatalogCache();
     list.innerHTML = "";
-    if (loadError) {
-      list.appendChild(catalogErrorBanner());
-      return;
-    }
     if (LCP_CATALOG_CACHE.deals.length === 0) {
       list.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🏷️</div><h3>No deals available right now</h3></div>`;
       return;
@@ -289,16 +253,8 @@ const LCP_MENU = (() => {
   async function renderFeatured(containerId, kind = "products", limit = 4) {
     const el = document.getElementById(containerId);
     if (!el) return;
-    const loadError = await LCP_loadCatalogCache();
+    await LCP_loadCatalogCache();
     el.innerHTML = "";
-    if (!LCP_DB.isConfigured) {
-      el.appendChild(notConfiguredBanner());
-      return;
-    }
-    if (loadError) {
-      el.appendChild(catalogErrorBanner());
-      return;
-    }
     if (kind === "products") {
       LCP_CATALOG_CACHE.products
         .filter((p) => p.featured && p.available)
