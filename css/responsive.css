@@ -89,8 +89,23 @@ body {
     color: var(--red);
   }
   .bucket-bar {
-    bottom: 74px;
-  } /* sit above the tab bar instead of overlapping it */
+    bottom: 66px;
+    left: 8px;
+    right: 8px;
+    transform: none;
+    max-width: none;
+    border-radius: 14px;
+    padding: 9px 12px;
+  } /* sit above the tab bar instead of overlapping it, full-width strip */
+  .bucket-bar:hover {
+    transform: none;
+  }
+  .bucket-bar__label-full {
+    display: none;
+  } /* "Bucket —" text: drop on mobile, chips speak for themselves */
+  .topnav .bucket-pill {
+    display: none;
+  } /* mobile has the bottom tab bar + bucket bar; this button is redundant clutter here */
 
   .admin-shell {
     flex-direction: column;

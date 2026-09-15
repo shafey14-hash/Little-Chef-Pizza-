@@ -11,6 +11,7 @@
   // already completed) the location gate before landing on their portal.
   // The redirect only happens once location is established, further down.
   const existingProfile = await LCP_DB.auth.init();
+  LCP_UTIL.flashPop(); // shows "You've been logged out." (or similar) if one was set before redirecting here
 
   const modal = document.getElementById("auth-modal");
 

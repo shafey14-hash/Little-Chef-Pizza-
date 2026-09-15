@@ -1,217 +1,131 @@
 /**
- * nav.js — builds the shared customer navbar + footer, and the admin shell.
- * Keeping this in one place means every page's navigation stays consistent.
+ * cart-ui.js — the right-side cart sidebar and the persistent bucket bar.
+ * Mounted once per page by LCP_NAV.mountCustomer(). Reuses LCP_CART for
+ * state/calculations — this file is purely rendering + interaction.
  */
-const LCP_NAV = (() => {
-  function isGuest() {
-    return (
-      !LCP_DB.auth.currentUser() && sessionStorage.getItem("lcp_guest") === "1"
-    );
-  }
-  function currentUser() {
-    return LCP_DB.auth.currentUser();
-  }
+const LCP_CART_UI = (() => {
+  let mounted = false;
 
-  function customerHeader(activePage) {
-    const user = currentUser();
-    const guest = isGuest();
-    const cart = LCP_CART.getState();
-    const links = [
-      ["home", "Home", "home.html", "🏠"],
-      ["menu", "Menu", "menu.html", "🍕"],
-      ["deals", "Deals", "deals.html", "🏷️"],
-      ["orders", "My Orders", "orders.html", "🧾"],
-      ["profile", "Profile", "profile.html", "👤"],
-    ];
+  function mount() {
+    if (mounted) return;
+    mounted = true;
 
-    const linkHtml = links
-      .map(([key, label, href]) => {
-        const active = key === activePage ? "nav__link--active" : "";
-        return `<a class="nav__link ${active}" href="${href}">${label}</a>`;
-      })
-      .join("");
-
-    const tabHtml = links
-      .map(([key, label, href, icon]) => {
-        const active = key === activePage ? "mobile-tabbar__item--active" : "";
-        return `<a class="mobile-tabbar__item ${active}" href="${href}">
-                <span class="mobile-tabbar__icon" aria-hidden="true">${icon}</span>
-                <span class="mobile-tabbar__label">${label}</span>
-              </a>`;
-      })
-      .join("");
-
-    const who = user
-      ? `<span class="nav__who">Hi, ${escapeHtml(user.full_name.split(" ")[0])}</span>`
-      : guest
-        ? `<span class="nav__who nav__who--guest">Browsing as Guest</span>`
-        : "";
-
-    document.body.insertAdjacentHTML(
-      "afterbegin",
-      `
-      <header class="topnav">
-        <div class="container topnav__inner">
-          <a href="home.html" class="brand">
-            <span class="brand__mark">LC</span>
-            <span class="brand__text">
-              <span class="brand__name">Little Chef Pizza</span>
-              <span class="brand__tag">PIZZA &amp; FAST FOOD</span>
-            </span>
-          </a>
-          <nav class="nav" aria-label="Main">${linkHtml}</nav>
-          <div class="topnav__right">
-            ${who}
-            <button class="btn btn--gold btn--sm bucket-pill" id="lcp-bucket-trigger" aria-label="View bucket">
-              🧺 <span class="bucket-pill__label">Bucket</span> <span class="bucket-pill__count">${cart.itemCount}</span>
-            </button>
-            ${user ? `<button class="btn btn--icon btn--ghost" id="lcp-logout-icon" title="Log out" aria-label="Log out">⎋</button>` : ""}
-          </div>
-        </div>
-      </header>
-      <nav class="mobile-tabbar" aria-label="Mobile navigation">${tabHtml}</nav>
-    `,
-    );
-
-    document
-      .getElementById("lcp-logout-icon")
-      ?.addEventListener("click", doLogout);
-  }
-
-  function customerFooter() {
-    const r = LCP_SEED.restaurant;
-    document.body.insertAdjacentHTML(
-      "beforeend",
-      `
-      <footer class="site-footer">
-        <div class="container footer__grid">
-          <div>
-            <div class="brand brand--on-dark">
-              <span class="brand__mark">LC</span>
-              <span class="brand__text">
-                <span class="brand__name">${r.name}</span>
-                <span class="brand__tag">PIZZA &amp; FAST FOOD</span>
-              </span>
-            </div>
-            <p class="footer__about">Freshly made pizza, wings, rolls &amp; more — delivered fast across Gujrat city, or ready for takeaway and dine-in.</p>
-          </div>
-          <div>
-            <h4>Quick Links</h4>
-            <a href="menu.html">Menu</a><a href="deals.html">Deals</a><a href="orders.html">My Orders</a><a href="bucket.html">Order Now</a>
-          </div>
-          <div>
-            <h4>Contact</h4>
-            <p>${r.address}</p>
-            <p>Tel: ${r.phone_primary}<br>Phone: ${r.phone_secondary}<br>WhatsApp: ${r.phone_whatsapp}</p>
-            <p class="footer__delivery-note">${r.delivery_note}</p>
-            <a class="btn btn--gold btn--sm" target="_blank" rel="noopener"
-               href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.address)}">Get Directions</a>
-          </div>
-        </div>
-        <div class="footer__bottom">© ${new Date().getFullYear()} Little Chef Pizza. All rights reserved.</div>
-      </footer>
-    `,
-    );
-  }
-
-  async function doLogout() {
-    await LCP_DB.auth.signOut();
-    sessionStorage.removeItem("lcp_guest");
-    window.location.href =
-      window.location.pathname.includes("/customer/") ||
-      window.location.pathname.includes("/admin/")
-        ? "../index.html"
-        : "index.html";
-  }
-
-  async function mountCustomer(activePage) {
-    await LCP_DB.auth.init(); // wait for the real Supabase session before rendering who's logged in
-    LCP_UTIL.flashPop();
-    customerHeader(activePage);
-    customerFooter();
-    LCP_CART_UI.mount();
-    return currentUser();
-  }
-
-  // ---------------------------------------------------------------- admin
-  function requireAdmin() {
-    const user = currentUser();
-    if (!user || user.role !== "admin") {
-      sessionStorage.setItem(
-        "lcp_flash",
-        "Please log in as admin to continue.",
-      );
-      window.location.href = "../index.html";
-      return null;
-    }
-    return user;
-  }
-
-  async function mountAdmin(activePage) {
-    await LCP_DB.auth.init(); // wait for the real Supabase session before checking the role
-    const admin = requireAdmin();
-    if (!admin) return null;
-    const links = [
-      ["dashboard", "Dashboard", "index.html"],
-      ["orders", "Orders", "orders.html"],
-      ["products", "Products & Prices", "products.html"],
-      ["deals", "Deals", "deals.html"],
-      ["history", "Order History", "history.html"],
-    ];
-    document.body.insertAdjacentHTML(
-      "afterbegin",
-      `
-      <div class="admin-shell">
-        <aside class="admin-sidebar">
-          <div class="brand brand--on-dark" style="padding:20px 18px 10px;">
-            <span class="brand__mark">LC</span>
-            <span class="brand__text"><span class="brand__name">Little Chef</span><span class="brand__tag">ADMIN</span></span>
-          </div>
-          <nav class="admin-nav">
-            ${links.map(([k, l, h]) => `<a href="${h}" class="${k === activePage ? "active" : ""}">${l}</a>`).join("")}
-          </nav>
-          <button class="admin-logout" id="lcp-admin-logout">Log out</button>
-        </aside>
-        <div class="admin-main">
-          <header class="admin-topbar">
-            <div>
-              <strong>Little Chef Pizza — Admin</strong>
-              <span class="muted" style="margin-left:8px;">${new Date().toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}</span>
-            </div>
-            <span class="badge badge--gold">${escapeHtml(admin.full_name)}</span>
-          </header>
-          <main class="admin-content container" id="admin-content"></main>
+    document.body.insertAdjacentHTML("beforeend", `
+      <div class="bucket-bar" id="bucket-bar" hidden aria-label="Your bucket">
+        <span class="bucket-bar__arrow" aria-hidden="true">🛒</span>
+        <div class="bucket-bar__items" id="bucket-bar-items" role="button" tabindex="0" aria-label="Open bucket"></div>
+        <div class="bucket-bar__summary">
+          <span id="bucket-bar-subtotal"></span>
+          <span class="bucket-bar__arrow" aria-hidden="true">→</span>
         </div>
       </div>
-    `,
-    );
-    document
-      .getElementById("lcp-admin-logout")
-      .addEventListener("click", doLogout);
-    return admin;
+      <div class="cart-sidebar-overlay" id="cart-sidebar-overlay">
+        <aside class="cart-sidebar" role="dialog" aria-label="Your bucket">
+          <div class="cart-sidebar__header">
+            <h3>Your Bucket</h3>
+            <button id="cart-sidebar-close" aria-label="Close" class="btn btn--icon btn--ghost">✕</button>
+          </div>
+          <div class="cart-sidebar__body" id="cart-sidebar-body"></div>
+          <div class="cart-sidebar__footer">
+            <div class="summary-row summary-row--total"><span>Subtotal</span><span id="cart-sidebar-subtotal">Rs. 0</span></div>
+            <a href="${inCustomerFolder() ? "checkout.html" : "customer/checkout.html"}" class="btn btn--primary btn--block" id="cart-sidebar-checkout">Checkout</a>
+          </div>
+        </aside>
+      </div>
+    `);
+
+    document.getElementById("cart-sidebar-close").addEventListener("click", close);
+    document.getElementById("cart-sidebar-overlay").addEventListener("click", (e) => {
+      if (e.target.id === "cart-sidebar-overlay") close();
+    });
+    const bar = document.getElementById("bucket-bar");
+    bar.addEventListener("click", open);
+    bar.addEventListener("keydown", (e) => { if (e.key === "Enter") open(); });
+    document.getElementById("lcp-bucket-trigger")?.addEventListener("click", open);
+
+    LCP_CART.onChange(render);
+    render();
   }
 
-  function escapeHtml(s) {
-    return String(s).replace(
-      /[&<>"']/g,
-      (c) =>
-        ({
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          '"': "&quot;",
-          "'": "&#39;",
-        })[c],
-    );
+  /** Called on pages (like the full bucket.html page) that already show
+   * full cart details inline — avoids a confusing duplicate floating bar
+   * that opens a second copy of the same thing you're already looking at. */
+  function mountWithoutBar() {
+    if (mounted) return;
+    mount();
+    document.getElementById("bucket-bar")?.remove();
   }
 
-  return {
-    mountCustomer,
-    mountAdmin,
-    requireAdmin,
-    currentUser,
-    isGuest,
-    doLogout,
-    escapeHtml,
-  };
+  function inCustomerFolder() {
+    return window.location.pathname.includes("/customer/");
+  }
+
+  function open() {
+    render();
+    document.getElementById("cart-sidebar-overlay").classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function close() {
+    document.getElementById("cart-sidebar-overlay").classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  function render() {
+    const state = LCP_CART.getState();
+    const bar = document.getElementById("bucket-bar");
+    if (bar) {
+      const allLines = [...state.items, ...state.deals];
+      bar.hidden = allLines.length === 0;
+      const itemsHost = document.getElementById("bucket-bar-items");
+      itemsHost.innerHTML = "";
+      allLines.forEach((line) => {
+        itemsHost.appendChild(LCP_UTIL.el("span", { class: "bucket-bar__chip" }, [
+          LCP_UTIL.el("span", {}, line.name),
+          LCP_UTIL.el("span", { class: "bucket-bar__chip-qty" }, String(line.qty)),
+        ]));
+      });
+      document.getElementById("bucket-bar-subtotal").textContent = LCP_UTIL.pkr(state.subtotal);
+    }
+
+    const pillCount = document.querySelector(".bucket-pill__count");
+    if (pillCount) pillCount.textContent = state.itemCount;
+
+    const body = document.getElementById("cart-sidebar-body");
+    if (!body) return;
+    body.innerHTML = "";
+
+    if (state.items.length === 0 && state.deals.length === 0) {
+      body.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🧺</div><p>Your bucket is empty.</p></div>`;
+      document.getElementById("cart-sidebar-subtotal").textContent = LCP_UTIL.pkr(0);
+      return;
+    }
+
+    function line(item, isDeal) {
+      const row = LCP_UTIL.el("div", { class: "cart-sidebar__line" });
+      row.appendChild(LCP_UTIL.el("div", { class: "stack flex-1" }, [
+        LCP_UTIL.el("span", { class: "bucket-line__name" }, item.name),
+        LCP_UTIL.el("span", { class: "muted" }, LCP_UTIL.pkr(item.unit_price) + " each"),
+      ]));
+      const stepper = LCP_UTIL.el("div", { class: "qty-stepper" });
+      const minus = LCP_UTIL.el("button", { type: "button" }, "−");
+      const qtyEl = LCP_UTIL.el("span", {}, String(item.qty));
+      const plus = LCP_UTIL.el("button", { type: "button" }, "+");
+      minus.addEventListener("click", () => {
+        isDeal ? LCP_CART.setDealQty(item.deal_id, item.qty - 1) : LCP_CART.setProductQty(item.product_id, item.size, item.qty - 1);
+      });
+      plus.addEventListener("click", () => {
+        isDeal ? LCP_CART.setDealQty(item.deal_id, item.qty + 1) : LCP_CART.setProductQty(item.product_id, item.size, item.qty + 1);
+      });
+      stepper.append(minus, qtyEl, plus);
+      row.appendChild(stepper);
+      row.appendChild(LCP_UTIL.el("span", { class: "price", style: "width:70px; text-align:right; font-size:13px;" }, LCP_UTIL.pkr(item.line_total)));
+      return row;
+    }
+
+    state.items.forEach((i) => body.appendChild(line(i, false)));
+    state.deals.forEach((d) => body.appendChild(line(d, true)));
+    document.getElementById("cart-sidebar-subtotal").textContent = LCP_UTIL.pkr(state.subtotal);
+  }
+
+  return { mount, mountWithoutBar, open, close };
 })();

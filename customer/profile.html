@@ -19,8 +19,11 @@
 
       <div id="guest-block" class="empty-state" hidden>
         <div class="empty-state__icon">🔒</div>
-        <h3>You're browsing as a guest</h3>
-        <p>Create an account to save your details and view order history.</p>
+        <h3>Please log in first</h3>
+        <p>
+          Log in or create an account to view your profile, save your details,
+          track your orders, and check out faster next time.
+        </p>
         <a
           href="../index.html"
           class="btn btn--primary"
@@ -29,30 +32,107 @@
         >
       </div>
 
-      <form class="card profile-card" id="profile-form" hidden>
-        <div class="field">
-          <label for="pf-username">Username</label
-          ><input id="pf-username" required />
+      <div id="profile-content" class="stack gap-20" hidden>
+        <div
+          class="card"
+          style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap"
+        >
+          <div
+            style="
+              width: 56px;
+              height: 56px;
+              border-radius: 50%;
+              background: var(--gold);
+              color: var(--black);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 800;
+              font-size: 22px;
+              flex-shrink: 0;
+            "
+            id="pf-avatar"
+          >
+            ?
+          </div>
+          <div class="stack flex-1" style="gap: 2px; min-width: 180px">
+            <strong id="pf-header-name" style="font-size: 17px"></strong>
+            <span class="muted" id="pf-header-since"></span>
+          </div>
+          <button type="button" class="btn btn--ghost" id="pf-logout-btn">
+            ⎋ Log Out
+          </button>
         </div>
-        <div class="field">
-          <label for="pf-fullname">Full Name</label
-          ><input id="pf-fullname" required />
+
+        <div
+          class="kpi-grid"
+          style="grid-template-columns: repeat(2, 1fr); gap: 14px"
+        >
+          <a
+            href="orders.html"
+            class="card"
+            style="text-decoration: none; color: inherit"
+          >
+            <span class="muted" style="font-size: 13px">Your Orders</span>
+            <div
+              style="font-size: 26px; font-weight: 800; margin-top: 4px"
+              id="pf-order-count"
+            >
+              —
+            </div>
+            <span class="muted" style="font-size: 12.5px"
+              >Tap to view history →</span
+            >
+          </a>
+          <div class="card">
+            <span class="muted" style="font-size: 13px"
+              >Little Chef Rewards</span
+            >
+            <div style="font-size: 15px; font-weight: 700; margin-top: 4px">
+              🎁 Coming soon
+            </div>
+            <span class="muted" style="font-size: 12.5px"
+              >Loyalty points for every order — stay tuned!</span
+            >
+          </div>
         </div>
-        <div class="field">
-          <label for="pf-phone">Phone</label><input id="pf-phone" required />
+
+        <form class="card profile-card" id="profile-form">
+          <h3 style="margin-top: 0">Account Details</h3>
+          <div class="field">
+            <label for="pf-username">Username</label
+            ><input id="pf-username" required />
+          </div>
+          <div class="field">
+            <label for="pf-fullname">Full Name</label
+            ><input id="pf-fullname" required />
+          </div>
+          <div class="field">
+            <label for="pf-phone">Phone</label><input id="pf-phone" required />
+          </div>
+          <div class="field">
+            <label for="pf-email"
+              >Email <span class="muted">(optional)</span></label
+            ><input id="pf-email" type="email" />
+          </div>
+          <div class="field">
+            <label for="pf-address">Saved Address</label
+            ><input id="pf-address" />
+          </div>
+          <button type="submit" class="btn btn--primary btn--block">
+            Save Changes
+          </button>
+        </form>
+
+        <div class="card">
+          <h3 style="margin-top: 0">Need Help?</h3>
+          <p class="muted">
+            Questions about an order, delivery, or your account? Reach us
+            directly:
+          </p>
+          <div id="pf-contact" class="stack" style="gap: 4px"></div>
         </div>
-        <div class="field">
-          <label for="pf-email"
-            >Email <span class="muted">(optional)</span></label
-          ><input id="pf-email" type="email" />
-        </div>
-        <div class="field">
-          <label for="pf-address">Saved Address</label><input id="pf-address" />
-        </div>
-        <button type="submit" class="btn btn--primary btn--block">
-          Save Changes
-        </button>
-      </form>
+      </div>
     </section>
 
     <script src="../js/seed-data.js"></script>
@@ -70,8 +150,44 @@
         if (!user) {
           document.getElementById("guest-block").hidden = false;
         } else {
+          document.getElementById("profile-content").hidden = false;
+
+          document.getElementById("pf-avatar").textContent = (
+            user.full_name ||
+            user.username ||
+            "?"
+          )
+            .trim()
+            .charAt(0)
+            .toUpperCase();
+          document.getElementById("pf-header-name").textContent =
+            user.full_name || user.username;
+          if (user.created_at) {
+            const since = new Date(user.created_at).toLocaleDateString(
+              "en-GB",
+              { month: "long", year: "numeric" },
+            );
+            document.getElementById("pf-header-since").textContent =
+              "Member since " + since;
+          }
+
+          const r = LCP_SEED.restaurant;
+          document.getElementById("pf-contact").innerHTML =
+            `<span>📞 ${r.phone_primary}</span><span>💬 WhatsApp: ${r.phone_whatsapp}</span>`;
+
+          LCP_DB.orders.listForUser(user.id).then(({ data, error }) => {
+            document.getElementById("pf-order-count").textContent = error
+              ? "—"
+              : (data || []).length;
+          });
+
+          document
+            .getElementById("pf-logout-btn")
+            .addEventListener("click", (e) =>
+              LCP_NAV.doLogout(e.currentTarget),
+            );
+
           const form = document.getElementById("profile-form");
-          form.hidden = false;
           document.getElementById("pf-username").value = user.username;
           document.getElementById("pf-fullname").value = user.full_name;
           document.getElementById("pf-phone").value = user.phone;

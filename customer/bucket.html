@@ -67,6 +67,7 @@
     <script src="../js/utils.js"></script>
     <script src="../js/validation.js"></script>
     <script src="../js/cart.js"></script>
+    <script src="../js/cart-ui.js"></script>
     <script src="../js/menu.js"></script>
     <script src="../js/nav.js"></script>
     <script>
@@ -186,7 +187,7 @@
         });
 
       (async () => {
-        await LCP_NAV.mountCustomer("bucket");
+        await LCP_NAV.mountCustomer("bucket", { noBucketBar: true });
         renderBucket();
       })();
     </script>

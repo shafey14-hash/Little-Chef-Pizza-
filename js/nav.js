@@ -75,7 +75,7 @@ const LCP_NAV = (() => {
 
     document
       .getElementById("lcp-logout-icon")
-      ?.addEventListener("click", doLogout);
+      ?.addEventListener("click", (e) => doLogout(e.currentTarget));
   }
 
   function customerFooter() {
@@ -114,9 +114,18 @@ const LCP_NAV = (() => {
     );
   }
 
-  async function doLogout() {
-    await LCP_DB.auth.signOut();
+  async function doLogout(triggerBtn) {
+    if (triggerBtn) LCP_UTIL.setLoading(triggerBtn, true, "Logging out…");
+    try {
+      await LCP_DB.auth.signOut();
+    } catch (err) {
+      console.error("Logout error (continuing anyway):", err);
+      // Even if the network call fails, we still clear local state and
+      // redirect below — a stuck "logging out…" button with no feedback
+      // is worse than a slightly-late server-side session cleanup.
+    }
     sessionStorage.removeItem("lcp_guest");
+    sessionStorage.setItem("lcp_flash", "You've been logged out.");
     if (window.location.pathname.includes("/admin/")) {
       window.location.href = "login.html";
     } else if (window.location.pathname.includes("/customer/")) {
@@ -126,12 +135,12 @@ const LCP_NAV = (() => {
     }
   }
 
-  async function mountCustomer(activePage) {
+  async function mountCustomer(activePage, opts = {}) {
     await LCP_DB.auth.init(); // wait for the real Supabase session before rendering who's logged in
     LCP_UTIL.flashPop();
     customerHeader(activePage);
     customerFooter();
-    LCP_CART_UI.mount();
+    opts.noBucketBar ? LCP_CART_UI.mountWithoutBar() : LCP_CART_UI.mount();
     return currentUser();
   }
 
@@ -189,7 +198,7 @@ const LCP_NAV = (() => {
     );
     document
       .getElementById("lcp-admin-logout")
-      .addEventListener("click", doLogout);
+      .addEventListener("click", (e) => doLogout(e.currentTarget));
     return admin;
   }
 

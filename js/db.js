@@ -418,5 +418,5 @@ const LCP_DB = (() => {
     },
   };
 
-  return { auth, catalog, orders, storage, settings };
+  return { auth, catalog, orders, storage, settings, isConfigured: CONFIGURED };
 })();
