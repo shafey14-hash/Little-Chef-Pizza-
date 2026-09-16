@@ -446,28 +446,110 @@ const LCP_ADMIN = (() => {
   async function initDeals() {
     const host = document.getElementById("admin-content");
     host.innerHTML = `
-      <h2>Deals</h2>
-      <p class="muted">Deal names, descriptions and prices come from the menu file (<code>js/seed-data.js</code>) and are edited in code, not here. You can manage each deal's photo below.</p>
+      <div class="admin-toolbar"><h2 style="margin:0;">Deals</h2>
+        <button class="btn btn--primary btn--sm" id="new-deal-btn">+ Create Deal</button></div>
+      <p class="muted">Deals from the menu file (<code>js/seed-data.js</code>) show a "Menu File" tag — their name/price are edited in code, only their photo is managed here. Deals you create with the button above are fully yours to edit or remove anytime.</p>
       <div id="deals-admin-list" class="stack gap-16"></div>`;
 
-    const { data: deals } = await LCP_DB.catalog.listDeals();
+    async function renderList() {
+      const { data: deals, error } = await LCP_DB.catalog.listDeals();
+      if (error) LCP_UTIL.toast("Unable to load deals: " + error, "error");
+      const wrap = document.getElementById("deals-admin-list");
+      wrap.innerHTML = "";
+      deals.forEach((d) => {
+        const isHardcoded = d.source === "hardcoded";
+        const card = LCP_UTIL.el("div", { class: "card" });
+        card.innerHTML = `
+          <div class="admin-toolbar" style="margin-bottom:8px;">
+            <strong>${d.name}${!d.verified ? ' <span class="badge badge--warn">Verify</span>' : ""}</strong>
+            <div class="row gap-8">
+              <span class="badge badge--muted">${isHardcoded ? "Menu File" : "Custom"}</span>
+              <span class="badge ${d.available ? "badge--success" : "badge--muted"}">${d.available ? "Active" : "Inactive"}</span>
+            </div>
+          </div>
+          <p class="muted">${LCP_NAV.escapeHtml(d.description || "")}</p>
+          <div class="row gap-12" style="flex-wrap:wrap; align-items:center;">
+            <strong id="deal-price-${d.id}">${LCP_UTIL.pkr(d.price)}</strong>
+            ${
+              !isHardcoded
+                ? `
+              <button class="btn btn--sm btn--gold" data-edit-price>Edit Price</button>
+              <button class="btn btn--sm btn--ghost" data-toggle-avail>${d.available ? "Deactivate" : "Activate"}</button>
+              <button class="btn btn--sm btn--danger" data-delete-deal>Delete</button>`
+                : ""
+            }
+          </div>
+          <div data-deal-image-cell style="margin-top:12px;"></div>`;
+        card
+          .querySelector("[data-deal-image-cell]")
+          .appendChild(buildImageCell(d, "deals", imageSaveFn(d.id)));
 
-    const wrap = document.getElementById("deals-admin-list");
-    deals.forEach((d) => {
-      const card = LCP_UTIL.el("div", { class: "card" });
-      card.innerHTML = `
-        <div class="admin-toolbar" style="margin-bottom:8px;">
-          <strong>${d.name}${!d.verified ? ' <span class="badge badge--warn">Verify</span>' : ""}</strong>
-          <span class="badge ${d.available ? "badge--success" : "badge--muted"}">${d.available ? "Active" : "Inactive"}</span>
-        </div>
-        <p class="muted">${LCP_NAV.escapeHtml(d.description)}</p>
-        <div class="row gap-12" style="align-items:center;"><strong>${LCP_UTIL.pkr(d.price)}</strong></div>
-        <div data-deal-image-cell style="margin-top:12px;"></div>`;
-      card
-        .querySelector("[data-deal-image-cell]")
-        .appendChild(buildImageCell(d, "deals", imageSaveFn(d.id)));
-      wrap.appendChild(card);
-    });
+        if (!isHardcoded) {
+          card
+            .querySelector("[data-edit-price]")
+            .addEventListener("click", async () => {
+              const newPrice = Number(
+                prompt(`New price for "${d.name}" (PKR):`, d.price),
+              );
+              if (!newPrice || newPrice <= 0) return;
+              const { error: err } = await LCP_DB.catalog.updateDeal(d.id, {
+                price: newPrice,
+              });
+              if (err) return LCP_UTIL.toast(err, "error");
+              LCP_UTIL.toast(`${d.name} price updated.`, "success");
+              renderList();
+            });
+          card
+            .querySelector("[data-toggle-avail]")
+            .addEventListener("click", async () => {
+              const { error: err } = await LCP_DB.catalog.updateDeal(d.id, {
+                available: !d.available,
+              });
+              if (err) return LCP_UTIL.toast(err, "error");
+              LCP_UTIL.toast(
+                `${d.name} ${d.available ? "deactivated" : "activated"}.`,
+                "success",
+              );
+              renderList();
+            });
+          card
+            .querySelector("[data-delete-deal]")
+            .addEventListener("click", async () => {
+              const ok = await LCP_UTIL.confirmDialog(
+                `Delete "${d.name}"? This can't be undone.`,
+              );
+              if (!ok) return;
+              const { error: err } = await LCP_DB.catalog.deleteDeal(d.id);
+              if (err) return LCP_UTIL.toast(err, "error");
+              LCP_UTIL.toast(`${d.name} deleted.`, "success");
+              renderList();
+            });
+        }
+        wrap.appendChild(card);
+      });
+    }
+    renderList();
+
+    document
+      .getElementById("new-deal-btn")
+      .addEventListener("click", async () => {
+        const name = prompt("Deal name (e.g. Deal 7):");
+        if (!name) return;
+        const description =
+          prompt("Description (e.g. 1 Large Pizza + 1 Drink):") || "";
+        const price = Number(prompt("Deal price (PKR):") || 0);
+        if (!price || price <= 0)
+          return LCP_UTIL.toast("Please enter a valid price.", "error");
+        const { error } = await LCP_DB.catalog.createDeal({
+          name,
+          description,
+          price,
+          available: true,
+        });
+        if (error) return LCP_UTIL.toast(error, "error");
+        LCP_UTIL.toast(`${name} created.`, "success");
+        renderList();
+      });
   }
 
   async function initHistory() {

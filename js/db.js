@@ -219,12 +219,52 @@ const LCP_DB = (() => {
     },
     async listDeals() {
       const images = await imageMap();
-      return {
-        data: LCP_SEED.deals.map((d) => ({
-          ...d,
-          image_url: images[d.id] || null,
-        })),
-      };
+      const hardcoded = LCP_SEED.deals.map((d) => ({
+        ...d,
+        image_url: images[d.id] || null,
+        source: "hardcoded",
+      }));
+      if (!CONFIGURED) return { data: hardcoded };
+      const { data, error } = await sb
+        .from("deals")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) {
+        console.error("Could not load admin-created deals:", error);
+        return { data: hardcoded };
+      }
+      const adminDeals = (data || []).map((d) => ({ ...d, source: "admin" }));
+      return { data: [...hardcoded, ...adminDeals] };
+    },
+    /** Admin-only: create a brand-new deal (stored in the database, fully editable — unlike the hardcoded menu deals). */
+    async createDeal(deal) {
+      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
+      const { data, error } = await sb
+        .from("deals")
+        .insert(deal)
+        .select()
+        .single();
+      return error
+        ? { error: friendlyDbError(error) }
+        : { data: { ...data, source: "admin" } };
+    },
+    /** Admin-only: edit an admin-created deal. Hardcoded deals (source: "hardcoded") can't be edited this way — only their image, via setMenuImage. */
+    async updateDeal(id, patch) {
+      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
+      const { data, error } = await sb
+        .from("deals")
+        .update(patch)
+        .eq("id", id)
+        .select()
+        .single();
+      return error
+        ? { error: friendlyDbError(error) }
+        : { data: { ...data, source: "admin" } };
+    },
+    async deleteDeal(id) {
+      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
+      const { error } = await sb.from("deals").delete().eq("id", id);
+      return error ? { error: friendlyDbError(error) } : { data: true };
     },
     /** Admin-only: attach/replace the image for a hardcoded product or deal (matched by its seed-data.js id). */
     async setMenuImage(itemId, imageUrl) {

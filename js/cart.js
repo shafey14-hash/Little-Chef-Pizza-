@@ -143,14 +143,25 @@ const LCP_CART = (() => {
   }
 
   function toOrderPayload() {
-    const raw = readRaw();
+    const state = getState();
     return {
-      items: raw.items.map((i) => ({
-        product_id: i.product_id,
-        size: i.size,
-        qty: i.qty,
-      })),
-      deals: raw.deals.map((d) => ({ deal_id: d.deal_id, qty: d.qty })),
+      items: state.items
+        .filter((i) => !i.missing)
+        .map((i) => ({
+          product_id: i.product_id,
+          name: i.name,
+          size: i.size,
+          unit_price: i.unit_price,
+          qty: i.qty,
+        })),
+      deals: state.deals
+        .filter((d) => !d.missing)
+        .map((d) => ({
+          deal_id: d.deal_id,
+          name: d.name,
+          unit_price: d.unit_price,
+          qty: d.qty,
+        })),
     };
   }
 
