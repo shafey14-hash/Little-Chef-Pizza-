@@ -56,7 +56,7 @@ const LCP_NAV = (() => {
             <span class="brand__mark">LC</span>
             <span class="brand__text">
               <span class="brand__name">Little Chef Pizza</span>
-              <span class="brand__tag">PIZZA &amp; FAST FOOD</span>
+              <span class="brand__tag">Pizza &amp; Fast Food</span>
             </span>
           </a>
           <nav class="nav" aria-label="Main">${linkHtml}</nav>
@@ -65,7 +65,17 @@ const LCP_NAV = (() => {
             <button class="btn btn--gold btn--sm bucket-pill" id="lcp-bucket-trigger" aria-label="View bucket">
               🧺 <span class="bucket-pill__label">Bucket</span> <span class="bucket-pill__count">${cart.itemCount}</span>
             </button>
-            ${user ? `<button class="btn btn--icon btn--ghost" id="lcp-logout-icon" title="Log out" aria-label="Log out">⎋</button>` : ""}
+            ${
+              user
+                ? `<button class="btn btn--icon btn--ghost" id="lcp-logout-icon" title="Log out" aria-label="Log out">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+            </button>`
+                : ""
+            }
           </div>
         </div>
       </header>
@@ -90,7 +100,7 @@ const LCP_NAV = (() => {
               <span class="brand__mark">LC</span>
               <span class="brand__text">
                 <span class="brand__name">${r.name}</span>
-                <span class="brand__tag">PIZZA &amp; FAST FOOD</span>
+                <span class="brand__tag">Pizza &amp; Fast Food</span>
               </span>
             </div>
             <p class="footer__about">Freshly made pizza, wings, rolls &amp; more — delivered fast across Gujrat city, or ready for takeaway and dine-in.</p>
