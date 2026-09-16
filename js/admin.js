@@ -404,13 +404,11 @@ const LCP_ADMIN = (() => {
   async function initProducts() {
     const host = document.getElementById("admin-content");
     host.innerHTML = `
-      <h2>Products</h2>
-      <p class="muted">Names, prices and descriptions come from the menu file (<code>js/seed-data.js</code>) and are edited in code, not here — this keeps the live menu identical to the restaurant's printed menu. The one thing you can manage here is each item's photo.</p>
+      <div class="admin-toolbar"><h2 style="margin:0;">Products</h2>
+        <button class="btn btn--primary btn--sm" id="new-product-btn">+ Create Product</button></div>
+      <p class="muted">Products from the menu file (<code>js/seed-data.js</code>) show a "Menu File" tag — their name/price are edited in code, only their photo is managed here. Products you create with the button above are fully yours to edit or remove anytime.</p>
       <div id="products-table-wrap"></div>`;
-    const [{ data: products }, { data: categories }] = await Promise.all([
-      LCP_DB.catalog.listProducts(),
-      LCP_DB.catalog.listCategories(),
-    ]);
+    const { data: categories } = await LCP_DB.catalog.listCategories();
     const catName = Object.fromEntries(categories.map((c) => [c.id, c.name]));
 
     function priceCell(p) {
@@ -422,25 +420,109 @@ const LCP_ADMIN = (() => {
     }
 
     function row(p) {
+      const isHardcoded = p.source === "hardcoded";
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><strong>${p.name}</strong>${!p.verified ? ' <span class="badge badge--warn">Verify</span>' : ""}</td>
-        <td>${catName[p.category_id] || ""}</td>
-        <td style="font-size:12.5px;">${priceCell(p)}</td>
+        <td>${catName[p.category_id] || ""} <span class="badge badge--muted" style="margin-left:4px;">${isHardcoded ? "Menu File" : "Custom"}</span></td>
+        <td style="font-size:12.5px;" id="prod-price-${p.id}">${priceCell(p)}</td>
         <td><span class="badge ${p.available ? "badge--success" : "badge--muted"}">${p.available ? "Available" : "Unavailable"}</span></td>
-        <td data-image-cell></td>`;
+        <td data-image-cell></td>
+        <td>${!isHardcoded ? `<div class="row gap-6"><button class="btn btn--sm btn--gold" data-edit-price>Price</button><button class="btn btn--sm btn--ghost" data-toggle-avail>${p.available ? "Deactivate" : "Activate"}</button><button class="btn btn--sm btn--danger" data-delete>Delete</button></div>` : ""}</td>`;
       tr.querySelector("[data-image-cell]").appendChild(
         buildImageCell(p, "products", imageSaveFn(p.id)),
       );
+
+      if (!isHardcoded) {
+        tr.querySelector("[data-edit-price]").addEventListener(
+          "click",
+          async () => {
+            const newPrice = Number(
+              prompt(`New price for "${p.name}" (PKR):`, p.price),
+            );
+            if (!newPrice || newPrice <= 0) return;
+            const { error } = await LCP_DB.catalog.updateProduct(p.id, {
+              price: newPrice,
+            });
+            if (error) return LCP_UTIL.toast(error, "error");
+            LCP_UTIL.toast(`${p.name} price updated.`, "success");
+            renderAll();
+          },
+        );
+        tr.querySelector("[data-toggle-avail]").addEventListener(
+          "click",
+          async () => {
+            const { error } = await LCP_DB.catalog.updateProduct(p.id, {
+              available: !p.available,
+            });
+            if (error) return LCP_UTIL.toast(error, "error");
+            LCP_UTIL.toast(
+              `${p.name} ${p.available ? "deactivated" : "activated"}.`,
+              "success",
+            );
+            renderAll();
+          },
+        );
+        tr.querySelector("[data-delete]").addEventListener(
+          "click",
+          async () => {
+            const ok = await LCP_UTIL.confirmDialog(
+              `Delete "${p.name}"? This can't be undone.`,
+            );
+            if (!ok) return;
+            const { error } = await LCP_DB.catalog.deleteProduct(p.id);
+            if (error) return LCP_UTIL.toast(error, "error");
+            LCP_UTIL.toast(`${p.name} deleted.`, "success");
+            renderAll();
+          },
+        );
+      }
       return tr;
     }
 
-    const wrap = document.getElementById("products-table-wrap");
-    wrap.innerHTML = `<table class="admin-table">
-      <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Availability</th><th>Image</th></tr></thead>
-      <tbody id="products-tbody"></tbody></table>`;
-    const tbody = document.getElementById("products-tbody");
-    products.forEach((p) => tbody.appendChild(row(p)));
+    async function renderAll() {
+      const { data: products, error } = await LCP_DB.catalog.listProducts();
+      if (error)
+        LCP_UTIL.toast("Unable to load products. Please refresh.", "error");
+      const wrap = document.getElementById("products-table-wrap");
+      wrap.innerHTML = `<table class="admin-table">
+        <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Availability</th><th>Image</th><th></th></tr></thead>
+        <tbody id="products-tbody"></tbody></table>`;
+      const tbody = document.getElementById("products-tbody");
+      products.forEach((p) => tbody.appendChild(row(p)));
+    }
+    renderAll();
+
+    document
+      .getElementById("new-product-btn")
+      .addEventListener("click", async () => {
+        const name = prompt("Product name:");
+        if (!name) return;
+        const categoryOptions = categories
+          .map((c, i) => `${i + 1}. ${c.name}`)
+          .join("\n");
+        const catIndex =
+          Number(prompt(`Category — enter a number:\n${categoryOptions}`)) - 1;
+        if (!categories[catIndex])
+          return LCP_UTIL.toast(
+            "Please pick a valid category number.",
+            "error",
+          );
+        const price = Number(prompt("Price (PKR):") || 0);
+        if (!price || price <= 0)
+          return LCP_UTIL.toast("Please enter a valid price.", "error");
+        const description = prompt("Description (optional):") || "";
+        const { error } = await LCP_DB.catalog.createProduct({
+          name,
+          description,
+          price,
+          category_id: categories[catIndex].id,
+          available: true,
+        });
+        if (error) return LCP_UTIL.toast(error, "error");
+        LCP_UTIL.toast(`${name} created.`, "success");
+        renderAll();
+      });
   }
 
   async function initDeals() {

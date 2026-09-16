@@ -172,69 +172,189 @@ const LCP_DB = (() => {
   // ------------------------------------------------------------ catalog
   // Product/category/deal data (name, price, sizes, description) is
   // HARDCODED in js/seed-data.js — always available, never depends on
-  // Supabase being configured/reachable. Only images are dynamic: admins
-  // upload them, they're stored in Supabase Storage + the
-  // menu_item_images table, and merged onto the hardcoded items below by
-  // matching seed-data.js's string `id` field.
+  // Supabase being configured/reachable, and NEVER throws. On top of that
+  // hardcoded base, admins can add extra products/deals that live in the
+  // database (full CRUD, real server-side price protection) — the two
+  // lists are combined (OR'd together), never duplicated, matched only
+  // by their own separate ids.
+  //
+  // CACHING: everything that comes from the database (images, and any
+  // admin-added products/deals) is cached in localStorage for
+  // CACHE_TTL_MS. The very first page load of a visit fetches fresh and
+  // caches it; every load after that within the window reads instantly
+  // from the cache with zero network wait. The hardcoded menu itself
+  // never needed this — it was already instant — this is purely for the
+  // database-backed extras.
+  const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
+  function cacheGet(key) {
+    try {
+      const raw = localStorage.getItem("lcp_cache_" + key);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (Date.now() - parsed.ts > CACHE_TTL_MS) return null;
+      return parsed.data;
+    } catch {
+      return null;
+    }
+  }
+  function cacheSet(key, data) {
+    try {
+      localStorage.setItem(
+        "lcp_cache_" + key,
+        JSON.stringify({ data, ts: Date.now() }),
+      );
+    } catch {
+      /* storage full/unavailable — fine, just skips caching */
+    }
+  }
+  function cacheClear(key) {
+    try {
+      localStorage.removeItem("lcp_cache_" + key);
+    } catch {
+      /* nothing to do */
+    }
+  }
+
+  /** Wraps any Supabase call so a network failure, a missing table, or
+   * any other unexpected error can NEVER throw and break the page — it
+   * always resolves to { data: fallback } instead. This is what
+   * guarantees the hardcoded menu keeps working no matter what happens
+   * on the database side. */
+  async function safeFetch(fn, fallback) {
+    try {
+      const { data, error } = await fn();
+      if (error) {
+        console.error("Database call failed (using fallback):", error);
+        return fallback;
+      }
+      return data || fallback;
+    } catch (err) {
+      console.error("Database call threw (using fallback):", err);
+      return fallback;
+    }
+  }
+
   async function imageMap() {
     if (!CONFIGURED) return {};
-    const { data, error } = await sb
-      .from("menu_item_images")
-      .select("item_id, image_url");
-    if (error) {
-      console.error("Could not load menu images:", error);
-      return {};
-    }
-    return Object.fromEntries(
-      (data || []).map((r) => [r.item_id, r.image_url]),
+    const cached = cacheGet("images");
+    if (cached) return cached;
+    const rows = await safeFetch(
+      () => sb.from("menu_item_images").select("item_id, image_url"),
+      [],
     );
+    const map = Object.fromEntries(rows.map((r) => [r.item_id, r.image_url]));
+    cacheSet("images", map);
+    return map;
   }
+
+  async function adminProducts() {
+    if (!CONFIGURED) return [];
+    const cached = cacheGet("admin_products");
+    if (cached) return cached;
+    const rows = await safeFetch(
+      () =>
+        sb
+          .from("products")
+          .select("*")
+          .order("created_at", { ascending: false }),
+      [],
+    );
+    const tagged = rows.map((p) => ({ ...p, source: "admin" }));
+    cacheSet("admin_products", tagged);
+    return tagged;
+  }
+
+  async function adminDeals() {
+    if (!CONFIGURED) return [];
+    const cached = cacheGet("admin_deals");
+    if (cached) return cached;
+    const rows = await safeFetch(
+      () =>
+        sb.from("deals").select("*").order("created_at", { ascending: false }),
+      [],
+    );
+    const tagged = rows.map((d) => ({ ...d, source: "admin" }));
+    cacheSet("admin_deals", tagged);
+    return tagged;
+  }
+
   const catalog = {
     async listCategories() {
       return { data: LCP_SEED.categories };
     },
     async listProducts() {
-      const images = await imageMap();
-      return {
-        data: LCP_SEED.products.map((p) => ({
-          ...p,
-          image_url: images[p.id] || null,
-        })),
-      };
+      const [images, admin] = await Promise.all([imageMap(), adminProducts()]);
+      const hardcoded = LCP_SEED.products.map((p) => ({
+        ...p,
+        image_url: images[p.id] || null,
+        source: "hardcoded",
+      }));
+      return { data: [...hardcoded, ...admin] };
     },
     async getProduct(id) {
-      const product = LCP_SEED.products.find((p) => p.id === id);
-      if (!product) return { error: "Product not found." };
+      const hardcoded = LCP_SEED.products.find((p) => p.id === id);
       const images = await imageMap();
-      const category = LCP_SEED.categories.find(
-        (c) => c.id === product.category_id,
-      );
-      return {
-        data: {
-          ...product,
-          image_url: images[id] || null,
-          categories: { name: category?.name },
-        },
-      };
+      if (hardcoded) {
+        const category = LCP_SEED.categories.find(
+          (c) => c.id === hardcoded.category_id,
+        );
+        return {
+          data: {
+            ...hardcoded,
+            image_url: images[id] || null,
+            source: "hardcoded",
+            categories: { name: category?.name },
+          },
+        };
+      }
+      const admin = (await adminProducts()).find((p) => p.id === id);
+      if (admin) {
+        const category = LCP_SEED.categories.find(
+          (c) => c.id === admin.category_id,
+        );
+        return { data: { ...admin, categories: { name: category?.name } } };
+      }
+      return { error: "Product not found." };
+    },
+    /** Admin-only: create a brand-new product (stored in the database, fully editable — unlike the hardcoded menu). Pick category_id from LCP_SEED.categories. */
+    async createProduct(product) {
+      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
+      const { data, error } = await sb
+        .from("products")
+        .insert(product)
+        .select()
+        .single();
+      if (error) return { error: friendlyDbError(error) };
+      cacheClear("admin_products");
+      return { data: { ...data, source: "admin" } };
+    },
+    async updateProduct(id, patch) {
+      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
+      const { data, error } = await sb
+        .from("products")
+        .update(patch)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) return { error: friendlyDbError(error) };
+      cacheClear("admin_products");
+      return { data: { ...data, source: "admin" } };
+    },
+    async deleteProduct(id) {
+      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
+      const { error } = await sb.from("products").delete().eq("id", id);
+      if (error) return { error: friendlyDbError(error) };
+      cacheClear("admin_products");
+      return { data: true };
     },
     async listDeals() {
-      const images = await imageMap();
+      const [images, admin] = await Promise.all([imageMap(), adminDeals()]);
       const hardcoded = LCP_SEED.deals.map((d) => ({
         ...d,
         image_url: images[d.id] || null,
         source: "hardcoded",
       }));
-      if (!CONFIGURED) return { data: hardcoded };
-      const { data, error } = await sb
-        .from("deals")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) {
-        console.error("Could not load admin-created deals:", error);
-        return { data: hardcoded };
-      }
-      const adminDeals = (data || []).map((d) => ({ ...d, source: "admin" }));
-      return { data: [...hardcoded, ...adminDeals] };
+      return { data: [...hardcoded, ...admin] };
     },
     /** Admin-only: create a brand-new deal (stored in the database, fully editable — unlike the hardcoded menu deals). */
     async createDeal(deal) {
@@ -244,9 +364,9 @@ const LCP_DB = (() => {
         .insert(deal)
         .select()
         .single();
-      return error
-        ? { error: friendlyDbError(error) }
-        : { data: { ...data, source: "admin" } };
+      if (error) return { error: friendlyDbError(error) };
+      cacheClear("admin_deals");
+      return { data: { ...data, source: "admin" } };
     },
     /** Admin-only: edit an admin-created deal. Hardcoded deals (source: "hardcoded") can't be edited this way — only their image, via setMenuImage. */
     async updateDeal(id, patch) {
@@ -257,16 +377,18 @@ const LCP_DB = (() => {
         .eq("id", id)
         .select()
         .single();
-      return error
-        ? { error: friendlyDbError(error) }
-        : { data: { ...data, source: "admin" } };
+      if (error) return { error: friendlyDbError(error) };
+      cacheClear("admin_deals");
+      return { data: { ...data, source: "admin" } };
     },
     async deleteDeal(id) {
       if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
       const { error } = await sb.from("deals").delete().eq("id", id);
-      return error ? { error: friendlyDbError(error) } : { data: true };
+      if (error) return { error: friendlyDbError(error) };
+      cacheClear("admin_deals");
+      return { data: true };
     },
-    /** Admin-only: attach/replace the image for a hardcoded product or deal (matched by its seed-data.js id). */
+    /** Admin-only: attach/replace the image for ANY product or deal — hardcoded (matched by its seed-data.js id) or admin-created (matched by its database id). */
     async setMenuImage(itemId, imageUrl) {
       if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
       const { data, error } = await sb
@@ -278,7 +400,9 @@ const LCP_DB = (() => {
         })
         .select()
         .single();
-      return error ? { error: friendlyDbError(error) } : { data };
+      if (error) return { error: friendlyDbError(error) };
+      cacheClear("images");
+      return { data };
     },
     async removeMenuImage(itemId) {
       if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
@@ -286,7 +410,9 @@ const LCP_DB = (() => {
         .from("menu_item_images")
         .delete()
         .eq("item_id", itemId);
-      return error ? { error: friendlyDbError(error) } : { data: true };
+      if (error) return { error: friendlyDbError(error) };
+      cacheClear("images");
+      return { data: true };
     },
   };
 
