@@ -2,6 +2,11 @@
  * menu.js — renders product/deal cards and drives the Menu & Deals pages.
  */
 const LCP_MENU = (() => {
+  console.log(
+    "%c[LCP] menu.js build: HARDCODED-MENU-v4",
+    "color:#d4af37; font-weight:bold;",
+  );
+
   function sizeLabel(size) {
     return size;
   }
