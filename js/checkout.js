@@ -59,6 +59,17 @@ function lcpRenderOrderSuccess(data, user) {
   // unavailable.
   await LCP_loadCatalogCache();
 
+  // If there was a network or database error loading the catalog,
+  // we must halt checkout to prevent items from being falsely flagged as missing/unavailable.
+  if (LCP_CATALOG_CACHE.lastError) {
+    LCP_UTIL.requireGuard(
+      false,
+      "bucket.html",
+      "Unable to verify availability due to a connection issue. Please check your connection or contact the restaurant."
+    );
+    return;
+  }
+
   const state = LCP_CART.getState();
   if (state.items.length === 0 && state.deals.length === 0) {
     LCP_UTIL.requireGuard(false, "bucket.html", "Your bucket is empty. Add something tasty first!");
