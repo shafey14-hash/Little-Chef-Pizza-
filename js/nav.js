@@ -150,7 +150,9 @@ const LCP_NAV = (() => {
     LCP_UTIL.flashPop();
     customerHeader(activePage);
     customerFooter();
-    opts.noBucketBar ? LCP_CART_UI.mountWithoutBar() : LCP_CART_UI.mount();
+    opts.noBucketBar
+      ? await LCP_CART_UI.mountWithoutBar()
+      : await LCP_CART_UI.mount();
     return currentUser();
   }
 

@@ -6,11 +6,13 @@
 const LCP_CART_UI = (() => {
   let mounted = false;
 
-  function mount() {
+  async function mount() {
     if (mounted) return;
     mounted = true;
 
-    document.body.insertAdjacentHTML("beforeend", `
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      `
       <div class="bucket-bar" id="bucket-bar" hidden aria-label="Your bucket">
         <span class="bucket-bar__arrow" aria-hidden="true">🛒</span>
         <div class="bucket-bar__items" id="bucket-bar-items" role="button" tabindex="0" aria-label="Open bucket"></div>
@@ -32,27 +34,41 @@ const LCP_CART_UI = (() => {
           </div>
         </aside>
       </div>
-    `);
+    `,
+    );
 
-    document.getElementById("cart-sidebar-close").addEventListener("click", close);
-    document.getElementById("cart-sidebar-overlay").addEventListener("click", (e) => {
-      if (e.target.id === "cart-sidebar-overlay") close();
-    });
+    document
+      .getElementById("cart-sidebar-close")
+      .addEventListener("click", close);
+    document
+      .getElementById("cart-sidebar-overlay")
+      .addEventListener("click", (e) => {
+        if (e.target.id === "cart-sidebar-overlay") close();
+      });
     const bar = document.getElementById("bucket-bar");
     bar.addEventListener("click", open);
-    bar.addEventListener("keydown", (e) => { if (e.key === "Enter") open(); });
-    document.getElementById("lcp-bucket-trigger")?.addEventListener("click", open);
+    bar.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") open();
+    });
+    document
+      .getElementById("lcp-bucket-trigger")
+      ?.addEventListener("click", open);
 
     LCP_CART.onChange(render);
+    // Load the catalog BEFORE the first render — otherwise, on any page
+    // loaded with items already in the bucket (from a previous page),
+    // every item would briefly (or until the next cart change) show as
+    // "Unavailable item" simply because the catalog hadn't loaded yet.
+    await LCP_loadCatalogCache();
     render();
   }
 
   /** Called on pages (like the full bucket.html page) that already show
    * full cart details inline — avoids a confusing duplicate floating bar
    * that opens a second copy of the same thing you're already looking at. */
-  function mountWithoutBar() {
+  async function mountWithoutBar() {
     if (mounted) return;
-    mount();
+    await mount();
     document.getElementById("bucket-bar")?.remove();
   }
 
@@ -79,12 +95,20 @@ const LCP_CART_UI = (() => {
       const itemsHost = document.getElementById("bucket-bar-items");
       itemsHost.innerHTML = "";
       allLines.forEach((line) => {
-        itemsHost.appendChild(LCP_UTIL.el("span", { class: "bucket-bar__chip" }, [
-          LCP_UTIL.el("span", {}, line.name),
-          LCP_UTIL.el("span", { class: "bucket-bar__chip-qty" }, String(line.qty)),
-        ]));
+        itemsHost.appendChild(
+          LCP_UTIL.el("span", { class: "bucket-bar__chip" }, [
+            LCP_UTIL.el("span", {}, line.name),
+            LCP_UTIL.el(
+              "span",
+              { class: "bucket-bar__chip-qty" },
+              String(line.qty),
+            ),
+          ]),
+        );
       });
-      document.getElementById("bucket-bar-subtotal").textContent = LCP_UTIL.pkr(state.subtotal);
+      document.getElementById("bucket-bar-subtotal").textContent = LCP_UTIL.pkr(
+        state.subtotal,
+      );
     }
 
     const pillCount = document.querySelector(".bucket-pill__count");
@@ -96,35 +120,57 @@ const LCP_CART_UI = (() => {
 
     if (state.items.length === 0 && state.deals.length === 0) {
       body.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🧺</div><p>Your bucket is empty.</p></div>`;
-      document.getElementById("cart-sidebar-subtotal").textContent = LCP_UTIL.pkr(0);
+      document.getElementById("cart-sidebar-subtotal").textContent =
+        LCP_UTIL.pkr(0);
       return;
     }
 
     function line(item, isDeal) {
       const row = LCP_UTIL.el("div", { class: "cart-sidebar__line" });
-      row.appendChild(LCP_UTIL.el("div", { class: "stack flex-1" }, [
-        LCP_UTIL.el("span", { class: "bucket-line__name" }, item.name),
-        LCP_UTIL.el("span", { class: "muted" }, LCP_UTIL.pkr(item.unit_price) + " each"),
-      ]));
+      row.appendChild(
+        LCP_UTIL.el("div", { class: "stack flex-1" }, [
+          LCP_UTIL.el("span", { class: "bucket-line__name" }, item.name),
+          LCP_UTIL.el(
+            "span",
+            { class: "muted" },
+            LCP_UTIL.pkr(item.unit_price) + " each",
+          ),
+        ]),
+      );
       const stepper = LCP_UTIL.el("div", { class: "qty-stepper" });
       const minus = LCP_UTIL.el("button", { type: "button" }, "−");
       const qtyEl = LCP_UTIL.el("span", {}, String(item.qty));
       const plus = LCP_UTIL.el("button", { type: "button" }, "+");
       minus.addEventListener("click", () => {
-        isDeal ? LCP_CART.setDealQty(item.deal_id, item.qty - 1) : LCP_CART.setProductQty(item.product_id, item.size, item.qty - 1);
+        isDeal
+          ? LCP_CART.setDealQty(item.deal_id, item.qty - 1)
+          : LCP_CART.setProductQty(item.product_id, item.size, item.qty - 1);
       });
       plus.addEventListener("click", () => {
-        isDeal ? LCP_CART.setDealQty(item.deal_id, item.qty + 1) : LCP_CART.setProductQty(item.product_id, item.size, item.qty + 1);
+        isDeal
+          ? LCP_CART.setDealQty(item.deal_id, item.qty + 1)
+          : LCP_CART.setProductQty(item.product_id, item.size, item.qty + 1);
       });
       stepper.append(minus, qtyEl, plus);
       row.appendChild(stepper);
-      row.appendChild(LCP_UTIL.el("span", { class: "price", style: "width:70px; text-align:right; font-size:13px;" }, LCP_UTIL.pkr(item.line_total)));
+      row.appendChild(
+        LCP_UTIL.el(
+          "span",
+          {
+            class: "price",
+            style: "width:70px; text-align:right; font-size:13px;",
+          },
+          LCP_UTIL.pkr(item.line_total),
+        ),
+      );
       return row;
     }
 
     state.items.forEach((i) => body.appendChild(line(i, false)));
     state.deals.forEach((d) => body.appendChild(line(d, true)));
-    document.getElementById("cart-sidebar-subtotal").textContent = LCP_UTIL.pkr(state.subtotal);
+    document.getElementById("cart-sidebar-subtotal").textContent = LCP_UTIL.pkr(
+      state.subtotal,
+    );
   }
 
   return { mount, mountWithoutBar, open, close };
