@@ -2,6 +2,7 @@
  * utils.js — shared helpers used across every page.
  */
 const LCP_UTIL = (() => {
+
   // Tiny non-cryptographic hash used ONLY for the localStorage demo mode.
   // In the real Supabase build, this is replaced entirely by Supabase Auth
   // (or a secure Edge Function) — see supabase/policies.sql notes.
@@ -18,20 +19,15 @@ const LCP_UTIL = (() => {
     return "Rs. " + Math.round(amount).toLocaleString("en-PK");
   }
 
-  function qs(sel, root = document) {
-    return root.querySelector(sel);
-  }
-  function qsa(sel, root = document) {
-    return [...root.querySelectorAll(sel)];
-  }
+  function qs(sel, root = document) { return root.querySelector(sel); }
+  function qsa(sel, root = document) { return [...root.querySelectorAll(sel)]; }
 
   function el(tag, attrs = {}, children = []) {
     const node = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs)) {
       if (k === "class") node.className = v;
       else if (k === "html") node.innerHTML = v;
-      else if (k.startsWith("on") && typeof v === "function")
-        node.addEventListener(k.slice(2), v);
+      else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2), v);
       else node.setAttribute(k, v);
     }
     for (const c of [].concat(children)) {
@@ -45,12 +41,7 @@ const LCP_UTIL = (() => {
   function ensureToastHost() {
     let host = qs("#lcp-toast-host");
     if (!host) {
-      host = el("div", {
-        id: "lcp-toast-host",
-        class: "lcp-toast-host",
-        role: "status",
-        "aria-live": "polite",
-      });
+      host = el("div", { id: "lcp-toast-host", class: "lcp-toast-host", role: "status", "aria-live": "polite" });
       document.body.appendChild(host);
     }
     return host;
@@ -67,28 +58,14 @@ const LCP_UTIL = (() => {
   }
 
   // ---- Confirm dialog (promise-based, replaces window.confirm) ----
-  function confirmDialog(
-    message,
-    { confirmText = "Confirm", danger = false } = {},
-  ) {
+  function confirmDialog(message, { confirmText = "Confirm", danger = false } = {}) {
     return new Promise((resolve) => {
       const overlay = el("div", { class: "lcp-modal-overlay" });
       const box = el("div", { class: "lcp-modal" }, [
         el("p", { class: "lcp-modal__msg" }, message),
         el("div", { class: "lcp-modal__actions" }, [
-          el(
-            "button",
-            { class: "btn btn--ghost", onclick: () => close(false) },
-            "Cancel",
-          ),
-          el(
-            "button",
-            {
-              class: `btn ${danger ? "btn--danger" : "btn--primary"}`,
-              onclick: () => close(true),
-            },
-            confirmText,
-          ),
+          el("button", { class: "btn btn--ghost", onclick: () => close(false) }, "Cancel"),
+          el("button", { class: `btn ${danger ? "btn--danger" : "btn--primary"}`, onclick: () => close(true) }, confirmText),
         ]),
       ]);
       overlay.appendChild(box);
@@ -103,11 +80,9 @@ const LCP_UTIL = (() => {
   }
 
   function setLoading(button, isLoading, loadingText = "Please wait…") {
-    if (!button || !button.classList || typeof button.dataset === "undefined")
-      return;
+    if (!button || !button.classList || typeof button.dataset === "undefined") return;
     if (isLoading) {
-      button.dataset.originalText =
-        button.dataset.originalText || button.textContent;
+      button.dataset.originalText = button.dataset.originalText || button.textContent;
       button.textContent = loadingText;
       button.disabled = true;
       button.classList.add("is-loading");
@@ -143,38 +118,25 @@ const LCP_UTIL = (() => {
 
   function fmtDate(iso) {
     const d = new Date(iso);
-    return (
-      d.toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }) +
-      " · " +
-      d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
-    );
+    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) +
+      " · " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function timeAgo(iso) {
+    const diffMs = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins} min ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs} hr ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days} day${days === 1 ? "" : "s"} ago`;
   }
 
   function debounce(fn, ms = 250) {
     let t;
-    return (...args) => {
-      clearTimeout(t);
-      t = setTimeout(() => fn(...args), ms);
-    };
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
   }
 
-  return {
-    hash,
-    pkr,
-    qs,
-    qsa,
-    el,
-    toast,
-    confirmDialog,
-    setLoading,
-    friendlyError,
-    requireGuard,
-    flashPop,
-    fmtDate,
-    debounce,
-  };
+  return { hash, pkr, qs, qsa, el, toast, confirmDialog, setLoading, friendlyError, requireGuard, flashPop, fmtDate, timeAgo, debounce };
 })();
