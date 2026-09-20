@@ -88,6 +88,12 @@
 .order-card--out_for_delivery{ border-left-color:var(--orange); background:linear-gradient(to right, #fdece0 0%, #fff 3%); }
 .order-card--delivered{ border-left-color:var(--success); background:linear-gradient(to right, var(--success-bg) 0%, #fff 3%); }
 .order-card--rejected{ border-left-color:var(--danger); background:linear-gradient(to right, var(--danger-bg) 0%, #fff 3%); }
+.order-card--just-updated{ animation:lcp-order-updated 2.5s ease; }
+@keyframes lcp-order-updated{
+  0%{ box-shadow:0 0 0 3px var(--gold), 0 4px 16px rgba(0,0,0,.1); }
+  100%{ box-shadow:0 1px 3px rgba(0,0,0,.04); }
+}
+@media (prefers-reduced-motion: reduce){ .order-card--just-updated{ animation:none; } }
 .order-card__top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:8px; }
 .order-card__num{ font-family:var(--font-display); font-weight:700; font-size:16px; }
 .order-card__meta{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:13px; color:var(--ink-soft); margin-bottom:10px; }

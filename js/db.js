@@ -644,6 +644,38 @@ const LCP_DB = (() => {
         ? { error: friendlyDbError(error) }
         : { data: data.signedUrl };
     },
+    /** Live updates — no page refresh needed. Calls onChange() (with no
+     * args; the caller just re-fetches/re-renders) whenever an order is
+     * created or its status changes. Pass { userId: profile.id } to only
+     * hear about one customer's own orders (My Orders page); omit it to
+     * hear about every order (admin Dashboard/Orders page — RLS still
+     * applies, so a non-admin caller would only ever get their own rows
+     * anyway). Returns an unsubscribe function — call it when leaving
+     * the page (e.g. in a `beforeunload`/navigation handler) to avoid
+     * piling up open connections across page loads.
+     */
+    subscribeToChanges(onChange, opts = {}) {
+      if (!CONFIGURED) return () => {};
+      const channelName = opts.userId
+        ? `orders-user-${opts.userId}`
+        : "orders-admin-" + Date.now();
+      const channel = sb
+        .channel(channelName)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "orders",
+            ...(opts.userId ? { filter: `user_id=eq.${opts.userId}` } : {}),
+          },
+          () => onChange(),
+        )
+        .subscribe();
+      return () => {
+        sb.removeChannel(channel);
+      };
+    },
   };
 
   return { auth, catalog, orders, storage, settings, isConfigured: CONFIGURED };

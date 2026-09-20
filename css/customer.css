@@ -153,6 +153,12 @@
 
 /* ---------------------------------------------------------------- orders */
 .order-card{ border:1px solid var(--line); border-left:4px solid var(--line); border-radius:var(--radius-m); padding:16px 18px; margin-bottom:14px; background:#fff; transition:box-shadow .15s ease; }
+.order-card--just-updated{ animation:lcp-order-updated 2.2s ease; }
+@keyframes lcp-order-updated{
+  0%{ box-shadow:0 0 0 3px var(--gold); background:#fdf6e0; }
+  100%{ box-shadow:none; background:#fff; }
+}
+@media (prefers-reduced-motion: reduce){ .order-card--just-updated{ animation:none; } }
 .order-card:hover{ box-shadow:0 2px 10px rgba(0,0,0,.05); }
 .order-card--payment_verification{ border-left-color:var(--warn); }
 .order-card--pending{ border-left-color:var(--gold); }
