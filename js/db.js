@@ -55,8 +55,22 @@ const LCP_DB = (() => {
   const usernameToEmail = (u) => u.trim().toLowerCase() + "@" + EMAIL_DOMAIN;
 
   function friendlyDbError(error) {
-    console.error("Supabase error:", error);
+    console.error(
+      "Supabase error:",
+      error?.message,
+      error?.details,
+      error?.hint,
+      error?.code,
+      error,
+    );
     if (error?.code === "23505") return "That value is already in use.";
+    if (error?.code === "42501") return "You don't have permission to do that.";
+    // P0001 = a deliberate RAISE EXCEPTION from one of our own functions
+    // (create_order, cancel_order, etc.) — those messages are always
+    // written to be human-readable, so show them directly. Any other
+    // error code is a raw driver/constraint error not meant for an
+    // end user, so it gets a safe generic fallback instead.
+    if (error?.code === "P0001" && error?.message) return error.message;
     return "Something went wrong. Please try again.";
   }
 
