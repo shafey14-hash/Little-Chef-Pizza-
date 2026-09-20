@@ -171,7 +171,7 @@ const LCP_ADMIN = (() => {
       <div class="order-card order-card--${o.status}" style="margin-bottom:10px; padding:12px 14px;">
         <div class="order-card__top" style="margin-bottom:4px;">
           <span class="order-card__num">${o.order_number}</span>
-          <span class="badge ${statusBadgeClass(o.status)}">${statusLabel(o.status)}</span>
+          <span class="badge ${statusBadgeClass(o.status)}">${statusLabel(o.status, o.rejection_reason)}</span>
         </div>
         <div class="muted" style="font-size:12.5px;">${LCP_UTIL.timeAgo(o.created_at)} · ${LCP_NAV.escapeHtml(o.customer_name)} · ${o.order_type} · ${itemCount} item${itemCount === 1 ? "" : "s"}</div>
         <div class="summary-row" style="margin-top:6px;"><span></span><strong>${LCP_UTIL.pkr(o.total)}</strong></div>
@@ -200,7 +200,14 @@ const LCP_ADMIN = (() => {
       : `<p class="muted">No sales data yet.</p>`;
   }
 
-  function statusLabel(s) {
+  function statusLabel(s, rejectionReason) {
+    if (s === "rejected") {
+      return (
+        { cancelled: "Cancelled", failed_delivery: "Failed Delivery" }[
+          rejectionReason
+        ] || "Rejected"
+      );
+    }
     return (
       {
         payment_verification: "Payment Verification",
@@ -282,7 +289,7 @@ const LCP_ADMIN = (() => {
       card.innerHTML = `
         <div class="order-card__top">
           <span class="order-card__num">${o.order_number}</span>
-          <span class="badge ${statusBadgeClass(o.status)}">${statusLabel(o.status)}</span>
+          <span class="badge ${statusBadgeClass(o.status)}">${statusLabel(o.status, o.rejection_reason)}</span>
         </div>
         <div class="order-card__meta">
           <span>🕐 ${LCP_UTIL.timeAgo(o.created_at)}</span>
@@ -386,7 +393,26 @@ const LCP_ADMIN = (() => {
           renderChips();
           render();
         });
-        actionsHost.appendChild(btn);
+        const cancelBtn = document.createElement("button");
+        cancelBtn.className = "btn btn--sm btn--danger";
+        cancelBtn.textContent = "Cancel Order";
+        cancelBtn.addEventListener("click", async () => {
+          const ok = await LCP_UTIL.confirmDialog(
+            "Cancel this order? It will move to Rejected Orders as Cancelled.",
+            { confirmText: "Cancel Order", danger: true },
+          );
+          if (!ok) return;
+          LCP_UTIL.setLoading(cancelBtn, true, "Cancelling…");
+          const { data, error } = await LCP_DB.orders.cancelOrder(o.id);
+          LCP_UTIL.setLoading(cancelBtn, false);
+          if (error)
+            return LCP_UTIL.toast(LCP_UTIL.friendlyError(error), "error");
+          Object.assign(o, data);
+          LCP_UTIL.toast(`${o.order_number} cancelled.`, "success");
+          renderChips();
+          render();
+        });
+        actionsHost.append(btn, cancelBtn);
       } else if (o.status === "out_for_delivery") {
         const btn = document.createElement("button");
         btn.className = "btn btn--sm btn--primary";
@@ -407,7 +433,29 @@ const LCP_ADMIN = (() => {
           renderChips();
           render();
         });
-        actionsHost.appendChild(btn);
+        const failedBtn = document.createElement("button");
+        failedBtn.className = "btn btn--sm btn--danger";
+        failedBtn.textContent = "Mark Failed Delivery";
+        failedBtn.addEventListener("click", async () => {
+          const ok = await LCP_UTIL.confirmDialog(
+            "Mark this delivery as failed? It will move to Rejected Orders as Failed Delivery.",
+            { confirmText: "Mark Failed", danger: true },
+          );
+          if (!ok) return;
+          LCP_UTIL.setLoading(failedBtn, true, "Updating…");
+          const { data, error } = await LCP_DB.orders.markFailedDelivery(o.id);
+          LCP_UTIL.setLoading(failedBtn, false);
+          if (error)
+            return LCP_UTIL.toast(LCP_UTIL.friendlyError(error), "error");
+          Object.assign(o, data);
+          LCP_UTIL.toast(
+            `${o.order_number} marked as failed delivery.`,
+            "success",
+          );
+          renderChips();
+          render();
+        });
+        actionsHost.append(btn, failedBtn);
       } else if (o.status === "rejected" && o.payment_screenshot_path) {
         actionsHost.appendChild(screenshotButton());
       }
@@ -788,7 +836,7 @@ const LCP_ADMIN = (() => {
               o,
             ) => `<tr><td><strong>${o.order_number}</strong></td><td>${LCP_UTIL.fmtDate(o.delivered_at || o.rejected_at || o.created_at)}</td>
           <td>${LCP_NAV.escapeHtml(o.customer_name)}</td><td>${o.customer_phone}</td><td>${o.order_type}</td><td>${LCP_UTIL.pkr(o.total)}</td>
-          <td><span class="badge ${statusBadgeClass(o.status)}">${statusLabel(o.status)}</span></td></tr>`,
+          <td><span class="badge ${statusBadgeClass(o.status)}">${statusLabel(o.status, o.rejection_reason)}</span></td></tr>`,
           )
           .join("")}</tbody></table>`;
     }

@@ -608,6 +608,18 @@ const LCP_DB = (() => {
       });
       return error ? { error: friendlyDbError(error) } : { data };
     },
+    async cancelOrder(orderId) {
+      const { data, error } = await sb.rpc("cancel_order", {
+        p_order_id: orderId,
+      });
+      return error ? { error: friendlyDbError(error) } : { data };
+    },
+    async markFailedDelivery(orderId) {
+      const { data, error } = await sb.rpc("mark_failed_delivery", {
+        p_order_id: orderId,
+      });
+      return error ? { error: friendlyDbError(error) } : { data };
+    },
     /** Admin-only: generates a short-lived signed URL to view a payment screenshot (bucket is private). */
     async getScreenshotUrl(path) {
       if (!CONFIGURED || !path) return { data: null };

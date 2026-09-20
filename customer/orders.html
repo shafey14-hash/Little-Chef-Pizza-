@@ -71,6 +71,10 @@
           delivered: "Delivered",
           rejected: "Rejected",
         };
+        const REJECTION_LABEL = {
+          cancelled: "Cancelled",
+          failed_delivery: "Failed Delivery",
+        };
         const STATUS_BADGE = {
           payment_verification: "badge--warn",
           pending: "badge--gold",
@@ -85,7 +89,11 @@
         const list = document.getElementById("orders-list");
         document.getElementById("orders-empty").hidden = data.length > 0;
         data.forEach((o) => {
-          const statusBadge = `<span class="badge ${STATUS_BADGE[o.status] || "badge--muted"}">${STATUS_LABEL[o.status] || o.status}</span>`;
+          const label =
+            (o.status === "rejected" && REJECTION_LABEL[o.rejection_reason]) ||
+            STATUS_LABEL[o.status] ||
+            o.status;
+          const statusBadge = `<span class="badge ${STATUS_BADGE[o.status] || "badge--muted"}">${label}</span>`;
           const itemsText = [...o.items, ...o.deals]
             .map(
               (l) =>
