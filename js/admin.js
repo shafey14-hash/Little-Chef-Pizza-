@@ -492,6 +492,17 @@ const LCP_ADMIN = (() => {
     document.getElementById("new-product-btn").addEventListener("click", async () => {
       const name = prompt("Product name:");
       if (!name) return;
+      const existing = allProducts.find((p) => p.name.trim().toLowerCase() === name.trim().toLowerCase());
+      if (existing) {
+        const isHardcoded = existing.source === "hardcoded";
+        const ok = await LCP_UTIL.confirmDialog(
+          `A product named "${existing.name}" already exists${isHardcoded ? " in the menu file" : ""}. Creating another one with the same name will show TWO separate entries on the site, which is confusing for customers. ` +
+          (isHardcoded ? `If you just want to change its photo, cancel this and use the image button next to it in the list instead.` : `If you meant to edit its price, cancel this and use the Price button next to it in the list instead.`) +
+          ` Create a duplicate anyway?`,
+          { confirmText: "Create Duplicate Anyway", danger: true }
+        );
+        if (!ok) return;
+      }
       const categoryOptions = categories.map((c, i) => `${i + 1}. ${c.name}`).join("\n");
       const catIndex = Number(prompt(`Category — enter a number:\n${categoryOptions}`)) - 1;
       if (!categories[catIndex]) return LCP_UTIL.toast("Please pick a valid category number.", "error");
@@ -601,6 +612,17 @@ const LCP_ADMIN = (() => {
     document.getElementById("new-deal-btn").addEventListener("click", async () => {
       const name = prompt("Deal name (e.g. Deal 7):");
       if (!name) return;
+      const existing = allDeals.find((d) => d.name.trim().toLowerCase() === name.trim().toLowerCase());
+      if (existing) {
+        const isHardcoded = existing.source === "hardcoded";
+        const ok = await LCP_UTIL.confirmDialog(
+          `A deal named "${existing.name}" already exists${isHardcoded ? " in the menu file" : ""}. Creating another one with the same name will show TWO separate entries on the site, which is confusing for customers. ` +
+          (isHardcoded ? `If you just want to change its photo, cancel this and use the image button next to it in the list instead.` : `If you meant to edit its price, cancel this and use the Edit Price button next to it in the list instead.`) +
+          ` Create a duplicate anyway?`,
+          { confirmText: "Create Duplicate Anyway", danger: true }
+        );
+        if (!ok) return;
+      }
       const description = prompt("Description (e.g. 1 Large Pizza + 1 Drink):") || "";
       const price = Number(prompt("Deal price (PKR):") || 0);
       if (!price || price <= 0) return LCP_UTIL.toast("Please enter a valid price.", "error");
