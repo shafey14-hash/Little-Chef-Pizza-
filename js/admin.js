@@ -410,6 +410,7 @@ const LCP_ADMIN = (() => {
         <button class="btn btn--primary btn--sm" id="new-product-btn">+ Create Product</button>
       </div>
       <p class="muted">Products from the menu file (<code>js/seed-data.js</code>) show a "Menu File" tag — their name/price are edited in code, only their photo is managed here. Products you create with the button above are fully yours to edit or remove anytime.</p>
+      <div id="products-duplicate-banner"></div>
       <div id="products-table-wrap"></div>`;
     const { data: categories } = await LCP_DB.catalog.listCategories();
     const catName = Object.fromEntries(categories.map((c) => [c.id, c.name]));
@@ -460,6 +461,44 @@ const LCP_ADMIN = (() => {
       return tr;
     }
 
+    function renderDuplicateBanner() {
+      const banner = document.getElementById("products-duplicate-banner");
+      const byName = {};
+      allProducts.forEach((p) => {
+        const key = p.name.trim().toLowerCase();
+        (byName[key] = byName[key] || []).push(p);
+      });
+      const dupeGroups = Object.values(byName).filter((g) => g.length > 1);
+      if (!dupeGroups.length) { banner.innerHTML = ""; return; }
+
+      banner.innerHTML = `<div class="notice-box" style="border-color:#e0c060; background:#fff8e0; color:#7a5c00; margin-bottom:16px;">
+        <strong>⚠ ${dupeGroups.length} duplicate product name${dupeGroups.length === 1 ? "" : "s"} found</strong> — the same item exists more than once and will show twice on the site. We recommend keeping the "Menu File" version (always reliable) and removing the "Custom" one below.
+        <div id="dupe-list-products" style="margin-top:10px;"></div>
+      </div>`;
+      const list = document.getElementById("dupe-list-products");
+      dupeGroups.forEach((group) => {
+        const customCopy = group.find((p) => p.source === "admin");
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap;";
+        row.innerHTML = `<span>"${LCP_NAV.escapeHtml(group[0].name)}" appears ${group.length} times</span>`;
+        if (customCopy) {
+          const btn = document.createElement("button");
+          btn.className = "btn btn--sm btn--danger";
+          btn.textContent = "Delete the Custom duplicate";
+          btn.addEventListener("click", async () => {
+            const ok = await LCP_UTIL.confirmDialog(`Delete the duplicate "${customCopy.name}" (Custom copy)? The Menu File version will stay.`, { confirmText: "Delete Duplicate", danger: true });
+            if (!ok) return;
+            const { error } = await LCP_DB.catalog.deleteProduct(customCopy.id);
+            if (error) return LCP_UTIL.toast(error, "error");
+            LCP_UTIL.toast(`Duplicate "${customCopy.name}" removed.`, "success");
+            renderAll();
+          });
+          row.appendChild(btn);
+        }
+        list.appendChild(row);
+      });
+    }
+
     function renderTable() {
       const wrap = document.getElementById("products-table-wrap");
       const q = searchTerm.trim().toLowerCase();
@@ -485,6 +524,7 @@ const LCP_ADMIN = (() => {
       const { data: products, error } = await LCP_DB.catalog.listProducts();
       if (error) LCP_UTIL.toast("Unable to load products. Please refresh.", "error");
       allProducts = products;
+      renderDuplicateBanner();
       renderTable();
     }
     renderAll();
@@ -529,10 +569,49 @@ const LCP_ADMIN = (() => {
         <button class="btn btn--primary btn--sm" id="new-deal-btn">+ Create Deal</button>
       </div>
       <p class="muted">Deals from the menu file (<code>js/seed-data.js</code>) show a "Menu File" tag — their name/price are edited in code, only their photo is managed here. Deals you create with the button above are fully yours to edit or remove anytime.</p>
+      <div id="deals-duplicate-banner"></div>
       <div id="deals-admin-list" class="stack gap-16"></div>`;
 
     let allDeals = [];
     let searchTerm = "";
+
+    function renderDuplicateBanner() {
+      const banner = document.getElementById("deals-duplicate-banner");
+      const byName = {};
+      allDeals.forEach((d) => {
+        const key = d.name.trim().toLowerCase();
+        (byName[key] = byName[key] || []).push(d);
+      });
+      const dupeGroups = Object.values(byName).filter((g) => g.length > 1);
+      if (!dupeGroups.length) { banner.innerHTML = ""; return; }
+
+      banner.innerHTML = `<div class="notice-box" style="border-color:#e0c060; background:#fff8e0; color:#7a5c00; margin-bottom:16px;">
+        <strong>⚠ ${dupeGroups.length} duplicate deal name${dupeGroups.length === 1 ? "" : "s"} found</strong> — the same deal exists more than once and will show twice on the site. We recommend keeping the "Menu File" version (always reliable) and removing the "Custom" one below.
+        <div id="dupe-list-deals" style="margin-top:10px;"></div>
+      </div>`;
+      const list = document.getElementById("dupe-list-deals");
+      dupeGroups.forEach((group) => {
+        const customCopy = group.find((d) => d.source === "admin");
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap;";
+        row.innerHTML = `<span>"${LCP_NAV.escapeHtml(group[0].name)}" appears ${group.length} times</span>`;
+        if (customCopy) {
+          const btn = document.createElement("button");
+          btn.className = "btn btn--sm btn--danger";
+          btn.textContent = "Delete the Custom duplicate";
+          btn.addEventListener("click", async () => {
+            const ok = await LCP_UTIL.confirmDialog(`Delete the duplicate "${customCopy.name}" (Custom copy)? The Menu File version will stay.`, { confirmText: "Delete Duplicate", danger: true });
+            if (!ok) return;
+            const { error } = await LCP_DB.catalog.deleteDeal(customCopy.id);
+            if (error) return LCP_UTIL.toast(error, "error");
+            LCP_UTIL.toast(`Duplicate "${customCopy.name}" removed.`, "success");
+            renderList();
+          });
+          row.appendChild(btn);
+        }
+        list.appendChild(row);
+      });
+    }
 
     function renderDealCards() {
       const wrap = document.getElementById("deals-admin-list");
@@ -600,6 +679,7 @@ const LCP_ADMIN = (() => {
       const { data: deals, error } = await LCP_DB.catalog.listDeals();
       if (error) LCP_UTIL.toast("Unable to load deals: " + error, "error");
       allDeals = deals;
+      renderDuplicateBanner();
       renderDealCards();
     }
     renderList();
