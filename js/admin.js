@@ -422,6 +422,20 @@ const LCP_ADMIN = (() => {
       return LCP_UTIL.pkr(p.price);
     }
 
+    async function promptForPrice(p) {
+      if (p.sizes) {
+        const newSizes = {};
+        for (const [sz, price] of Object.entries(p.sizes)) {
+          const val = Number(prompt(`New price for "${p.name}" — ${sz} (PKR):`, price));
+          if (!val || val <= 0) return null; // cancelled or invalid — abort the whole edit
+          newSizes[sz] = val;
+        }
+        return newSizes;
+      }
+      const val = Number(prompt(`New price for "${p.name}" (PKR):`, p.price));
+      return (!val || val <= 0) ? null : val;
+    }
+
     function row(p) {
       const isHardcoded = p.source === "hardcoded";
       const tr = document.createElement("tr");
@@ -431,24 +445,28 @@ const LCP_ADMIN = (() => {
         <td style="font-size:12.5px;" id="prod-price-${p.id}">${priceCell(p)}</td>
         <td><span class="badge ${p.available ? "badge--success" : "badge--muted"}">${p.available ? "Available" : "Unavailable"}</span></td>
         <td data-image-cell></td>
-        <td>${!isHardcoded ? `<div class="row gap-6"><button class="btn btn--sm btn--gold" data-edit-price>Price</button><button class="btn btn--sm btn--ghost" data-toggle-avail>${p.available ? "Deactivate" : "Activate"}</button><button class="btn btn--sm btn--danger" data-delete>Delete</button></div>` : ""}</td>`;
+        <td><div class="row gap-6"><button class="btn btn--sm btn--gold" data-edit-price>Price</button><button class="btn btn--sm btn--ghost" data-toggle-avail>${p.available ? "Deactivate" : "Activate"}</button>${!isHardcoded ? `<button class="btn btn--sm btn--danger" data-delete>Delete</button>` : ""}</div></td>`;
       tr.querySelector("[data-image-cell]").appendChild(buildImageCell(p, "products", imageSaveFn(p.id)));
 
+      tr.querySelector("[data-edit-price]").addEventListener("click", async () => {
+        const newPrice = await promptForPrice(p);
+        if (newPrice == null) return;
+        const { error } = isHardcoded
+          ? await LCP_DB.catalog.setPriceOverride(p.id, newPrice)
+          : await LCP_DB.catalog.updateProduct(p.id, p.sizes ? { sizes: newPrice } : { price: newPrice });
+        if (error) return LCP_UTIL.toast(error, "error");
+        LCP_UTIL.toast(`${p.name} price updated.`, "success");
+        renderAll();
+      });
+      tr.querySelector("[data-toggle-avail]").addEventListener("click", async () => {
+        const { error } = isHardcoded
+          ? await LCP_DB.catalog.setAvailabilityOverride(p.id, !p.available)
+          : await LCP_DB.catalog.updateProduct(p.id, { available: !p.available });
+        if (error) return LCP_UTIL.toast(error, "error");
+        LCP_UTIL.toast(`${p.name} ${p.available ? "deactivated" : "activated"}.`, "success");
+        renderAll();
+      });
       if (!isHardcoded) {
-        tr.querySelector("[data-edit-price]").addEventListener("click", async () => {
-          const newPrice = Number(prompt(`New price for "${p.name}" (PKR):`, p.price));
-          if (!newPrice || newPrice <= 0) return;
-          const { error } = await LCP_DB.catalog.updateProduct(p.id, { price: newPrice });
-          if (error) return LCP_UTIL.toast(error, "error");
-          LCP_UTIL.toast(`${p.name} price updated.`, "success");
-          renderAll();
-        });
-        tr.querySelector("[data-toggle-avail]").addEventListener("click", async () => {
-          const { error } = await LCP_DB.catalog.updateProduct(p.id, { available: !p.available });
-          if (error) return LCP_UTIL.toast(error, "error");
-          LCP_UTIL.toast(`${p.name} ${p.available ? "deactivated" : "activated"}.`, "success");
-          renderAll();
-        });
         tr.querySelector("[data-delete]").addEventListener("click", async () => {
           const ok = await LCP_UTIL.confirmDialog(`Delete "${p.name}"? This can't be undone.`);
           if (!ok) return;
@@ -639,29 +657,32 @@ const LCP_ADMIN = (() => {
           <p class="muted">${LCP_NAV.escapeHtml(d.description || "")}</p>
           <div class="row gap-12" style="flex-wrap:wrap; align-items:center;">
             <strong id="deal-price-${d.id}">${LCP_UTIL.pkr(d.price)}</strong>
-            ${!isHardcoded ? `
-              <button class="btn btn--sm btn--gold" data-edit-price>Edit Price</button>
-              <button class="btn btn--sm btn--ghost" data-toggle-avail>${d.available ? "Deactivate" : "Activate"}</button>
-              <button class="btn btn--sm btn--danger" data-delete-deal>Delete</button>` : ""}
+            <button class="btn btn--sm btn--gold" data-edit-price>Edit Price</button>
+            <button class="btn btn--sm btn--ghost" data-toggle-avail>${d.available ? "Deactivate" : "Activate"}</button>
+            ${!isHardcoded ? `<button class="btn btn--sm btn--danger" data-delete-deal>Delete</button>` : ""}
           </div>
           <div data-deal-image-cell style="margin-top:12px;"></div>`;
         card.querySelector("[data-deal-image-cell]").appendChild(buildImageCell(d, "deals", imageSaveFn(d.id)));
 
+        card.querySelector("[data-edit-price]").addEventListener("click", async () => {
+          const newPrice = Number(prompt(`New price for "${d.name}" (PKR):`, d.price));
+          if (!newPrice || newPrice <= 0) return;
+          const { error: err } = isHardcoded
+            ? await LCP_DB.catalog.setPriceOverride(d.id, newPrice)
+            : await LCP_DB.catalog.updateDeal(d.id, { price: newPrice });
+          if (err) return LCP_UTIL.toast(err, "error");
+          LCP_UTIL.toast(`${d.name} price updated.`, "success");
+          renderList();
+        });
+        card.querySelector("[data-toggle-avail]").addEventListener("click", async () => {
+          const { error: err } = isHardcoded
+            ? await LCP_DB.catalog.setAvailabilityOverride(d.id, !d.available)
+            : await LCP_DB.catalog.updateDeal(d.id, { available: !d.available });
+          if (err) return LCP_UTIL.toast(err, "error");
+          LCP_UTIL.toast(`${d.name} ${d.available ? "deactivated" : "activated"}.`, "success");
+          renderList();
+        });
         if (!isHardcoded) {
-          card.querySelector("[data-edit-price]").addEventListener("click", async () => {
-            const newPrice = Number(prompt(`New price for "${d.name}" (PKR):`, d.price));
-            if (!newPrice || newPrice <= 0) return;
-            const { error: err } = await LCP_DB.catalog.updateDeal(d.id, { price: newPrice });
-            if (err) return LCP_UTIL.toast(err, "error");
-            LCP_UTIL.toast(`${d.name} price updated.`, "success");
-            renderList();
-          });
-          card.querySelector("[data-toggle-avail]").addEventListener("click", async () => {
-            const { error: err } = await LCP_DB.catalog.updateDeal(d.id, { available: !d.available });
-            if (err) return LCP_UTIL.toast(err, "error");
-            LCP_UTIL.toast(`${d.name} ${d.available ? "deactivated" : "activated"}.`, "success");
-            renderList();
-          });
           card.querySelector("[data-delete-deal]").addEventListener("click", async () => {
             const ok = await LCP_UTIL.confirmDialog(`Delete "${d.name}"? This can't be undone.`);
             if (!ok) return;

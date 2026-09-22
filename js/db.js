@@ -269,17 +269,40 @@ const LCP_DB = (() => {
     }
   }
 
-  async function imageMap() {
+  async function overridesMap() {
     if (!CONFIGURED) return {};
-    const cached = cacheGet("images_v2");
+    const cached = cacheGet("overrides_v3");
     if (cached) return cached;
     const { ok, data: rows } = await safeFetch(
-      () => sb.from("menu_item_images").select("item_id, image_url"),
+      () =>
+        sb
+          .from("menu_item_images")
+          .select("item_id, image_url, price_override, available_override"),
       [],
     );
-    const map = Object.fromEntries(rows.map((r) => [r.item_id, r.image_url]));
-    if (ok) cacheSet("images_v2", map);
+    const map = Object.fromEntries(rows.map((r) => [r.item_id, r]));
+    if (ok) cacheSet("overrides_v3", map);
     return map;
+  }
+
+  /** Merges a hardcoded item's optional database overrides (image, price,
+   * availability) onto its base seed-data.js definition. Price override is
+   * either a plain number (flat-price items) or an object matching the
+   * item's `sizes` shape. */
+  function applyOverride(item, override) {
+    const merged = {
+      ...item,
+      image_url: override?.image_url || null,
+      source: "hardcoded",
+    };
+    if (override?.price_override != null) {
+      if (item.sizes && typeof override.price_override === "object")
+        merged.sizes = override.price_override;
+      else if (!item.sizes) merged.price = override.price_override;
+    }
+    if (override?.available_override != null)
+      merged.available = override.available_override;
+    return merged;
   }
 
   async function adminProducts() {
@@ -318,26 +341,25 @@ const LCP_DB = (() => {
       return { data: LCP_SEED.categories };
     },
     async listProducts() {
-      const [images, admin] = await Promise.all([imageMap(), adminProducts()]);
-      const hardcoded = LCP_SEED.products.map((p) => ({
-        ...p,
-        image_url: images[p.id] || null,
-        source: "hardcoded",
-      }));
+      const [overrides, admin] = await Promise.all([
+        overridesMap(),
+        adminProducts(),
+      ]);
+      const hardcoded = LCP_SEED.products.map((p) =>
+        applyOverride(p, overrides[p.id]),
+      );
       return { data: [...hardcoded, ...admin] };
     },
     async getProduct(id) {
       const hardcoded = LCP_SEED.products.find((p) => p.id === id);
-      const images = await imageMap();
+      const overrides = await overridesMap();
       if (hardcoded) {
         const category = LCP_SEED.categories.find(
           (c) => c.id === hardcoded.category_id,
         );
         return {
           data: {
-            ...hardcoded,
-            image_url: images[id] || null,
-            source: "hardcoded",
+            ...applyOverride(hardcoded, overrides[id]),
             categories: { name: category?.name },
           },
         };
@@ -382,13 +404,45 @@ const LCP_DB = (() => {
       cacheClear("admin_products_v2");
       return { data: true };
     },
+    /** Admin-only: set/clear a price or availability override for a HARDCODED product or deal (matched by its seed-data.js id). Pass null to clear and fall back to the hardcoded default. */
+    async setPriceOverride(itemId, priceOrSizes) {
+      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
+      const { data, error } = await sb
+        .from("menu_item_images")
+        .upsert({
+          item_id: itemId,
+          price_override: priceOrSizes,
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      if (error) return { error: friendlyDbError(error) };
+      cacheClear("overrides_v3");
+      return { data };
+    },
+    async setAvailabilityOverride(itemId, available) {
+      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
+      const { data, error } = await sb
+        .from("menu_item_images")
+        .upsert({
+          item_id: itemId,
+          available_override: available,
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      if (error) return { error: friendlyDbError(error) };
+      cacheClear("overrides_v3");
+      return { data };
+    },
     async listDeals() {
-      const [images, admin] = await Promise.all([imageMap(), adminDeals()]);
-      const hardcoded = LCP_SEED.deals.map((d) => ({
-        ...d,
-        image_url: images[d.id] || null,
-        source: "hardcoded",
-      }));
+      const [overrides, admin] = await Promise.all([
+        overridesMap(),
+        adminDeals(),
+      ]);
+      const hardcoded = LCP_SEED.deals.map((d) =>
+        applyOverride(d, overrides[d.id]),
+      );
       return { data: [...hardcoded, ...admin] };
     },
     /** Admin-only: create a brand-new deal (stored in the database, fully editable — unlike the hardcoded menu deals). */
@@ -436,7 +490,7 @@ const LCP_DB = (() => {
         .select()
         .single();
       if (error) return { error: friendlyDbError(error) };
-      cacheClear("images_v2");
+      cacheClear("overrides_v3");
       return { data };
     },
     async removeMenuImage(itemId) {
@@ -446,7 +500,7 @@ const LCP_DB = (() => {
         .delete()
         .eq("item_id", itemId);
       if (error) return { error: friendlyDbError(error) };
-      cacheClear("images_v2");
+      cacheClear("overrides_v3");
       return { data: true };
     },
   };
