@@ -77,25 +77,35 @@
     });
   });
 
+  let pendingVerifyEmail = null; // set whenever we need the OTP screen, so Resend knows which address to use
+
   document
     .getElementById("form-customer-login")
     .addEventListener("submit", async (e) => {
       e.preventDefault();
       const btn = e.target.querySelector("button[type=submit]");
-      const username = document.getElementById("cl-username").value.trim();
+      const identifier = document.getElementById("cl-identifier").value.trim();
       const password = document.getElementById("cl-password").value;
-      if (!username || !password)
+      if (!identifier || !password)
         return LCP_UTIL.toast(
-          "Please enter your username and password.",
+          "Please enter your email/phone and password.",
           "error",
         );
       LCP_UTIL.setLoading(btn, true, "Logging in…");
-      const { data, error } = await LCP_DB.auth.signIn({
-        username,
-        password,
-        expectRole: "customer",
-      });
+      const { data, error, needsVerification, email } =
+        await LCP_DB.auth.signIn({
+          identifier,
+          password,
+          expectRole: "customer",
+        });
       LCP_UTIL.setLoading(btn, false);
+      if (needsVerification) {
+        pendingVerifyEmail = email;
+        document.getElementById("verify-email-note").textContent =
+          `Your account isn't verified yet. We've sent a 6-digit code to ${email} — enter it below to continue.`;
+        showView("verify-email");
+        return;
+      }
       if (error) return LCP_UTIL.toast(error, "error");
       sessionStorage.removeItem("lcp_guest");
       window.location.href = "customer/home.html";
@@ -116,43 +126,87 @@
       e.preventDefault();
       const btn = e.target.querySelector("button[type=submit]");
       const full_name = document.getElementById("su-fullname").value.trim();
-      const username = document.getElementById("su-username").value.trim();
+      const email = document.getElementById("su-email").value.trim();
       const password = document.getElementById("su-password").value;
       const phone = document.getElementById("su-phone").value.trim();
-      const email = document.getElementById("su-email").value.trim() || null;
+      const alt_phone =
+        document.getElementById("su-alt-phone").value.trim() || null;
       const address =
         document.getElementById("su-address").value.trim() || null;
 
       const errors = [
         LCP_VALID.fullName(full_name),
-        LCP_VALID.username(username),
         LCP_VALID.password(password),
         LCP_VALID.phone(phone),
       ].filter(Boolean);
-      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-        errors.push("Please enter a valid email address, or leave it blank.");
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+        errors.push("Please enter a valid email address.");
+      if (alt_phone) {
+        const e2 = LCP_VALID.phone(alt_phone);
+        if (e2)
+          errors.push(
+            "Alternative " + e2.charAt(0).toLowerCase() + e2.slice(1),
+          );
+      }
       if (errors.length) return LCP_UTIL.toast(errors[0], "error");
 
       LCP_UTIL.setLoading(btn, true, "Creating account…");
       const loc = LCP_LOCATION.getStored();
       const { data, error } = await LCP_DB.auth.signUp({
-        username,
-        password,
         full_name,
-        phone,
         email,
+        phone,
+        alt_phone,
+        password,
         address,
         area: loc ? loc.address : null,
       });
       LCP_UTIL.setLoading(btn, false);
       if (error) return LCP_UTIL.toast(error, "error");
+
+      pendingVerifyEmail = data.email;
+      document.getElementById("verify-email-note").textContent =
+        `We've sent a 6-digit code to ${data.email} — enter it below to finish creating your account.`;
+      showView("verify-email");
+    });
+
+  document
+    .getElementById("form-verify-email")
+    .addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector("button[type=submit]");
+      const token = document.getElementById("ve-code").value.trim();
+      if (!token)
+        return LCP_UTIL.toast(
+          "Please enter the code from your email.",
+          "error",
+        );
+      LCP_UTIL.setLoading(btn, true, "Verifying…");
+      const { data, error } = await LCP_DB.auth.verifySignupOtp({
+        email: pendingVerifyEmail,
+        token,
+      });
+      LCP_UTIL.setLoading(btn, false);
+      if (error) return LCP_UTIL.toast(error, "error");
       sessionStorage.removeItem("lcp_guest");
       LCP_UTIL.toast(
-        "Account created! Welcome, " + full_name.split(" ")[0] + ".",
+        "Email verified! Welcome" +
+          (data?.full_name ? ", " + data.full_name.split(" ")[0] : "") +
+          ".",
         "success",
       );
       setTimeout(() => (window.location.href = "customer/home.html"), 500);
     });
+
+  document.getElementById("ve-resend").addEventListener("click", async (e) => {
+    e.preventDefault();
+    if (!pendingVerifyEmail) return;
+    const { error } = await LCP_DB.auth.resendSignupOtp(pendingVerifyEmail);
+    LCP_UTIL.toast(
+      error || "A new code has been sent to your email.",
+      error ? "error" : "success",
+    );
+  });
 
   // =====================================================================
   // LOCATION GATE — map, Locate Me, address geocoding. Isolated in its

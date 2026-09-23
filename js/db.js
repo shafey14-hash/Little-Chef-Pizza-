@@ -51,9 +51,6 @@ const LCP_DB = (() => {
   const NOT_CONFIGURED_MSG =
     "The site isn't connected to a database yet. Please fill in js/config.js.";
 
-  const EMAIL_DOMAIN = "users.littlechefpizza.local";
-  const usernameToEmail = (u) => u.trim().toLowerCase() + "@" + EMAIL_DOMAIN;
-
   function friendlyDbError(error) {
     console.error(
       "Supabase error:",
@@ -109,34 +106,41 @@ const LCP_DB = (() => {
       return _profile;
     },
 
+    /** Admin login only — unaffected by the customer email/phone overhaul below. Admin accounts still use the internal username->synthetic-email mapping. */
+    async signInAdmin({ username, password }) {
+      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
+      const email =
+        username.trim().toLowerCase() + "@users.littlechefpizza.local";
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) return { error: "Incorrect username or password." };
+      await loadProfile();
+      if (!_profile || _profile.role !== "admin") {
+        await sb.auth.signOut();
+        _profile = null;
+        return { error: "Incorrect username or password." };
+      }
+      return { data: _profile };
+    },
+
     async signUp({
-      username,
-      password,
       full_name,
-      phone,
       email,
+      phone,
+      alt_phone,
+      password,
       area,
       address,
     }) {
       if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
-      username = username.trim().toLowerCase();
-
-      const { data: taken, error: checkErr } = await sb.rpc(
-        "is_username_taken",
-        { p_username: username },
-      );
-      if (checkErr) return { error: friendlyDbError(checkErr) };
-      if (taken) return { error: "Username already exists." };
-
+      email = email.trim().toLowerCase();
       const { error } = await sb.auth.signUp({
-        email: usernameToEmail(username),
+        email,
         password,
         options: {
           data: {
-            username,
             full_name,
             phone,
-            email,
+            alt_phone,
             area,
             address,
             role: "customer",
@@ -145,26 +149,72 @@ const LCP_DB = (() => {
       });
       if (error) {
         if (/registered|exists/i.test(error.message))
-          return { error: "Username already exists." };
-        return { error: "Something went wrong. Please try again." };
+          return { error: "An account with this email already exists." };
+        return { error: friendlyDbError(error) };
       }
-      // The on_auth_user_created trigger (see supabase/auth_and_admin.sql)
-      // creates the matching public.profiles row automatically.
+      // No session yet on purpose — the email must be verified with the
+      // code we just sent before the account can be used.
+      return { data: { email } };
+    },
+
+    /** Step 2 of signup: the customer enters the 6-digit code emailed to them. */
+    async verifySignupOtp({ email, token }) {
+      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
+      const { error } = await sb.auth.verifyOtp({
+        email: email.trim().toLowerCase(),
+        token: token.trim(),
+        type: "signup",
+      });
+      if (error)
+        return {
+          error:
+            "That code is incorrect or has expired. Please try again, or resend the code.",
+        };
       await loadProfile();
       return { data: _profile };
     },
 
-    async signIn({ username, password, expectRole }) {
+    async resendSignupOtp(email) {
       if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
-      const email = usernameToEmail(username.trim());
-      const { error } = await sb.auth.signInWithPassword({ email, password });
-      if (error) return { error: "Incorrect username or password." };
+      const { error } = await sb.auth.resend({
+        type: "signup",
+        email: email.trim().toLowerCase(),
+      });
+      if (error) return { error: friendlyDbError(error) };
+      return { data: true };
+    },
 
+    /** identifier can be an email OR a phone number — phone is looked up
+     * server-side to find the matching real email, then signed in with
+     * that, same as normal. */
+    async signIn({ identifier, password, expectRole }) {
+      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
+      identifier = identifier.trim();
+      let email = identifier;
+      if (!identifier.includes("@")) {
+        const { data: foundEmail, error: lookupErr } = await sb.rpc(
+          "lookup_email_by_phone",
+          { p_phone: identifier },
+        );
+        if (lookupErr || !foundEmail)
+          return { error: "Incorrect email/phone or password." };
+        email = foundEmail;
+      }
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) {
+        if (/email not confirmed/i.test(error.message))
+          return {
+            error: "Please verify your email before logging in.",
+            needsVerification: true,
+            email,
+          };
+        return { error: "Incorrect email/phone or password." };
+      }
       await loadProfile();
       if (expectRole && (!_profile || _profile.role !== expectRole)) {
         await sb.auth.signOut();
         _profile = null;
-        return { error: "Incorrect username or password." };
+        return { error: "Incorrect email/phone or password." };
       }
       return { data: _profile };
     },

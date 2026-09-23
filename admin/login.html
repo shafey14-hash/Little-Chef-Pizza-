@@ -109,10 +109,9 @@
                 "error",
               );
             LCP_UTIL.setLoading(btn, true, "Logging in…");
-            const { data, error } = await LCP_DB.auth.signIn({
+            const { data, error } = await LCP_DB.auth.signInAdmin({
               username,
               password,
-              expectRole: "admin",
             });
             LCP_UTIL.setLoading(btn, false);
             if (error) return LCP_UTIL.toast(error, "error");

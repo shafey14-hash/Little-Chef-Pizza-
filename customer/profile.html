@@ -1,137 +1,257 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Profile — Little Chef Pizza</title>
-<link rel="icon" type="image/svg+xml" href="../assets/images/logo/favicon.svg">
-<link rel="stylesheet" href="../css/global.css">
-<link rel="stylesheet" href="../css/customer.css">
-<link rel="stylesheet" href="../css/responsive.css">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile — Little Chef Pizza</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="../assets/images/logo/favicon.svg"
+    />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/customer.css" />
+    <link rel="stylesheet" href="../css/responsive.css" />
+  </head>
+  <body>
+    <section class="section container">
+      <h1>Your Profile</h1>
 
-<section class="section container">
-  <h1>Your Profile</h1>
-
-  <div id="guest-block" class="empty-state" hidden>
-    <div class="empty-state__icon">🔒</div>
-    <h3>Please log in first</h3>
-    <p>Log in or create an account to view your profile, save your details, track your orders, and check out faster next time.</p>
-    <a href="../index.html" class="btn btn--primary" style="margin-top:14px;">Login / Create Account</a>
-  </div>
-
-  <div id="profile-content" class="stack gap-20" hidden>
-
-    <div class="card" style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
-      <div style="width:56px; height:56px; border-radius:50%; background:var(--gold); color:var(--black); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:22px; flex-shrink:0;" id="pf-avatar">?</div>
-      <div class="stack flex-1" style="gap:2px; min-width:180px;">
-        <strong id="pf-header-name" style="font-size:17px;"></strong>
-        <span class="muted" id="pf-header-since"></span>
+      <div id="guest-block" class="empty-state" hidden>
+        <div class="empty-state__icon">🔒</div>
+        <h3>Please log in first</h3>
+        <p>
+          Log in or create an account to view your profile, save your details,
+          track your orders, and check out faster next time.
+        </p>
+        <a
+          href="../index.html"
+          class="btn btn--primary"
+          style="margin-top: 14px"
+          >Login / Create Account</a
+        >
       </div>
-      <button type="button" class="btn btn--ghost" id="pf-logout-btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-3px; margin-right:4px;">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-          <polyline points="16 17 21 12 16 7"></polyline>
-          <line x1="21" y1="12" x2="9" y2="12"></line>
-        </svg>
-        Log Out
-      </button>
-    </div>
 
-    <div class="kpi-grid" style="grid-template-columns:repeat(2,1fr); gap:14px;">
-      <a href="orders.html" class="card" style="text-decoration:none; color:inherit;">
-        <span class="muted" style="font-size:13px;">Your Orders</span>
-        <div style="font-size:26px; font-weight:800; margin-top:4px;" id="pf-order-count">—</div>
-        <span class="muted" style="font-size:12.5px;">Tap to view history →</span>
-      </a>
-      <a href="orders.html" class="card" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:6px;">
-        <span style="font-size:28px;">🧾</span>
-        <strong style="font-size:15px;">Order History</strong>
-        <span class="muted" style="font-size:12.5px;">View all past orders</span>
-      </a>
-    </div>
+      <div id="profile-content" class="stack gap-20" hidden>
+        <div
+          class="card"
+          style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap"
+        >
+          <div
+            style="
+              width: 56px;
+              height: 56px;
+              border-radius: 50%;
+              background: var(--gold);
+              color: var(--black);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 800;
+              font-size: 22px;
+              flex-shrink: 0;
+            "
+            id="pf-avatar"
+          >
+            ?
+          </div>
+          <div class="stack flex-1" style="gap: 2px; min-width: 180px">
+            <strong id="pf-header-name" style="font-size: 17px"></strong>
+            <span class="muted" id="pf-header-since"></span>
+          </div>
+          <button type="button" class="btn btn--ghost" id="pf-logout-btn">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              focusable="false"
+              style="vertical-align: -3px; margin-right: 4px"
+            >
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            Log Out
+          </button>
+        </div>
 
-    <form class="card profile-card" id="profile-form">
-      <h3 style="margin-top:0;">Account Details</h3>
-      <div class="field"><label for="pf-username">Username</label><input id="pf-username" required></div>
-      <div class="field"><label for="pf-fullname">Full Name</label><input id="pf-fullname" required></div>
-      <div class="field"><label for="pf-phone">Phone</label><input id="pf-phone" required></div>
-      <div class="field"><label for="pf-email">Email <span class="muted">(optional)</span></label><input id="pf-email" type="email"></div>
-      <div class="field"><label for="pf-address">Saved Address</label><input id="pf-address"></div>
-      <button type="submit" class="btn btn--primary btn--block">Save Changes</button>
-    </form>
+        <div
+          class="kpi-grid"
+          style="grid-template-columns: repeat(2, 1fr); gap: 14px"
+        >
+          <a
+            href="orders.html"
+            class="card"
+            style="text-decoration: none; color: inherit"
+          >
+            <span class="muted" style="font-size: 13px">Your Orders</span>
+            <div
+              style="font-size: 26px; font-weight: 800; margin-top: 4px"
+              id="pf-order-count"
+            >
+              —
+            </div>
+            <span class="muted" style="font-size: 12.5px"
+              >Tap to view history →</span
+            >
+          </a>
+          <a
+            href="orders.html"
+            class="card"
+            style="
+              text-decoration: none;
+              color: inherit;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              text-align: center;
+              gap: 6px;
+            "
+          >
+            <span style="font-size: 28px">🧾</span>
+            <strong style="font-size: 15px">Order History</strong>
+            <span class="muted" style="font-size: 12.5px"
+              >View all past orders</span
+            >
+          </a>
+        </div>
 
-    <div class="card">
-      <h3 style="margin-top:0;">Need Help?</h3>
-      <p class="muted">Questions about an order, delivery, or your account? Reach us directly:</p>
-      <div id="pf-contact" class="stack" style="gap:4px;"></div>
-    </div>
-  </div>
-</section>
+        <form class="card profile-card" id="profile-form">
+          <h3 style="margin-top: 0">Account Details</h3>
+          <div class="field">
+            <label for="pf-fullname">Full Name</label
+            ><input id="pf-fullname" required />
+          </div>
+          <div class="field">
+            <label for="pf-phone">Phone</label><input id="pf-phone" required />
+          </div>
+          <div class="field">
+            <label for="pf-alt-phone"
+              >Alternative Number <span class="muted">(optional)</span></label
+            ><input id="pf-alt-phone" type="tel" />
+          </div>
+          <div class="field">
+            <label for="pf-email">Email</label
+            ><input id="pf-email" type="email" disabled /><span
+              class="field__hint"
+              >Your login email — contact us to change it.</span
+            >
+          </div>
+          <div class="field">
+            <label for="pf-address">Saved Address</label
+            ><input id="pf-address" />
+          </div>
+          <button type="submit" class="btn btn--primary btn--block">
+            Save Changes
+          </button>
+        </form>
 
-<script src="../js/seed-data.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="../js/config.js"></script>
-<script src="../js/db.js"></script>
-<script src="../js/utils.js"></script>
-<script src="../js/validation.js"></script>
-<script src="../js/cart.js"></script>
-<script src="../js/cart-ui.js"></script>
-<script src="../js/nav.js"></script>
-<script>
-(async () => {
-  const user = await LCP_NAV.mountCustomer("profile");
-  if (!user) {
-    document.getElementById("guest-block").hidden = false;
-  } else {
-    document.getElementById("profile-content").hidden = false;
+        <div class="card">
+          <h3 style="margin-top: 0">Need Help?</h3>
+          <p class="muted">
+            Questions about an order, delivery, or your account? Reach us
+            directly:
+          </p>
+          <div id="pf-contact" class="stack" style="gap: 4px"></div>
+        </div>
+      </div>
+    </section>
 
-    document.getElementById("pf-avatar").textContent = (user.full_name || user.username || "?").trim().charAt(0).toUpperCase();
-    document.getElementById("pf-header-name").textContent = user.full_name || user.username;
-    if (user.created_at) {
-      const since = new Date(user.created_at).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
-      document.getElementById("pf-header-since").textContent = "Member since " + since;
-    }
+    <script src="../js/seed-data.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/db.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/validation.js"></script>
+    <script src="../js/cart.js"></script>
+    <script src="../js/cart-ui.js"></script>
+    <script src="../js/nav.js"></script>
+    <script>
+      (async () => {
+        const user = await LCP_NAV.mountCustomer("profile");
+        if (!user) {
+          document.getElementById("guest-block").hidden = false;
+        } else {
+          document.getElementById("profile-content").hidden = false;
 
-    const r = LCP_SEED.restaurant;
-    document.getElementById("pf-contact").innerHTML =
-      `<span>📞 ${r.phone_primary}</span><span>💬 WhatsApp: ${r.phone_whatsapp}</span>`;
+          document.getElementById("pf-avatar").textContent = (
+            user.full_name || "?"
+          )
+            .trim()
+            .charAt(0)
+            .toUpperCase();
+          document.getElementById("pf-header-name").textContent =
+            user.full_name;
+          if (user.created_at) {
+            const since = new Date(user.created_at).toLocaleDateString(
+              "en-GB",
+              { month: "long", year: "numeric" },
+            );
+            document.getElementById("pf-header-since").textContent =
+              "Member since " + since;
+          }
 
-    LCP_DB.orders.listForUser(user.id).then(({ data, error }) => {
-      document.getElementById("pf-order-count").textContent = error ? "—" : (data || []).length;
-    });
+          const r = LCP_SEED.restaurant;
+          document.getElementById("pf-contact").innerHTML =
+            `<span>📞 ${r.phone_primary}</span><span>💬 WhatsApp: ${r.phone_whatsapp}</span>`;
 
-    document.getElementById("pf-logout-btn").addEventListener("click", (e) => LCP_NAV.doLogout(e.currentTarget));
+          LCP_DB.orders.listForUser(user.id).then(({ data, error }) => {
+            document.getElementById("pf-order-count").textContent = error
+              ? "—"
+              : (data || []).length;
+          });
 
-    const form = document.getElementById("profile-form");
-    document.getElementById("pf-username").value = user.username;
-    document.getElementById("pf-fullname").value = user.full_name;
-    document.getElementById("pf-phone").value = user.phone;
-    document.getElementById("pf-email").value = user.email || "";
-    document.getElementById("pf-address").value = user.address || "";
+          document
+            .getElementById("pf-logout-btn")
+            .addEventListener("click", (e) =>
+              LCP_NAV.doLogout(e.currentTarget),
+            );
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const btn = form.querySelector("button[type=submit]");
-      const patch = {
-        username: document.getElementById("pf-username").value.trim(),
-        full_name: document.getElementById("pf-fullname").value.trim(),
-        phone: document.getElementById("pf-phone").value.trim(),
-        email: document.getElementById("pf-email").value.trim() || null,
-        address: document.getElementById("pf-address").value.trim() || null,
-      };
-      const errs = [LCP_VALID.username(patch.username), LCP_VALID.fullName(patch.full_name), LCP_VALID.phone(patch.phone)].filter(Boolean);
-      if (patch.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(patch.email)) errs.push("Please enter a valid email address, or leave it blank.");
-      if (errs.length) return LCP_UTIL.toast(errs[0], "error");
-      LCP_UTIL.setLoading(btn, true, "Saving…");
-      const { error } = await LCP_DB.auth.updateProfile(user.id, patch);
-      LCP_UTIL.setLoading(btn, false);
-      if (error) return LCP_UTIL.toast(error, "error");
-      LCP_UTIL.toast("Profile updated.", "success");
-    });
-  }
-})();
-</script>
-</body>
+          const form = document.getElementById("profile-form");
+          document.getElementById("pf-fullname").value = user.full_name;
+          document.getElementById("pf-phone").value = user.phone;
+          document.getElementById("pf-alt-phone").value = user.alt_phone || "";
+          document.getElementById("pf-email").value = user.email || "";
+          document.getElementById("pf-address").value = user.address || "";
+
+          form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = form.querySelector("button[type=submit]");
+            const patch = {
+              full_name: document.getElementById("pf-fullname").value.trim(),
+              phone: document.getElementById("pf-phone").value.trim(),
+              alt_phone:
+                document.getElementById("pf-alt-phone").value.trim() || null,
+              address:
+                document.getElementById("pf-address").value.trim() || null,
+            };
+            const errs = [
+              LCP_VALID.fullName(patch.full_name),
+              LCP_VALID.phone(patch.phone),
+            ].filter(Boolean);
+            if (patch.alt_phone) {
+              const e2 = LCP_VALID.phone(patch.alt_phone);
+              if (e2)
+                errs.push(
+                  "Alternative " + e2.charAt(0).toLowerCase() + e2.slice(1),
+                );
+            }
+            if (errs.length) return LCP_UTIL.toast(errs[0], "error");
+            LCP_UTIL.setLoading(btn, true, "Saving…");
+            const { error } = await LCP_DB.auth.updateProfile(user.id, patch);
+            LCP_UTIL.setLoading(btn, false);
+            if (error) return LCP_UTIL.toast(error, "error");
+            LCP_UTIL.toast("Profile updated.", "success");
+          });
+        }
+      })();
+    </script>
+  </body>
 </html>

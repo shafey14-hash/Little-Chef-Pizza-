@@ -144,10 +144,10 @@
           <h2 class="text-center">Customer Login</h2>
           <form id="form-customer-login" novalidate>
             <div class="field">
-              <label for="cl-username">Username</label>
+              <label for="cl-identifier">Email or Phone Number</label>
               <input
-                id="cl-username"
-                name="username"
+                id="cl-identifier"
+                name="identifier"
                 autocomplete="username"
                 required
               />
@@ -200,12 +200,17 @@
           <h2 class="text-center">Create Your Account</h2>
           <form id="form-customer-signup" novalidate>
             <div class="field">
-              <label for="su-fullname">Name</label
+              <label for="su-fullname">Full Name</label
               ><input id="su-fullname" required />
             </div>
             <div class="field">
-              <label for="su-username">Username</label
-              ><input id="su-username" autocomplete="username" required />
+              <label for="su-email">Email</label
+              ><input
+                id="su-email"
+                type="email"
+                placeholder="you@example.com"
+                required
+              />
             </div>
             <div class="field">
               <label for="su-password">Password</label>
@@ -230,13 +235,9 @@
               ><input id="su-phone" type="tel" required />
             </div>
             <div class="field">
-              <label for="su-email"
-                >Email <span class="muted">(optional)</span></label
-              ><input
-                id="su-email"
-                type="email"
-                placeholder="you@example.com"
-              />
+              <label for="su-alt-phone"
+                >Alternative Number <span class="muted">(optional)</span></label
+              ><input id="su-alt-phone" type="tel" />
             </div>
             <div class="field">
               <label for="su-address">Address</label>
@@ -254,6 +255,34 @@
               Create Account
             </button>
           </form>
+        </section>
+
+        <!-- EMAIL VERIFICATION (OTP) -->
+        <section class="auth-view" data-view="verify-email" hidden>
+          <h2 class="text-center">Verify Your Email</h2>
+          <p class="text-center muted" id="verify-email-note">
+            We've sent a 6-digit code to your email. Enter it below to finish
+            creating your account.
+          </p>
+          <form id="form-verify-email" novalidate>
+            <div class="field">
+              <label for="ve-code">Verification Code</label>
+              <input
+                id="ve-code"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                placeholder="123456"
+                required
+              />
+            </div>
+            <button type="submit" class="btn btn--primary btn--block">
+              Verify &amp; Continue
+            </button>
+          </form>
+          <p class="auth-signup-line">
+            Didn't get it? <a href="#" id="ve-resend">Resend code</a>
+          </p>
         </section>
       </div>
     </main>
