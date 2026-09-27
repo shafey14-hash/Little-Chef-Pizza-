@@ -116,15 +116,8 @@ p {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: var(--black);
-  border: 2px solid var(--gold);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  color: var(--gold);
-  font-weight: 800;
-  font-size: 18px;
+  object-fit: cover;
+  display: block;
   flex-shrink: 0;
 }
 .brand__text {

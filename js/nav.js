@@ -53,7 +53,7 @@ const LCP_NAV = (() => {
       <header class="topnav">
         <div class="container topnav__inner">
           <a href="home.html" class="brand">
-            <span class="brand__mark">LC</span>
+            <img class="brand__mark" src="../assets/images/logo/logo-badge.png" alt="Little Chef Pizza logo" width="44" height="44" />
             <span class="brand__text">
               <span class="brand__name">Little Chef Pizza</span>
               <span class="brand__tag">Pizza &amp; Fast Food</span>
@@ -97,7 +97,7 @@ const LCP_NAV = (() => {
         <div class="container footer__grid">
           <div>
             <div class="brand brand--on-dark">
-              <span class="brand__mark">LC</span>
+              <img class="brand__mark" src="../assets/images/logo/logo-badge.png" alt="Little Chef Pizza logo" width="44" height="44" />
               <span class="brand__text">
                 <span class="brand__name">${r.name}</span>
                 <span class="brand__tag">Pizza &amp; Fast Food</span>
@@ -187,7 +187,7 @@ const LCP_NAV = (() => {
       <div class="admin-shell">
         <aside class="admin-sidebar">
           <div class="brand brand--on-dark" style="padding:20px 18px 10px;">
-            <span class="brand__mark">LC</span>
+            <img class="brand__mark" src="../assets/images/logo/logo-badge.png" alt="Little Chef Pizza logo" width="44" height="44" />
             <span class="brand__text"><span class="brand__name">Little Chef</span><span class="brand__tag">ADMIN</span></span>
           </div>
           <nav class="admin-nav">
