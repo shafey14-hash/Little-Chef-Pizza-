@@ -77,7 +77,11 @@
     });
   });
 
-  let pendingVerifyEmail = null; // set whenever we need the OTP screen, so Resend knows which address to use
+  // Set whenever we need the OTP screen, so Resend knows which address to
+  // use — and so we can sign the customer in automatically right after they
+  // verify (custom OTP verification does not create a session by itself).
+  let pendingVerifyEmail = null;
+  let pendingVerifyPassword = null;
 
   document
     .getElementById("form-customer-login")
@@ -101,6 +105,11 @@
       LCP_UTIL.setLoading(btn, false);
       if (needsVerification) {
         pendingVerifyEmail = email;
+        pendingVerifyPassword = password; // so we can sign them in right after they verify
+        // A stale code may have expired since signup — send a fresh one in
+        // the background (never blocks showing the verify screen; if it is
+        // throttled, the previously sent code is still valid).
+        LCP_DB.auth.resendSignupOtp(email);
         document.getElementById("verify-email-note").textContent =
           `Your account isn't verified yet. We've sent a 6-digit code to ${email} — enter it below to continue.`;
         showView("verify-email");
@@ -165,6 +174,7 @@
       if (error) return LCP_UTIL.toast(error, "error");
 
       pendingVerifyEmail = data.email;
+      pendingVerifyPassword = password; // captured now so we can auto-login after verification
       document.getElementById("verify-email-note").textContent =
         `We've sent a 6-digit code to ${data.email} — enter it below to finish creating your account.`;
       showView("verify-email");
@@ -182,20 +192,48 @@
           "error",
         );
       LCP_UTIL.setLoading(btn, true, "Verifying…");
-      const { data, error } = await LCP_DB.auth.verifySignupOtp({
+      const { error } = await LCP_DB.auth.verifySignupOtp({
         email: pendingVerifyEmail,
         token,
       });
+      if (error) {
+        LCP_UTIL.setLoading(btn, false);
+        return LCP_UTIL.toast(error, "error");
+      }
+
+      // Custom OTP verification confirms the email server-side but does not
+      // create a session — sign in with the password captured at
+      // signup/login time so the customer lands straight in their account.
+      if (pendingVerifyPassword) {
+        LCP_UTIL.setLoading(btn, true, "Signing you in…");
+        const { data: profile, error: signInError } =
+          await LCP_DB.auth.signIn({
+            identifier: pendingVerifyEmail,
+            password: pendingVerifyPassword,
+            expectRole: "customer",
+          });
+        LCP_UTIL.setLoading(btn, false);
+        if (!signInError && profile) {
+          sessionStorage.removeItem("lcp_guest");
+          LCP_UTIL.toast(
+            "Email verified! Welcome" +
+              (profile.full_name
+                ? ", " + profile.full_name.split(" ")[0]
+                : "") +
+              ".",
+            "success",
+          );
+          setTimeout(
+            () => (window.location.href = "customer/home.html"),
+            500,
+          );
+          return;
+        }
+      }
+
       LCP_UTIL.setLoading(btn, false);
-      if (error) return LCP_UTIL.toast(error, "error");
-      sessionStorage.removeItem("lcp_guest");
-      LCP_UTIL.toast(
-        "Email verified! Welcome" +
-          (data?.full_name ? ", " + data.full_name.split(" ")[0] : "") +
-          ".",
-        "success",
-      );
-      setTimeout(() => (window.location.href = "customer/home.html"), 500);
+      LCP_UTIL.toast("Email verified! Please log in to continue.", "success");
+      showView("customer-login");
     });
 
   document.getElementById("ve-resend").addEventListener("click", async (e) => {

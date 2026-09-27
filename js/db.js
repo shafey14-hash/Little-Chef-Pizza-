@@ -51,6 +51,29 @@ const LCP_DB = (() => {
   const NOT_CONFIGURED_MSG =
     "The site isn't connected to a database yet. Please fill in js/config.js.";
 
+  // Serverless email/auth API lives on the same deployment by default
+  // (/api/* on Vercel). Set API_BASE_URL in js/config.js only if the site is
+  // hosted somewhere else than the API (e.g. GitHub Pages + Vercel API).
+  const API_BASE = ((LCP_CONFIG && LCP_CONFIG.API_BASE_URL) || "").replace(
+    /\/+$/,
+    "",
+  );
+
+  async function apiPost(path, body) {
+    try {
+      const res = await fetch(API_BASE + path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body || {}),
+      });
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, data };
+    } catch (err) {
+      console.error("API call failed:", path, err);
+      return { ok: false, status: 0, data: {} };
+    }
+  }
+
   function friendlyDbError(error) {
     console.error(
       "Supabase error:",
@@ -133,54 +156,57 @@ const LCP_DB = (() => {
     }) {
       if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
       email = email.trim().toLowerCase();
-      const { error } = await sb.auth.signUp({
+      // Custom signup: our own API creates the user and emails a 6-digit
+      // OTP with the branded template — Supabase's default email is never
+      // sent. No session yet on purpose; the code must be verified first.
+      const { ok, data } = await apiPost("/api/auth-signup", {
+        full_name,
         email,
+        phone,
+        alt_phone,
+        area,
+        address,
         password,
-        options: {
-          data: {
-            full_name,
-            phone,
-            alt_phone,
-            area,
-            address,
-            role: "customer",
-          },
-        },
       });
-      if (error) {
-        if (/registered|exists/i.test(error.message))
-          return { error: "An account with this email already exists." };
-        return { error: friendlyDbError(error) };
+      if (!ok) {
+        return {
+          error:
+            (data && data.error) ||
+            "Something went wrong. Please try again.",
+        };
       }
-      // No session yet on purpose — the email must be verified with the
-      // code we just sent before the account can be used.
-      return { data: { email } };
+      return { data: { email: (data && data.email) || email } };
     },
 
     /** Step 2 of signup: the customer enters the 6-digit code emailed to them. */
     async verifySignupOtp({ email, token }) {
       if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
-      const { error } = await sb.auth.verifyOtp({
+      const { ok, data } = await apiPost("/api/auth-verify-otp", {
         email: email.trim().toLowerCase(),
         token: token.trim(),
-        type: "signup",
       });
-      if (error)
+      if (!ok) {
         return {
           error:
+            (data && data.error) ||
             "That code is incorrect or has expired. Please try again, or resend the code.",
         };
-      await loadProfile();
-      return { data: _profile };
+      }
+      // No session comes out of verification — auth.js signs the customer
+      // in with the password they just chose.
+      return { data: { verified: true } };
     },
 
     async resendSignupOtp(email) {
       if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
-      const { error } = await sb.auth.resend({
-        type: "signup",
+      const { ok, data } = await apiPost("/api/auth-resend-otp", {
         email: email.trim().toLowerCase(),
       });
-      if (error) return { error: friendlyDbError(error) };
+      if (!ok) {
+        return {
+          error: (data && data.error) || "Something went wrong. Please try again.",
+        };
+      }
       return { data: true };
     },
 

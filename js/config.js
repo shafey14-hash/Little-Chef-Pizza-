@@ -16,4 +16,10 @@ const LCP_CONFIG = {
   SUPABASE_URL: "https://lambfbjicnvqjrraerur.supabase.co", // e.g. "https://lambfbjicnvqjrraerur.supabase.co"
   SUPABASE_ANON_KEY:
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhbWJmYmppY252cWpycmFlcnVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg2MDAyNzYsImV4cCI6MjEwNDE3NjI3Nn0.xJEDNyC8gyE5vYYmY4JjmtJr05AJnzrBkQoI_3Z6KSE", // the "anon public" key from Project Settings → API
+
+  // Base URL of the serverless API (OTP + order emails). Leave EMPTY when
+  // the site and /api are deployed together on Vercel (same origin).
+  // Set it only if the site is hosted separately, e.g.
+  // API_BASE_URL: "https://little-chef-pizza.vercel.app"
+  API_BASE_URL: "",
 };

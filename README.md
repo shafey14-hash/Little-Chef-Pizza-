@@ -10,20 +10,26 @@ This is the production version: `js/db.js` talks to a real Supabase
 project (Postgres + Auth) via `supabase-js`, loaded from a CDN — there is
 no build step. Before anything will work you must:
 
-1. Run `supabase/schema.sql` → `supabase/seed.sql` → `supabase/policies.sql`
-   → `supabase/auth_and_admin.sql`, in that exact order, in your Supabase
-   project's SQL Editor.
+1. Run these SQL files **in this exact order** in your Supabase project's
+   SQL Editor:
+   `supabase/schema.sql` → `supabase/seed.sql` → `supabase/policies.sql`
+   → `supabase/auth_and_admin.sql` → `supabase/location_and_payments.sql`
+   → `supabase/audit_fixes.sql` → `supabase/email_verification_codes.sql`.
 2. Create a **Storage** bucket named exactly `menu-images` (Storage → New
    bucket → toggle "Public bucket" ON), then run `supabase/storage_policies.sql`.
    This powers the admin panel's direct image upload (max 5MB per image).
-3. In **Authentication → Providers → Email**, turn **OFF** "Confirm email".
-   This app logs customers in with a username, mapped internally to a
-   fake address like `alibaba@users.littlechefpizza.local` — no real inbox
-   exists to click a confirmation link in, so confirmation must stay off.
-4. Fill in `js/config.js` with your project's URL and **anon/public** key
+3. Set the Vercel environment variables listed in `.env.example`
+   (`SUPABASE_SERVICE_ROLE_KEY`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`,
+   `EMAIL_WEBHOOK_SECRET`, optional `SITE_URL`) — they are read only by
+   the serverless functions in `api/*` and must never touch browser code.
+4. In `supabase/order_email_notifications_trigger.sql`, replace the two
+   placeholders (`https://YOUR-SITE.vercel.app` and `YOUR_WEBHOOK_SECRET`)
+   with your real deployment URL and the same `EMAIL_WEBHOOK_SECRET` from
+   step 3, then run it. This wires order-status emails (see "Emails" below).
+5. Fill in `js/config.js` with your project's URL and **anon/public** key
    (Project Settings → API). This key is safe to commit — see the comment
    in that file for why.
-5. Create the admin account exactly as described at the top of
+6. Create the admin account exactly as described at the top of
    `supabase/auth_and_admin.sql`.
 
 Then just open `index.html` (or deploy — see below). No `localStorage`
@@ -33,7 +39,7 @@ hits the real database.
 ## What's inside
 
 ```
-index.html            → Welcome/auth modal: Login as Customer, Login as Admin, Continue as Guest
+index.html            → Location gate + welcome/auth modal (login, signup, guest)
 customer/              → Customer portal (home, menu, deals, bucket, checkout, orders, profile)
 admin/                 → Admin portal (dashboard, orders, products & prices, deals, order history)
 css/                   → global design system, auth, customer, admin, responsive
@@ -41,11 +47,23 @@ js/
   seed-data.js         → extracted menu data (see "Menu extraction notes" below)
   db.js                → trusted data-access layer (see "Architecture" below)
   utils.js, validation.js, nav.js, cart.js, menu.js, checkout.js, admin.js, auth.js
+api/                   → Vercel serverless functions (see "Emails" below)
+  _lib/email-template.js    → branded HTML email engine (layout + components)
+  _lib/supabase-admin.js    → service-role helpers (GoTrue admin REST + PostgREST)
+  auth-signup.js            → creates user unconfirmed, emails a 6-digit OTP
+  auth-verify-otp.js        → checks the OTP, confirms the user server-side
+  auth-resend-otp.js        → throttled OTP resend
+  send-order-email.js       → order status emails (called by the DB trigger)
 assets/images/…        → image folders with placeholder comments (see below)
 supabase/
   schema.sql           → full production Postgres schema for Supabase
   seed.sql             → same menu data as SQL inserts
   policies.sql         → Row Level Security + the trusted create_order() function
+  auth_and_admin.sql   → profiles trigger + is_admin() + admin account setup
+  location_and_payments.sql → delivery charge, EasyPaisa settings, order status fns
+  audit_fixes.sql      → audit-log trigger fixes
+  email_verification_codes.sql → our own OTP store (service-role only)
+  order_email_notifications_trigger.sql → pg_net webhook → /api/send-order-email
 ```
 
 ## Architecture
@@ -70,13 +88,44 @@ page calls `await LCP_NAV.mountCustomer(...)` / `await LCP_NAV.mountAdmin(...)`
 before reading `currentUser()`. If you add a new page, follow that same
 pattern (see any file in `customer/` or `admin/` for the exact wrapper).
 
-**Username-only login** is implemented by deterministically mapping every
-username to an internal address, `<username>@users.littlechefpizza.local`,
-which Supabase Auth uses for real underneath. The browser never shows this
-address. A Postgres trigger (`handle_new_user` in
+**Email/phone login + custom OTP.** Customers sign up with a real email
+address and phone number. The browser calls `POST /api/auth-signup`, which
+creates the Supabase auth user **unconfirmed** (via the service-role admin
+API — Supabase's own confirmation email is never sent) and emails the
+customer a 6-digit code through our own branded template. `verify-otp`
+checks the code against the `email_verification_codes` table and confirms
+the user server-side; `auth.js` then signs them in with the password they
+just chose. Logging in accepts either the email or the phone number
+(`lookup_email_by_phone` resolves a phone to its email server-side). Admin
+accounts still use the internal username→synthetic-email mapping and are
+completely separate. A Postgres trigger (`handle_new_user` in
 `supabase/auth_and_admin.sql`) automatically creates the matching
 `public.profiles` row — with `role` read from signup metadata — every time
 someone signs up, so the client never inserts into `profiles` directly.
+
+## Emails
+
+All emails are built **in code** and sent through Nodemailer + Gmail SMTP
+(`api/_lib/email-template.js`) — Supabase's built-in email sending is not
+used at all (it has rate limits and no branding control). The shared
+template engine renders table-based, inline-styled HTML in the site's own
+black/gold design: dark gradient header with the 🍕 wordmark, a coloured
+status banner, an order summary box (items, quantities, totals in Rs.), a
+support footer with phone/WhatsApp, and a plain-text fallback for every
+message.
+
+- **OTP verification emails** — `api/auth-signup.js` sends the code when an
+  account is created (or refreshed, if an unconfirmed account signs up
+  again); `api/auth-resend-otp.js` handles resends (60-second throttle);
+  `api/auth-verify-otp.js` validates it (5 attempts max, 10-minute expiry).
+- **Order status emails** — a Postgres trigger
+  (`trg_order_email` in `supabase/order_email_notifications_trigger.sql`)
+  fires on order insert and on every status change, and uses `pg_net` to
+  POST the order to `/api/send-order-email` with a shared-secret header.
+  The function builds a branded email per event: order received (payment
+  being verified for EasyPaisa, confirmed for COD), payment approved,
+  out for delivery, delivered, and rejected/cancelled/failed-delivery
+  variants — each with the matching banner colour and a full order summary.
 
 ## Menu extraction notes
 
@@ -126,8 +175,8 @@ update public.site_settings set value = '150' where key = 'delivery_charge';
 ## What's deliberately NOT included
 
 Per the brief: no inventory/ingredients/suppliers, no table management, no
-ratings/reviews, no email field anywhere, no working online payment (shown
-as "Coming Soon" and disabled), and the admin portal only has Dashboard,
+ratings/reviews, no online card payment (EasyPaisa transfer + cash on
+delivery instead), and the admin portal only has Dashboard,
 Orders, Products & Prices, Deals, Order History and Settings — no
 kitchen/staff/attendance modules.
 
