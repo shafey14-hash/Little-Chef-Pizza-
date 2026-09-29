@@ -113,12 +113,11 @@ jobs:
             aligned.apk
           echo "OK: aligned.apk created"
 
-      - name: Sign step 4/4 - Sign + verify APK (checks KEY_PASSWORD)
+      - name: Sign step 4/4 - Sign + verify APK
         if: env.HAS_SECRETS == 'true'
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           BT=$(ls -d "$ANDROID_SDK_ROOT"/build-tools/* | sort -V | tail -1)
           "$BT/apksigner" sign \
@@ -126,7 +125,6 @@ jobs:
             --ks-type PKCS12 \
             --ks-key-alias "$KEY_ALIAS" \
             --ks-pass "pass:$KEYSTORE_PASSWORD" \
-            --key-pass "pass:$KEY_PASSWORD" \
             --out app.apk aligned.apk
           "$BT/apksigner" verify --print-certs app.apk
 
