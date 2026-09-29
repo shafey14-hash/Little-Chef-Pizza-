@@ -3,6 +3,12 @@
  * Keeping this in one place means every page's navigation stays consistent.
  */
 const LCP_NAV = (() => {
+  // Running inside the native Android app (Capacitor)? Flag the root element
+  // so CSS can hide website-only things like the app download section.
+  if (window.Capacitor?.isNativePlatform?.()) {
+    document.documentElement.classList.add("is-app");
+  }
+
   function isGuest() {
     return (
       !LCP_DB.auth.currentUser() && sessionStorage.getItem("lcp_guest") === "1"
@@ -107,7 +113,7 @@ const LCP_NAV = (() => {
           </div>
           <div>
             <h4>Quick Links</h4>
-            <a href="menu.html">Menu</a><a href="deals.html">Deals</a><a href="orders.html">My Orders</a><a href="bucket.html">Order Now</a>
+            <a href="menu.html">Menu</a><a href="deals.html">Deals</a><a href="orders.html">My Orders</a><a href="bucket.html">Order Now</a><a href="download.html" class="app-only-hide">Get the App</a>
           </div>
           <div>
             <h4>Contact</h4>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Get the App — Little Chef Pizza</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="../assets/images/logo/favicon.svg"
+    />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/customer.css" />
+    <link rel="stylesheet" href="../css/responsive.css" />
+  </head>
+  <body>
+    <section class="section container app-download-section">
+      <div class="section-head">
+        <h1>Get the Little Chef App</h1>
+      </div>
+      <p>
+        The app is the same website you know — same menu, same deals, same
+        account, same live order tracking — wrapped into a fast Android app.
+        Install it once and you're always on the latest version.
+      </p>
+
+      <div class="app-download-grid">
+        <div class="card app-download-card">
+          <h3>1. Download the APK</h3>
+          <p>
+            Tap the button below (or scan the QR code) to download the app
+            file. It's built fresh from the latest code every time.
+          </p>
+          <a
+            class="btn btn--gold btn--block"
+            id="app-download-btn"
+            href="https://github.com/shafey14-hash/Little-Chef-Pizza-/releases/latest/download/app.apk"
+            download
+            >⬇️ Download the App (Android)</a
+          >
+          <p class="muted" style="font-size: 0.85rem">
+            Direct download — the Play Store version is coming soon.
+          </p>
+        </div>
+
+        <div class="card app-download-card app-download-card--qr">
+          <h3>2. Scan to Download</h3>
+          <p>Point any phone camera at this code to open the download link.</p>
+          <img
+            src="../assets/images/app-download-qr.png"
+            alt="QR code to download the Little Chef Pizza app"
+            width="200"
+            height="200"
+          />
+        </div>
+
+        <div class="card app-download-card">
+          <h3>3. Install</h3>
+          <p>
+            Open the downloaded file. Android will ask you to allow installs
+            from your browser once — approve it, and the app installs like any
+            other.
+          </p>
+          <p>
+            Afterwards it updates itself automatically from the website, so
+            you'll never need to download it again.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <script src="../js/seed-data.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/db.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/validation.js"></script>
+    <script src="../js/cart.js"></script>
+    <script src="../js/cart-ui.js"></script>
+    <script src="../js/menu.js"></script>
+    <script src="../js/nav.js"></script>
+    <script>
+      // Already inside the app? This page is pointless there — go home.
+      if (window.Capacitor?.isNativePlatform?.()) {
+        window.location.replace("home.html");
+      }
+      (async () => {
+        await LCP_NAV.mountCustomer("");
+      })();
+    </script>
+  </body>
+</html>

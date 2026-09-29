@@ -15,3 +15,7 @@ npm-debug.log*
 
 # Supabase CLI local state (if you use `supabase init` later)
 .supabase/
+
+# Android signing keystore + local secrets-instructions (NEVER commit these)
+littlechef-keystore.p12
+APP-SECRETS-SETUP.txt

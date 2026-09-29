@@ -103,6 +103,33 @@ completely separate. A Postgres trigger (`handle_new_user` in
 `public.profiles` row — with `role` read from signup metadata — every time
 someone signs up, so the client never inserts into `profiles` directly.
 
+## Mobile app (Android APK)
+
+`app/` is a **Capacitor 6 wrapper** that loads the live website (`server.url`
+in `app/capacitor.config.json`). The app is literally the same website, so it
+shares the same Supabase database, auth, APIs and realtime subscriptions —
+and **almost every website change applies to the app instantly with no new
+APK**, because the app renders the live site. Only changes to `app/` itself
+(icons, native config, plugins) need a rebuild.
+
+- **Build & release** — `.github/workflows/android-apk.yml` builds the APK in
+  the cloud (GitHub Actions: npm ci → cap sync → gradle → sign with
+  apksigner) and publishes it as a Release tagged `latest`. The asset is
+  always named `app.apk`, so the download link and the QR code
+  (`assets/images/app-download-qr.png`) never change:
+  `https://github.com/shafey14-hash/Little-Chef-Pizza-/releases/latest/download/app.apk`
+- **Signing** — the release APK is signed with a PKCS#12 keystore
+  (`littlechef-keystore.p12`, gitignored). The matching values live in 4 repo
+  secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
+  Until those secrets exist, the workflow builds a **debug APK** so the
+  pipeline works end-to-end from day one. Never lose the keystore — Android
+  refuses to install a new APK over an old one if the signing key differs.
+- **Website download section** — `customer/download.html` + a home-page
+  banner offer the direct APK link and QR code. Inside the app these are
+  hidden automatically (`window.Capacitor.isNativePlatform()` adds an `is-app`
+  class to `<html>` and CSS hides the download section + footer link), so
+  customers only see the download prompt on the website.
+
 ## Emails
 
 All emails are built **in code** and sent through Nodemailer + Gmail SMTP

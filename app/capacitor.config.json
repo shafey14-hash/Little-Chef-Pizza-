@@ -1,0 +1,12 @@
+{
+  "appId": "com.littlechefpizza.app",
+  "appName": "Little Chef Pizza",
+  "webDir": "public",
+  "server": {
+    "url": "https://little-chef-pizza.vercel.app",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

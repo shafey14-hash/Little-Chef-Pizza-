@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Little Chef Pizza</string>
+    <string name="title_activity_main">Little Chef Pizza</string>
+    <string name="package_name">com.littlechefpizza.app</string>
+    <string name="custom_url_scheme">com.littlechefpizza.app</string>
+</resources>

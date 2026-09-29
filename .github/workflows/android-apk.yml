@@ -1,0 +1,111 @@
+# Builds an Android APK on every push that touches app/ and publishes it as a
+# GitHub Release tagged "latest". The asset keeps the same name (app.apk), so
+# the download URL + QR code never change:
+#   https://github.com/shafey14-hash/Little-Chef-Pizza-/releases/latest/download/app.apk
+#
+# The app loads the LIVE website via server.url, so most website changes never
+# need a new APK — this only rebuilds when app/ files actually change (icons,
+# config, native code). Signing is done with apksigner directly so the PKCS#12
+# keystore type is explicit (no third-party signing action needed).
+
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/android-apk.yml"
+  workflow_dispatch: # rebuild manually from the Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # True once the 4 keystore secrets exist in the repo. Until then a debug
+      # APK is built, so the whole pipeline works before secrets are added.
+      HAS_SECRETS: ${{ secrets.KEYSTORE_BASE64 != '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install Capacitor dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Sync web assets into the Android project
+        working-directory: app
+        run: npx cap sync android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build unsigned release APK
+        if: env.HAS_SECRETS == 'true'
+        working-directory: app/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      - name: Build debug APK (no signing secrets yet)
+        if: env.HAS_SECRETS != 'true'
+        working-directory: app/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Sign release APK (apksigner, PKCS#12 keystore)
+        if: env.HAS_SECRETS == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          sdkmanager "build-tools;34.0.0" >/dev/null
+          BT=$ANDROID_SDK_ROOT/build-tools/34.0.0
+          UNSIGNED=app/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          echo "$KEYSTORE_BASE64" | base64 -d > keystore.p12
+          $BT/zipalign -f -p 4 "$UNSIGNED" aligned.apk
+          $BT/apksigner sign \
+            --ks keystore.p12 \
+            --ks-type PKCS12 \
+            --ks-key-alias "${{ secrets.KEY_ALIAS }}" \
+            --ks-pass "pass:${{ secrets.KEYSTORE_PASSWORD }}" \
+            --key-pass "pass:${{ secrets.KEY_PASSWORD }}" \
+            --out app.apk aligned.apk
+          $BT/apksigner verify --print-certs app.apk
+
+      - name: Stage the APK under a stable name
+        run: |
+          if [ "${{ env.HAS_SECRETS }}" != "true" ]; then
+            cp app/android/app/build/outputs/apk/debug/app-debug.apk app.apk
+          fi
+          test -f app.apk
+          ls -lh app.apk
+
+      - name: Publish Release "latest"
+        uses: ncipollo/release-action@v1
+        with:
+          tag: latest
+          name: Little Chef Pizza App (latest)
+          artifacts: app.apk
+          artifactContentType: application/vnd.android.package-archive
+          allowUpdates: true
+          replacesArtifacts: true
+          makeLatest: true
+          body: |
+            Latest build of the Little Chef Pizza Android app.
+
+            - Signed release (once keystore secrets are configured), otherwise a debug build.
+            - The app loads the live website, so website updates apply automatically —
+              only native/app changes require a new APK from this release.

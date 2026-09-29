@@ -832,3 +832,46 @@
 .product-detail__info p {
   font-size: 15px;
 }
+
+.app-download-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 20px;
+}
+.app-download-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+.app-download-card--qr {
+  align-items: center;
+  text-align: center;
+}
+.app-download-card img {
+  border-radius: 12px;
+  background: #fff;
+  padding: 8px;
+}
+.app-download-banner {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: center;
+}
+.app-download-banner img {
+  border-radius: 12px;
+  background: #fff;
+  padding: 8px;
+}
+@media (max-width: 768px) {
+  .app-download-grid {
+    grid-template-columns: 1fr;
+  }
+  .app-download-banner {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+}

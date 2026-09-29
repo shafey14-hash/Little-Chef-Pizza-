@@ -558,3 +558,9 @@ input:disabled {
     transform: rotate(360deg);
   }
 }
+
+/* Inside the native app, website-only things disappear */
+html.is-app .app-download-section,
+html.is-app .app-only-hide {
+  display: none !important;
+}
