@@ -64,26 +64,71 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Sign release APK (apksigner, PKCS#12 keystore)
+      # --- Signing, split into small named steps so a bad secret is identified
+      # by the failing step name alone (GitHub annotations are unreliable here). ---
+
+      - name: Sign step 1/4 - Decode keystore (checks KEYSTORE_BASE64)
         if: env.HAS_SECRETS == 'true'
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          SDKMANAGER=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager
-          [ -x "$SDKMANAGER" ] || SDKMANAGER=$(find "$ANDROID_SDK_ROOT/cmdline-tools" -name sdkmanager -type f | head -1)
-          yes | "$SDKMANAGER" "build-tools;34.0.0" >/dev/null
-          BT=$ANDROID_SDK_ROOT/build-tools/34.0.0
-          UNSIGNED=app/android/app/build/outputs/apk/release/app-release-unsigned.apk
           echo "$KEYSTORE_BASE64" | base64 -d > keystore.p12
-          $BT/zipalign -f -p 4 "$UNSIGNED" aligned.apk
-          $BT/apksigner sign \
+          # A valid PKCS#12 file starts with DER bytes 30 82
+          if ! od -An -tx1 -N2 keystore.p12 | tr -s ' ' | grep -q "30 82"; then
+            echo "FAIL: KEYSTORE_BASE64 is invalid - the decoded file is not a PKCS#12 keystore."
+            echo "Re-paste it from APP-SECRETS-SETUP.txt: copy ONLY the long line AFTER 'KEYSTORE_BASE64 =', no label, no quotes, single line."
+            exit 1
+          fi
+          echo "OK: keystore.p12 decoded ($(stat -c%s keystore.p12) bytes)"
+
+      - name: Sign step 2/4 - Open keystore (checks KEYSTORE_PASSWORD + KEY_ALIAS)
+        if: env.HAS_SECRETS == 'true'
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          if ! keytool -list -keystore keystore.p12 -storetype PKCS12 -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" >/dev/null 2>&1; then
+            echo "FAIL: keystore did not open. One of these two secrets is wrong: KEYSTORE_PASSWORD or KEY_ALIAS."
+            echo "From APP-SECRETS-SETUP.txt: KEYSTORE_PASSWORD must match EXACTLY (no extra spaces), KEY_ALIAS must be 'littlechef' (all lowercase, no spaces)."
+            echo "--- keytool's own error message (tells you which one): ---"
+            keytool -list -keystore keystore.p12 -storetype PKCS12 -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" 2>&1 | head -5 || true
+            exit 1
+          fi
+          echo "OK: keystore opened with the given password and alias"
+
+      - name: Sign step 3/4 - Build zipaligned APK
+        if: env.HAS_SECRETS == 'true'
+        run: |
+          BT_ROOT=$ANDROID_SDK_ROOT/build-tools
+          BT=$(ls -d "$BT_ROOT"/* 2>/dev/null | sort -V | tail -1)
+          if [ -z "$BT" ]; then
+            SDKMANAGER=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager
+            [ -x "$SDKMANAGER" ] || SDKMANAGER=$(find "$ANDROID_SDK_ROOT/cmdline-tools" -name sdkmanager -type f 2>/dev/null | head -1)
+            yes | "$SDKMANAGER" "build-tools;34.0.0" >/dev/null || true
+            BT=$BT_ROOT/34.0.0
+          fi
+          echo "Using build-tools at: $BT"
+          "$BT/zipalign" -f -p 4 \
+            app/android/app/build/outputs/apk/release/app-release-unsigned.apk \
+            aligned.apk
+          echo "OK: aligned.apk created"
+
+      - name: Sign step 4/4 - Sign + verify APK (checks KEY_PASSWORD)
+        if: env.HAS_SECRETS == 'true'
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          BT=$(ls -d "$ANDROID_SDK_ROOT"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" sign \
             --ks keystore.p12 \
             --ks-type PKCS12 \
-            --ks-key-alias "${{ secrets.KEY_ALIAS }}" \
-            --ks-pass "pass:${{ secrets.KEYSTORE_PASSWORD }}" \
-            --key-pass "pass:${{ secrets.KEY_PASSWORD }}" \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass "pass:$KEYSTORE_PASSWORD" \
+            --key-pass "pass:$KEY_PASSWORD" \
             --out app.apk aligned.apk
-          $BT/apksigner verify --print-certs app.apk
+          "$BT/apksigner" verify --print-certs app.apk
 
       - name: Stage the APK under a stable name
         run: |
