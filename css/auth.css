@@ -76,3 +76,20 @@
   .location-map{ height:180px; }
   .auth-modal--wide{ max-width:420px; }
 }
+/* ADMIN CORNER ENTRY — app only. The button is rendered on this page in both
+   places, but stays display:none on the website; only html.is-app (added via
+   Capacitor detection) reveals it, and only on the welcome/login views. */
+.admin-corner-btn{
+  display:none;
+  position:fixed; left:14px; bottom:14px; z-index:60;
+  align-items:center; justify-content:center;
+  padding:9px 16px; border-radius:999px;
+  border:1px solid rgba(231,185,63,.45);
+  background:rgba(12,11,10,.82); color:var(--cream);
+  font:600 12.5px/1 var(--font-body); letter-spacing:.05em;
+  cursor:pointer; backdrop-filter:blur(4px);
+  box-shadow:0 4px 14px rgba(12,11,10,.35);
+  transition:border-color .15s ease, color .15s ease;
+}
+.admin-corner-btn:hover{ border-color:var(--gold); color:var(--gold-2); }
+html.is-app .admin-corner-btn.is-visible{ display:inline-flex; }

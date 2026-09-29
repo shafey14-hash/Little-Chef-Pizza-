@@ -1,7 +1,7 @@
 # Builds an Android APK on every push that touches app/ and publishes it as a
-# GitHub Release tagged "latest". The asset keeps the same name (app.apk), so
-# the download URL + QR code never change:
-#   https://github.com/shafey14-hash/Little-Chef-Pizza-/releases/latest/download/app.apk
+# GitHub Release tagged "latest". The asset keeps the same name
+# (little-chef-pizza.apk), so the download URL + QR code never change:
+#   https://github.com/shafey14-hash/Little-Chef-Pizza-/releases/latest/download/little-chef-pizza.apk
 #
 # The app loads the LIVE website via server.url, so most website changes never
 # need a new APK — this only rebuilds when app/ files actually change (icons,
@@ -127,26 +127,27 @@ jobs:
             --ks-type PKCS12 \
             --ks-key-alias "$KEY_ALIAS" \
             --ks-pass "pass:$KEYSTORE_PASSWORD" \
-            --out app.apk aligned.apk
-          "$BT/apksigner" verify --print-certs app.apk
+            --out little-chef-pizza.apk aligned.apk
+          "$BT/apksigner" verify --print-certs little-chef-pizza.apk
 
       - name: Stage the APK under a stable name
         run: |
           if [ "${{ env.HAS_SECRETS }}" != "true" ]; then
-            cp app/android/app/build/outputs/apk/debug/app-debug.apk app.apk
+            cp app/android/app/build/outputs/apk/debug/app-debug.apk little-chef-pizza.apk
           fi
-          test -f app.apk
-          ls -lh app.apk
+          test -f little-chef-pizza.apk
+          ls -lh little-chef-pizza.apk
 
       - name: Publish Release "latest"
         uses: ncipollo/release-action@v1
         with:
           tag: latest
           name: Little Chef Pizza App (latest)
-          artifacts: app.apk
+          artifacts: little-chef-pizza.apk
           artifactContentType: application/vnd.android.package-archive
           allowUpdates: true
           replacesArtifacts: true
+          removeArtifacts: true # purge the old app.apk from this release
           makeLatest: true
           body: |
             Latest build of the Little Chef Pizza Android app.

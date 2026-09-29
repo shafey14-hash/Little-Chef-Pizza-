@@ -288,8 +288,60 @@
             Didn't get it? <a href="#" id="ve-resend">Resend code</a>
           </p>
         </section>
+
+        <!-- ADMIN LOGIN (app only — the corner button that reaches this view
+             is hidden on the website via CSS; it only renders inside the app) -->
+        <section class="auth-view" data-view="admin-login" hidden>
+          <button class="auth-back" data-goto="welcome" aria-label="Back">
+            ← Back
+          </button>
+          <h2 class="text-center">Admin Login</h2>
+          <p class="muted text-center" style="margin-bottom: 18px">
+            Restaurant staff only.
+          </p>
+          <form id="form-admin-login" novalidate>
+            <div class="field">
+              <label for="al-username">Username</label>
+              <input
+                id="al-username"
+                autocomplete="username"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="al-password">Password</label>
+              <div class="input-group">
+                <input
+                  id="al-password"
+                  type="password"
+                  autocomplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  class="input-group__toggle"
+                  data-toggle="al-password"
+                >
+                  Show
+                </button>
+              </div>
+            </div>
+            <button type="submit" class="btn btn--primary btn--block">
+              Log In
+            </button>
+          </form>
+        </section>
       </div>
     </main>
+
+    <button
+      type="button"
+      id="admin-corner-btn"
+      class="admin-corner-btn"
+      title="Restaurant staff only"
+    >
+      Log in as Admin
+    </button>
 
     <script src="js/seed-data.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>

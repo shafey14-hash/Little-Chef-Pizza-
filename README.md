@@ -115,9 +115,9 @@ APK**, because the app renders the live site. Only changes to `app/` itself
 - **Build & release** — `.github/workflows/android-apk.yml` builds the APK in
   the cloud (GitHub Actions: npm ci → cap sync → gradle → sign with
   apksigner) and publishes it as a Release tagged `latest`. The asset is
-  always named `app.apk`, so the download link and the QR code
+  always named `little-chef-pizza.apk`, so the download link and the QR code
   (`assets/images/app-download-qr.png`) never change:
-  `https://github.com/shafey14-hash/Little-Chef-Pizza-/releases/latest/download/app.apk`
+  `https://github.com/shafey14-hash/Little-Chef-Pizza-/releases/latest/download/little-chef-pizza.apk`
 - **Signing** — the release APK is signed with a PKCS#12 keystore
   (`littlechef-keystore.p12`, gitignored). The matching values live in repo
   secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` (the keystore

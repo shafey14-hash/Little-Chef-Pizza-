@@ -5,6 +5,13 @@
  * never touches admin authentication.
  */
 (async function () {
+  // Marks the document when running inside the Android app (Capacitor) so
+  // CSS can show app-only elements — e.g. the admin corner button below.
+  // index.html does not load nav.js, so the check has to live here too.
+  if (window.Capacitor?.isNativePlatform?.()) {
+    document.documentElement.classList.add("is-app");
+  }
+
   // NOTE: we deliberately do NOT redirect immediately here even if a
   // Supabase session already exists — Supabase persists sessions in
   // localStorage, so an already-logged-in visitor must still see (or have
@@ -14,12 +21,18 @@
   LCP_UTIL.flashPop(); // shows "You've been logged out." (or similar) if one was set before redirecting here
 
   const modal = document.getElementById("auth-modal");
+  const adminCornerBtn = document.getElementById("admin-corner-btn");
 
   function showView(name) {
     LCP_UTIL.qsa(".auth-view", modal).forEach(
       (v) => (v.hidden = v.dataset.view !== name),
     );
     modal.classList.toggle("auth-modal--wide", name === "location-gate");
+    // The app-only admin entry appears only on the welcome/login screens.
+    adminCornerBtn.classList.toggle(
+      "is-visible",
+      name === "welcome" || name === "customer-login",
+    );
   }
   LCP_UTIL.qsa("[data-goto]", modal).forEach((btn) => {
     btn.addEventListener("click", (e) => {
@@ -128,6 +141,37 @@
       "info",
     );
   });
+
+  // ADMIN (app only): the corner button opens the admin-login view; the
+  // form uses the same LCP_DB.auth.signInAdmin as admin/login.html, which
+  // verifies the role server-side and signs out any non-admin session.
+  adminCornerBtn.addEventListener("click", () => showView("admin-login"));
+
+  document
+    .getElementById("form-admin-login")
+    .addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector("button[type=submit]");
+      const username = document.getElementById("al-username").value.trim();
+      const password = document.getElementById("al-password").value;
+      if (!username || !password)
+        return LCP_UTIL.toast(
+          "Please enter your username and password.",
+          "error",
+        );
+      // A customer/guest session must not silently become an admin session.
+      const current = await LCP_DB.auth.init();
+      if (current && current.role !== "admin") await LCP_DB.auth.signOut();
+      LCP_UTIL.setLoading(btn, true, "Logging in…");
+      const { error } = await LCP_DB.auth.signInAdmin({
+        username,
+        password,
+      });
+      LCP_UTIL.setLoading(btn, false);
+      if (error) return LCP_UTIL.toast(error, "error");
+      sessionStorage.removeItem("lcp_guest");
+      window.location.href = "admin/index.html";
+    });
 
   document
     .getElementById("form-customer-signup")
