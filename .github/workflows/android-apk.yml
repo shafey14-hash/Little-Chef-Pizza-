@@ -21,6 +21,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # required to create/update the GitHub Release
     env:
       # True once the 4 keystore secrets exist in the repo. Until then a debug
       # APK is built, so the whole pipeline works before secrets are added.
