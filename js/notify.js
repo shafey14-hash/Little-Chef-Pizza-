@@ -159,6 +159,7 @@ const LCP_NOTIFY = (() => {
     if (changed) saveState();
     renderBadge();
     renderPanel();
+    renderPush().catch(() => {});
   }
 
   function closePanel() {
@@ -192,12 +193,193 @@ const LCP_NOTIFY = (() => {
     });
   }
 
+  // ------------------------------------------------------------- push
+  // Background Web Push: after "Enable", order updates reach this device
+  // through the browser's own push service — even when the site tab is
+  // closed and not in recent apps. Not available inside the Android APK
+  // WebView (no PushManager there) — the section simply stays hidden when
+  // the browser doesn't support it.
+  function pushSupported() {
+    return (
+      typeof navigator !== "undefined" &&
+      "serviceWorker" in navigator &&
+      "PushManager" in window &&
+      "Notification" in window
+    );
+  }
+
+  let swReg = null;
+
+  async function getSwReg() {
+    if (swReg) return swReg;
+    swReg = await navigator.serviceWorker.register("/sw.js");
+    return swReg;
+  }
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding)
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+    const raw = atob(base64);
+    const arr = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i += 1) arr[i] = raw.charCodeAt(i);
+    return arr;
+  }
+
+  async function apiPush(path, body) {
+    const base = ((LCP_CONFIG && LCP_CONFIG.API_BASE_URL) || "").replace(
+      /\/+$/,
+      "",
+    );
+    const token = await LCP_DB?.auth?.getAccessToken?.();
+    if (!token) throw new Error("Please log in again.");
+    const res = await fetch(base + path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body || {}),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Request failed.");
+    return data;
+  }
+
+  function pushMsg(text) {
+    const box = document.getElementById("lcp-notify-push");
+    if (!box) return;
+    let el = document.getElementById("lcp-push-msg");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "lcp-push-msg";
+      el.className = "notify-push__msg";
+      box.appendChild(el);
+    }
+    el.textContent = text;
+  }
+
+  function bindPushButtons() {
+    document.getElementById("lcp-push-on")?.addEventListener("click", enablePush);
+    document
+      .getElementById("lcp-push-off")
+      ?.addEventListener("click", disablePush);
+    document
+      .getElementById("lcp-push-test")
+      ?.addEventListener("click", testPush);
+  }
+
+  async function renderPush() {
+    const box = document.getElementById("lcp-notify-push");
+    if (!box) return;
+    if (!pushSupported()) {
+      box.hidden = true;
+      return;
+    }
+    let sub = null;
+    try {
+      const reg = await getSwReg();
+      sub = await reg.pushManager.getSubscription();
+    } catch (e) {
+      box.hidden = true; // registration blocked/unavailable — hide quietly
+      return;
+    }
+    box.hidden = false;
+    if (sub) {
+      box.innerHTML = `
+        <div class="notify-push__row">
+          <span class="notify-push__state">Background notifications: <strong>ON</strong></span>
+          <span class="notify-push__links">
+            <button type="button" class="notify-push__link" id="lcp-push-test">Send test</button>
+            <button type="button" class="notify-push__link" id="lcp-push-off">Turn off</button>
+          </span>
+        </div>
+        <div class="notify-push__msg" id="lcp-push-msg">Order updates reach this device even when the app is closed.</div>`;
+    } else {
+      box.innerHTML = `
+        <button type="button" class="notify-push__btn" id="lcp-push-on">🔔 Enable background notifications</button>
+        <div class="notify-push__msg" id="lcp-push-msg">Get new-order and status updates on this device even when the app is closed.</div>`;
+    }
+    bindPushButtons();
+  }
+
+  async function enablePush() {
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") {
+        pushMsg(
+          "Notifications are blocked for this site — allow them in your browser settings, then try again.",
+        );
+        return;
+      }
+      const key = LCP_CONFIG && LCP_CONFIG.VAPID_PUBLIC_KEY;
+      if (!key) {
+        pushMsg("Push is not configured on this site (missing VAPID key).");
+        return;
+      }
+      const reg = await getSwReg();
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(key),
+      });
+      await apiPush("/api/push-subscribe", {
+        action: "subscribe",
+        subscription: sub.toJSON(),
+      });
+      await renderPush();
+      u().toast?.(
+        "Background notifications enabled on this device.",
+        "success",
+      );
+    } catch (e) {
+      console.error("Push enable failed:", e);
+      pushMsg("Could not enable notifications on this device.");
+    }
+  }
+
+  async function disablePush() {
+    try {
+      const reg = await getSwReg();
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        try {
+          await apiPush("/api/push-subscribe", {
+            action: "unsubscribe",
+            subscription: sub.toJSON(),
+          });
+        } catch (e) {
+          /* server row also dies on the next 404/410 send */
+        }
+        await sub.unsubscribe();
+      }
+      await renderPush();
+    } catch (e) {
+      console.error("Push disable failed:", e);
+      pushMsg("Could not turn off notifications.");
+    }
+  }
+
+  async function testPush() {
+    pushMsg("Sending a test…");
+    try {
+      const data = await apiPush("/api/push-notify", { test: true });
+      pushMsg(
+        data.sent
+          ? "Test sent — check your device notifications."
+          : "This device isn't subscribed yet.",
+      );
+    } catch (e) {
+      pushMsg(e.message || "Test failed.");
+    }
+  }
+
   function injectUi(slot) {
     slot.innerHTML = `
       <div class="notify-wrap">
         <button class="btn btn--icon btn--ghost notify-bell" id="lcp-notify-bell"
                 title="Notifications" aria-label="Notifications" aria-expanded="false" aria-haspopup="true">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
@@ -210,6 +392,7 @@ const LCP_NOTIFY = (() => {
             <button class="notify-panel__clear" id="lcp-notify-clear">Clear all</button>
           </div>
           <div class="notify-list" id="lcp-notify-list"></div>
+          <div class="notify-push" id="lcp-notify-push" hidden></div>
           <div class="notify-panel__foot"><a href="orders.html">View all orders →</a></div>
         </div>
       </div>`;
@@ -302,6 +485,7 @@ const LCP_NOTIFY = (() => {
     bindEvents();
     renderBadge();
     renderPanel();
+    renderPush().catch(() => {});
 
     sync();
     pollTimer = setInterval(sync, POLL_MS);

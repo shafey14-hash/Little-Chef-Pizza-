@@ -221,11 +221,15 @@ p {
 .btn.is-loading {
   opacity: 0.75;
 }
-.btn--icon {
+/* Double class beats the responsive .btn media-query overrides (which would
+   otherwise re-apply horizontal padding on small screens and squeeze the
+   inner SVG down to a few pixels). */
+.btn.btn--icon {
   height: 40px;
   width: 40px;
   padding: 0;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 /* ---------------------------------------------------------------- cards */
@@ -576,6 +580,10 @@ html.is-app .app-only-hide {
 .notify-bell {
   position: relative;
 }
+.notify-bell svg {
+  width: 24px;
+  height: 24px;
+}
 .notify-bell__badge {
   position: absolute;
   top: -4px;
@@ -680,4 +688,65 @@ html.is-app .app-only-hide {
   font-size: 13px;
   font-weight: 700;
   color: var(--red);
+}
+.notify-push {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 11px 14px;
+  border-top: 1px solid var(--line);
+  background: #fffdf9;
+}
+.notify-push__btn {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.notify-push__btn:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+.notify-push__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.notify-push__state {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.notify-push__state strong {
+  color: var(--success);
+}
+.notify-push__links {
+  display: inline-flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.notify-push__link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--red);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.notify-push__link:hover {
+  text-decoration: underline;
+}
+.notify-push__msg {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
 }

@@ -48,7 +48,7 @@ function subjectAndBody(event, order) {
     });
 
   const detailRows = `
-    ${infoRow("Payment Method", isEasypaisa ? "📱 EasyPaisa" : "💵 Cash on Delivery")}
+    ${infoRow("Payment Method", isEasypaisa ? '<span style="display:inline-block;background:#00a651;color:#ffffff;border-radius:4px;padding:0 7px;font-weight:800;">e</span>&nbsp;EasyPaisa' : "💵 Cash on Delivery")}
     ${infoRow("Contact Number", esc(order.phone || order.customer_phone || "—"))}
     ${order.order_type === "delivery" ? infoRow("Delivery Address", esc(order.address || order.delivery_address || "—")) : ""}
   `;

@@ -22,4 +22,10 @@ const LCP_CONFIG = {
   // Set it only if the site is hosted separately, e.g.
   // API_BASE_URL: "https://little-chef-pizza.vercel.app"
   API_BASE_URL: "",
+
+  // Web Push — public VAPID key. Public by design (browsers need it to
+  // subscribe this device to background notifications); the matching
+  // PRIVATE key lives ONLY in Vercel env vars, never in this repo.
+  VAPID_PUBLIC_KEY:
+    "BCj0KkbG505EY3pEN_vGO2WFtC9v9U_1D4mrM9W8nn1MHpPwGR7yJwv0SPtJ_QEevDB1q6zOw_pQs8MQn6755Lc",
 };

@@ -193,6 +193,7 @@ module.exports = {
   findAuthUserByEmail,
   getUserFromAccessToken,
   bearerToken,
+  dbRest,
   getVerificationCode,
   saveVerificationCode,
   incrementCodeAttempts,
