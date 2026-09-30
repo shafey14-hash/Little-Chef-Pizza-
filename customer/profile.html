@@ -85,47 +85,14 @@
           </div>
         </div>
 
-        <div
-          class="kpi-grid"
-          style="grid-template-columns: repeat(2, 1fr); gap: 14px"
-        >
-          <a
-            href="orders.html"
-            class="card"
-            style="text-decoration: none; color: inherit"
-          >
-            <span class="muted" style="font-size: 13px">Your Orders</span>
-            <div
-              style="font-size: 26px; font-weight: 800; margin-top: 4px"
-              id="pf-order-count"
-            >
-              —
-            </div>
-            <span class="muted" style="font-size: 12.5px"
-              >Tap to view history →</span
-            >
-          </a>
-          <a
-            href="orders.html"
-            class="card"
-            style="
-              text-decoration: none;
-              color: inherit;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              text-align: center;
-              gap: 6px;
-            "
-          >
-            <span style="font-size: 28px">🧾</span>
-            <strong style="font-size: 15px">Order History</strong>
-            <span class="muted" style="font-size: 12.5px"
-              >View all past orders</span
-            >
-          </a>
-        </div>
+        <a href="orders.html" class="card card--hover pf-orders-link">
+          <span class="pf-orders-link__icon" aria-hidden="true">🧾</span>
+          <span class="stack flex-1" style="gap: 2px; min-width: 0">
+            <strong>Your Orders</strong>
+            <span class="muted" id="pf-orders-sub">View all past orders</span>
+          </span>
+          <span class="pf-orders-link__chevron" aria-hidden="true">→</span>
+        </a>
 
         <div class="card">
           <h3 style="margin-top: 0">Need Help?</h3>
@@ -311,9 +278,16 @@
           `<span>📞 ${r.phone_primary}</span><span>💬 WhatsApp: ${r.phone_whatsapp}</span>`;
 
         LCP_DB.orders.listForUser(user.id).then(({ data, error }) => {
-          document.getElementById("pf-order-count").textContent = error
-            ? "—"
-            : (data || []).length;
+          if (error) return;
+          const sub = document.getElementById("pf-orders-sub");
+          if (!sub) return;
+          const n = (data || []).length;
+          sub.textContent =
+            n === 0
+              ? "No orders yet"
+              : n === 1
+                ? "1 order placed so far"
+                : `${n} orders placed so far`;
         });
 
         document
