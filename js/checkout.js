@@ -36,6 +36,17 @@ function lcpRenderOrderSuccess(data, user) {
 (async function () {
   const user = await LCP_NAV.mountCustomer(null);
 
+  // Admin accounts can't place customer orders — blocks "Restaurant Admin"
+  // test orders from ever appearing in the admin panel again.
+  if (user && user.role === "admin") {
+    LCP_UTIL.requireGuard(
+      false,
+      "home.html",
+      "You are logged in as Restaurant Admin — customer checkout is disabled for admin accounts. Please log out to order as a customer.",
+    );
+    return;
+  }
+
   // If the page is refreshed right after a successful order (bucket is now
   // empty because it was just cleared), show the confirmation again instead
   // of bouncing to an "empty bucket" redirect and losing the order number.
@@ -83,7 +94,7 @@ function lcpRenderOrderSuccess(data, user) {
   const { data: deliveryChargeSetting } = await LCP_DB.settings.get("delivery_charge");
   const DELIVERY_CHARGE = Number(deliveryChargeSetting) || 250;
   const deliveryCardNote = document.querySelector('.order-type-card[data-type="delivery"] .muted');
-  if (deliveryCardNote) deliveryCardNote.textContent = `Up to 40 minutes · within 5km · Rs. ${DELIVERY_CHARGE} delivery fee`;
+  if (deliveryCardNote) deliveryCardNote.textContent = `Up to 40 minutes · Free delivery within 3km · Rs. ${DELIVERY_CHARGE} beyond 3km (within 5km)`;
 
   let orderType = null;
   let paymentMethod = "cod";
@@ -124,6 +135,12 @@ function lcpRenderOrderSuccess(data, user) {
   document.getElementById("step2-back").addEventListener("click", () => goToStep(1));
 
   const storedLocation = LCP_LOCATION.getStored();
+  // Distance band for the chosen delivery location — free within 3km, normal
+  // charge from 3–5km. The server recomputes this itself in create_order();
+  // this is only for the on-screen review. (Delivery orders always have a
+  // stored location: step 1 blocks otherwise.)
+  const locCheck = storedLocation ? LCP_LOCATION.deliveryCheck(storedLocation.lat, storedLocation.lng) : null;
+  const deliveryIsFree = !!(locCheck && locCheck.band === "free");
 
   function prefillDetails() {
     if (user) {
@@ -212,9 +229,13 @@ function lcpRenderOrderSuccess(data, user) {
         document.createTextNode(LCP_UTIL.pkr(l.line_total)),
       ]));
     });
-    const deliveryCharge = orderType === "delivery" ? DELIVERY_CHARGE : 0;
+    const deliveryCharge = orderType === "delivery" ? (deliveryIsFree ? 0 : DELIVERY_CHARGE) : 0;
     document.getElementById("rv-subtotal").textContent = LCP_UTIL.pkr(cur.subtotal);
-    document.getElementById("rv-delivery").textContent = orderType === "delivery" ? `Rs. ${deliveryCharge}` : "—";
+    document.getElementById("rv-delivery").textContent = orderType !== "delivery"
+      ? "—"
+      : deliveryIsFree
+        ? "Free ✓ (within 3km)"
+        : `Rs. ${deliveryCharge}`;
     document.getElementById("rv-total").textContent = LCP_UTIL.pkr(cur.subtotal + deliveryCharge);
   }
 
@@ -242,14 +263,55 @@ function lcpRenderOrderSuccess(data, user) {
     const address = orderType === "delivery" ? addressInput.value.trim() : document.getElementById("co-address-simple").value.trim();
     const ack = ackCheckbox.checked;
 
-    const errs = [LCP_VALID.fullName(name), LCP_VALID.phone(phone)].filter(Boolean);
-    if (altPhone) { const e2 = LCP_VALID.phone(altPhone); if (e2) errs.push("Alternative " + e2.charAt(0).toLowerCase() + e2.slice(1)); }
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.push("Please enter a valid email address, or leave it blank.");
-    if (orderType === "delivery" && (!address || address.length < 5)) errs.push("Please enter your full delivery address.");
+    // Every field must be filled before the order can be placed — only the
+    // alternative number and special instructions are optional.
+    const nameEl = document.getElementById("co-name");
+    const emailEl = document.getElementById("co-email");
+    const phoneEl = document.getElementById("co-phone");
+    const altPhoneEl = document.getElementById("co-alt-phone");
+    const addressEl = orderType === "delivery" ? addressInput : document.getElementById("co-address-simple");
+
+    const errs = [];
+    const eName = LCP_VALID.fullName(name);
+    if (eName) errs.push(eName);
+    LCP_VALID.applyFieldError(nameEl, eName);
+
+    const eEmail = !email
+      ? "Please enter your email address."
+      : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+        ? "Please enter a valid email address."
+        : null;
+    if (eEmail) errs.push(eEmail);
+    LCP_VALID.applyFieldError(emailEl, eEmail);
+
+    const ePhone = LCP_VALID.phone(phone);
+    if (ePhone) errs.push(ePhone);
+    LCP_VALID.applyFieldError(phoneEl, ePhone);
+
+    const eAlt = altPhone ? LCP_VALID.phone(altPhone) : null;
+    if (eAlt) errs.push("Alternative " + eAlt.charAt(0).toLowerCase() + eAlt.slice(1));
+    LCP_VALID.applyFieldError(altPhoneEl, eAlt);
+
+    const eAddress = !address
+      ? orderType === "delivery" ? "Please enter your full delivery address." : "Please enter your address."
+      : orderType === "delivery" && address.length < 5
+        ? "Please enter your full delivery address."
+        : null;
+    if (eAddress) errs.push(eAddress);
+    LCP_VALID.applyFieldError(addressEl, eAddress);
+
     if (orderType === "delivery" && !storedLocation) errs.push("Please select your delivery location again from the home page.");
     if (!ack) errs.push("Please confirm you understand the cancellation policy.");
     if (paymentMethod === "easypaisa" && !screenshotPath) errs.push("Please upload your EasyPaisa payment screenshot.");
-    if (errs.length) return LCP_UTIL.toast(errs[0], "error");
+    if (errs.length) {
+      const anyEmpty = !name || !email || !phone || !address;
+      return LCP_UTIL.toast(
+        anyEmpty
+          ? "Please fill in all the fields — only the alternative number and special instructions are optional."
+          : errs[0],
+        "error",
+      );
+    }
 
     submitting = true;
     const btn = document.getElementById("place-order-btn");

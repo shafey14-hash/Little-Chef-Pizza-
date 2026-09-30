@@ -13,7 +13,8 @@
 const LCP_LOCATION = (() => {
   const STORAGE_KEY = "lcp_delivery_location";
   const CENTER = { lat: 32.57349, lng: 74.08170 };
-  const RADIUS_KM = 5;
+  const RADIUS_KM = 5; // we deliver up to 5 km...
+  const FREE_RADIUS_KM = 3; // ...but delivery is only FREE within 3 km
 
   function haversineKm(lat1, lng1, lat2, lng2) {
     const R = 6371;
@@ -22,6 +23,20 @@ const LCP_LOCATION = (() => {
     const a = Math.sin(dLat / 2) ** 2 +
       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
     return 2 * R * Math.asin(Math.sqrt(a));
+  }
+
+  /**
+   * Classifies a point relative to the restaurant:
+   *   band "free"         → within 3 km, no delivery charge
+   *   band "charged"      → 3–5 km, normal delivery charge applies
+   *   band "out_of_range" → beyond 5 km, we don't deliver there
+   * Mirrors the server-side logic inside create_order() — the server always
+   * recomputes this itself and never trusts the browser.
+   */
+  function deliveryCheck(lat, lng) {
+    const distanceKm = haversineKm(CENTER.lat, CENTER.lng, lat, lng);
+    const band = distanceKm <= FREE_RADIUS_KM ? "free" : distanceKm <= RADIUS_KM ? "charged" : "out_of_range";
+    return { distanceKm, band, deliverable: band !== "out_of_range" };
   }
 
   function getStored() {
@@ -51,8 +66,9 @@ const LCP_LOCATION = (() => {
   }
 
   /**
-   * Mounts an interactive map + marker + 5km radius circle into `elementId`.
-   * Returns handles to update the marker position programmatically.
+   * Mounts an interactive map + marker + radius circles into `elementId`.
+   * Gold outer circle = 5 km delivery limit, green inner circle = 3 km
+   * free-delivery zone. Returns handles to update the marker programmatically.
    */
   function mountMap(elementId) {
     const map = L.map(elementId, { scrollWheelZoom: false }).setView([CENTER.lat, CENTER.lng], 13);
@@ -62,6 +78,7 @@ const LCP_LOCATION = (() => {
     }).addTo(map);
 
     L.circle([CENTER.lat, CENTER.lng], { radius: RADIUS_KM * 1000, color: "#e7b93f", fillColor: "#e7b93f", fillOpacity: 0.08 }).addTo(map);
+    L.circle([CENTER.lat, CENTER.lng], { radius: FREE_RADIUS_KM * 1000, color: "#2e9e5b", dashArray: "6 6", fillColor: "#2e9e5b", fillOpacity: 0.06 }).addTo(map);
     const centerMarker = L.marker([CENTER.lat, CENTER.lng], { title: "Little Chef Pizza" }).addTo(map);
 
     let userMarker = null;
@@ -74,5 +91,5 @@ const LCP_LOCATION = (() => {
     return { map, setUserMarker };
   }
 
-  return { CENTER, RADIUS_KM, haversineKm, getStored, save, clear, reverseGeocode, forwardGeocode, mountMap };
+  return { CENTER, RADIUS_KM, FREE_RADIUS_KM, haversineKm, deliveryCheck, getStored, save, clear, reverseGeocode, forwardGeocode, mountMap };
 })();

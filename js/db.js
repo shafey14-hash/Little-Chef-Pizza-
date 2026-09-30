@@ -74,6 +74,33 @@ const LCP_DB = (() => {
     }
   }
 
+  /** Same as apiPost, but proves who the caller is — the signed-in user's
+   * Supabase access token travels in the Authorization header. */
+  async function apiPostAuthed(path, body) {
+    try {
+      const token = await auth.getAccessToken();
+      if (!token)
+        return {
+          ok: false,
+          status: 401,
+          data: { error: "Please log in again." },
+        };
+      const res = await fetch(API_BASE + path, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body || {}),
+      });
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, data };
+    } catch (err) {
+      console.error("API call failed:", path, err);
+      return { ok: false, status: 0, data: {} };
+    }
+  }
+
   function friendlyDbError(error) {
     console.error(
       "Supabase error:",
@@ -127,6 +154,17 @@ const LCP_DB = (() => {
 
     currentUser() {
       return _profile;
+    },
+
+    /** Raw Supabase access token for the signed-in user (or null). Sent to
+     * our own /api endpoints that act on the caller's behalf (e.g. the
+     * verified email-change flow) — never logged, never stored anywhere. */
+    async getAccessToken() {
+      if (!CONFIGURED) return null;
+      const {
+        data: { session },
+      } = await sb.auth.getSession();
+      return session ? session.access_token : null;
     },
 
     /** Admin login only — unaffected by the customer email/phone overhaul below. Admin accounts still use the internal username->synthetic-email mapping. */
@@ -261,6 +299,39 @@ const LCP_DB = (() => {
       if (error) return { error: friendlyDbError(error) };
       _profile = data;
       return { data };
+    },
+
+    /** Verified email change — step 1: emails a 6-digit code to the NEW
+     * address. Nothing changes in the account yet. */
+    async requestEmailChange(newEmail) {
+      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
+      const { ok, data } = await apiPostAuthed("/api/auth-change-email", {
+        new_email: newEmail,
+      });
+      if (!ok)
+        return {
+          error:
+            (data && data.error) || "Something went wrong. Please try again.",
+        };
+      return { data: { email: (data && data.email) || newEmail } };
+    },
+
+    /** Verified email change — step 2: the code from the new address. On
+     * success the login email becomes the new one immediately. */
+    async verifyEmailChange({ email, token }) {
+      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
+      const { ok, data } = await apiPostAuthed(
+        "/api/auth-verify-email-change",
+        { email, token },
+      );
+      if (!ok)
+        return {
+          error:
+            (data && data.error) ||
+            "That code is incorrect or has expired. Please try again.",
+        };
+      await loadProfile(); // refresh the cached profile row (email just changed)
+      return { data: { email: (data && data.email) || email } };
     },
   };
 
@@ -736,6 +807,19 @@ const LCP_DB = (() => {
     },
     async rejectPayment(orderId) {
       const { data, error } = await sb.rpc("reject_payment", {
+        p_order_id: orderId,
+      });
+      return error ? { error: friendlyDbError(error) } : { data };
+    },
+    /** COD orders: admin accepts (pending -> confirmed) or declines (pending -> rejected). */
+    async confirmOrder(orderId) {
+      const { data, error } = await sb.rpc("confirm_order", {
+        p_order_id: orderId,
+      });
+      return error ? { error: friendlyDbError(error) } : { data };
+    },
+    async rejectOrder(orderId) {
+      const { data, error } = await sb.rpc("reject_order", {
         p_order_id: orderId,
       });
       return error ? { error: friendlyDbError(error) } : { data };

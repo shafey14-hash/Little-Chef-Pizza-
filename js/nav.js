@@ -71,6 +71,7 @@ const LCP_NAV = (() => {
             <button class="btn btn--gold btn--sm bucket-pill" id="lcp-bucket-trigger" aria-label="View bucket">
               🧺 <span class="bucket-pill__label">Bucket</span> <span class="bucket-pill__count">${cart.itemCount}</span>
             </button>
+            <span class="notify-slot" id="lcp-notify-slot"></span>
             ${
               user
                 ? `<button class="btn btn--icon btn--ghost" id="lcp-logout-icon" title="Log out" aria-label="Log out">
@@ -159,6 +160,7 @@ const LCP_NAV = (() => {
     opts.noBucketBar
       ? await LCP_CART_UI.mountWithoutBar()
       : await LCP_CART_UI.mount();
+    LCP_NOTIFY?.start("customer", currentUser());
     return currentUser();
   }
 
@@ -208,6 +210,7 @@ const LCP_NAV = (() => {
               <span class="muted" style="margin-left:8px;">${new Date().toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}</span>
             </div>
             <span class="badge badge--gold">${escapeHtml(admin.full_name)}</span>
+            <span class="notify-slot" id="lcp-notify-slot"></span>
           </header>
           <main class="admin-content container" id="admin-content"></main>
         </div>
@@ -217,6 +220,30 @@ const LCP_NAV = (() => {
     document
       .getElementById("lcp-admin-logout")
       .addEventListener("click", (e) => doLogout(e.currentTarget));
+
+    // Mobile/tablet: the header bar (topbar) owns the very top and the nav
+    // strip sits directly below it — so re-home the sidebar between the
+    // topbar and the content at this breakpoint. Desktop keeps the sidebar
+    // as the shell's first child (left column).
+    const adminNavMq = window.matchMedia("(max-width: 860px)");
+    const placeAdminNav = () => {
+      const shell = document.querySelector(".admin-shell");
+      if (!shell) return;
+      const sidebar = shell.querySelector(".admin-sidebar");
+      const mainCol = shell.querySelector(".admin-main");
+      if (!sidebar || !mainCol) return;
+      if (adminNavMq.matches) {
+        mainCol.insertBefore(sidebar, mainCol.querySelector(".admin-content"));
+      } else {
+        shell.insertBefore(sidebar, mainCol);
+      }
+    };
+    placeAdminNav();
+    if (adminNavMq.addEventListener) {
+      adminNavMq.addEventListener("change", placeAdminNav);
+    }
+
+    LCP_NOTIFY?.start("admin", admin);
     return admin;
   }
 

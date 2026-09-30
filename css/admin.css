@@ -88,6 +88,7 @@
 .order-card:hover{ box-shadow:0 4px 16px rgba(0,0,0,.08); transform:translateY(-1px); }
 .order-card--payment_verification{ border-left-color:var(--warn); background:linear-gradient(to right, var(--warn-bg) 0%, #fff 3%); }
 .order-card--pending{ border-left-color:var(--gold); background:linear-gradient(to right, #fdf6e0 0%, #fff 3%); }
+.order-card--confirmed{ border-left-color:#0e8a70; background:linear-gradient(to right, #e6f5f1 0%, #fff 3%); }
 .order-card--out_for_delivery{ border-left-color:var(--orange); background:linear-gradient(to right, #fdece0 0%, #fff 3%); }
 .order-card--delivered{ border-left-color:var(--success); background:linear-gradient(to right, var(--success-bg) 0%, #fff 3%); }
 .order-card--rejected{ border-left-color:var(--danger); background:linear-gradient(to right, var(--danger-bg) 0%, #fff 3%); }

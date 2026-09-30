@@ -79,6 +79,33 @@ async function findAuthUserByEmail(email) {
   }
 }
 
+/**
+ * The auth user behind a caller-supplied Supabase access token. The token is
+ * verified against GoTrue itself (a forged or expired one simply fails), so
+ * endpoints that act on "the caller's own account" can trust the result.
+ * Returns null when the token is missing/invalid.
+ */
+async function getUserFromAccessToken(token) {
+  assertConfig();
+  if (!token || typeof token !== "string") return null;
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { apikey: SERVICE_ROLE, Authorization: `Bearer ${token}` },
+  });
+  if (res.status !== 200) return null;
+  const data = await res.json().catch(() => null);
+  return data && data.id ? data : null;
+}
+
+/** Reads "Bearer <token>" out of an incoming request's headers. */
+function bearerToken(req) {
+  const raw =
+    (req.headers &&
+      (req.headers.authorization || req.headers.Authorization)) ||
+    "";
+  const match = /^Bearer\s+(.+)$/i.exec(String(raw).trim());
+  return match ? match[1] : null;
+}
+
 /** Raw PostgREST call with the service role (bypasses RLS by design). */
 async function dbRest(path, { method = "GET", prefer, body } = {}) {
   assertConfig();
@@ -164,6 +191,8 @@ module.exports = {
   createAuthUser,
   updateAuthUser,
   findAuthUserByEmail,
+  getUserFromAccessToken,
+  bearerToken,
   getVerificationCode,
   saveVerificationCode,
   incrementCodeAttempts,

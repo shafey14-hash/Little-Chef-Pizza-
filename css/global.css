@@ -564,3 +564,120 @@ html.is-app .app-download-section,
 html.is-app .app-only-hide {
   display: none !important;
 }
+
+/* ---------------------------------------------------------------- notifications */
+.notify-slot {
+  display: inline-flex;
+}
+.notify-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.notify-bell {
+  position: relative;
+}
+.notify-bell__badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--red);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+}
+.notify-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  width: min(340px, 86vw);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-2);
+  z-index: 400;
+  overflow: hidden;
+}
+.notify-panel__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.notify-panel__head strong {
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+.notify-panel__clear {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 4px;
+}
+.notify-panel__clear:hover {
+  color: var(--danger);
+}
+.notify-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+.notify-item {
+  display: flex;
+  gap: 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.notify-item:last-child {
+  border-bottom: none;
+}
+.notify-item--unread {
+  background: #fffaf2;
+}
+.notify-item__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line);
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+.notify-item--unread .notify-item__dot {
+  background: var(--red);
+}
+.notify-item__text {
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.45;
+}
+.notify-item__time {
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+.notify-panel__empty {
+  padding: 28px 14px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+.notify-panel__foot {
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+.notify-panel__foot a {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--red);
+}

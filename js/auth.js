@@ -332,7 +332,8 @@
         currentSelection.lng,
       );
       if (distance <= LCP_LOCATION.RADIUS_KM) {
-        locStatus.innerHTML = `<div class="location-status--ok">✓ Within delivery range (${distance.toFixed(1)} km away)</div>`;
+        const freeMsg = distance <= LCP_LOCATION.FREE_RADIUS_KM ? " · Free delivery ✓" : " · Delivery fee applies (over 3 km)";
+        locStatus.innerHTML = `<div class="location-status--ok">✓ Within delivery range (${distance.toFixed(1)} km away)${freeMsg}</div>`;
         locContinueBtn.disabled = false;
       } else {
         locStatus.innerHTML = `<div class="location-status--error">Delivery is only available within 5 km. You are too far.</div>`;

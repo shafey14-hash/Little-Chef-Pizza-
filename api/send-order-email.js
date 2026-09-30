@@ -82,23 +82,23 @@ function subjectAndBody(event, order) {
       };
     }
     return {
-      subject: `Order ${orderNum} confirmed! | ${BRAND.name}`,
-      text: `Hi ${name},\n\nThanks for your order ${orderNum}! It's been received and is being prepared.\n\nTotal: ${pkr(order.total)}\nPayment: Cash on Delivery\n\n${BRAND.name} — ${BRAND.phone}`,
+      subject: `Order ${orderNum} received! | ${BRAND.name}`,
+      text: `Hi ${name},\n\nThanks for your order ${orderNum}! We've received it — our team will confirm it shortly and the kitchen will start preparing it.\n\nTotal: ${pkr(order.total)}\nPayment: Cash on Delivery\n\n${BRAND.name} — ${BRAND.phone}`,
       html: masterLayout({
-        previewText: `Order ${orderNum} confirmed! We're preparing it now.`,
-        bannerBg: C.successBg,
-        bannerBorderColor: C.success,
-        bannerTextColor: C.success,
-        bannerLabel: "🎉 &nbsp; Your Order Has Been Confirmed!",
+        previewText: `Order ${orderNum} received — we'll confirm it shortly.`,
+        bannerBg: C.warnBg,
+        bannerBorderColor: C.gold,
+        bannerTextColor: C.warn,
+        bannerLabel: "🧾 &nbsp; Order Received — Awaiting Confirmation",
         bodyHTML: `
-          ${greeting(name, `Thank you for your order! Your <strong>Cash on Delivery</strong> order has been received and our kitchen is on it. 🍕`)}
+          ${greeting(name, `Thank you for your order! We've received your <strong>Cash on Delivery</strong> order — our team will <strong>confirm it shortly</strong> and the kitchen will get started. 🍕`)}
           ${orderBox(detailRows)}
           ${alertBox(
             C.warnBg,
             C.gold,
             C.warn,
-            `<strong>🚀 What's next?</strong><br/>
-             Our chefs are preparing your food fresh. Please keep <strong>${pkr(order.total)}</strong> ready for the rider. You'll get another email when the order is out for delivery.`,
+            `<strong>⏳ What's next?</strong><br/>
+             We'll confirm your order in a few minutes. Once it's confirmed, our chefs will prepare your food fresh — please keep <strong>${pkr(order.total)}</strong> ready for the rider.`,
           )}
           <p style="margin:0;color:${C.inkSoft};font-size:0.88rem;line-height:1.7;font-family:${FONT_F};">
             Thank you for choosing ${BRAND.name}! 🍕
@@ -129,6 +129,34 @@ function subjectAndBody(event, order) {
                 C.success,
                 `<strong>👨‍🍳 Order Status</strong><br/>
                  ✅ Payment Verified &nbsp;→&nbsp; ⏳ Being Prepared &nbsp;→&nbsp; 🚚 Out for Delivery Soon`,
+              )}
+              <p style="margin:0;color:${C.inkSoft};font-size:0.88rem;line-height:1.7;font-family:${FONT_F};">
+                Thank you for choosing ${BRAND.name}! 🍕
+              </p>`,
+          }),
+        };
+
+      case "confirmed":
+        return {
+          subject: `Order ${orderNum} confirmed! | ${BRAND.name}`,
+          text: `Hi ${name},\n\nGreat news — ${isEasypaisa ? "your payment has been verified and your order" : "your order"} ${orderNum} is confirmed and our kitchen is preparing it fresh now!\n\nTotal: ${pkr(order.total)}\nPayment: ${isEasypaisa ? "EasyPaisa" : "Cash on Delivery"}\n\n${BRAND.name} — ${BRAND.phone}`,
+          html: masterLayout({
+            previewText: `Order ${orderNum} confirmed — our kitchen is on it!`,
+            bannerBg: C.successBg,
+            bannerBorderColor: C.success,
+            bannerTextColor: C.success,
+            bannerLabel: "✅ &nbsp; Order Confirmed!",
+            bodyHTML: `
+              ${greeting(name, isEasypaisa
+                ? `Great news! Your payment has been <strong style="color:${C.success};">verified</strong> and your order is <strong>confirmed</strong> — our kitchen is on it! 🍕`
+                : `Great news! Your order has been <strong style="color:${C.success};">confirmed</strong> by our team — our kitchen is on it! 🍕`)}
+              ${orderBox(detailRows)}
+              ${alertBox(
+                C.successBg,
+                C.success,
+                C.success,
+                `<strong>👨‍🍳 Order Status</strong><br/>
+                 ✅ Confirmed &nbsp;→&nbsp; 👨‍🍳 Being Prepared &nbsp;→&nbsp; 🚚 Out for Delivery Soon${isEasypaisa ? "" : `<br/>Please keep <strong>${pkr(order.total)}</strong> ready for the rider.`}`,
               )}
               <p style="margin:0;color:${C.inkSoft};font-size:0.88rem;line-height:1.7;font-family:${FONT_F};">
                 Thank you for choosing ${BRAND.name}! 🍕
@@ -192,19 +220,24 @@ function subjectAndBody(event, order) {
         const reason = order.rejection_reason;
         const isCancelled = reason === "cancelled";
         const isFailedDelivery = reason === "failed_delivery";
+        const isRejected = reason === "rejected";
         const title = isCancelled
           ? "Order Cancelled"
           : isFailedDelivery
             ? "Delivery Failed"
-            : "Payment Could Not Be Verified";
+            : isRejected
+              ? "Order Rejected"
+              : "Payment Could Not Be Verified";
         const intro = isCancelled
           ? `Unfortunately, your order has been <strong style="color:${C.danger};">cancelled</strong> as requested.`
           : isFailedDelivery
             ? `Unfortunately, our rider was unable to complete the delivery for this order.`
-            : `Unfortunately, we were unable to verify your payment. Your order has been <strong style="color:${C.danger};">cancelled</strong>.`;
+            : isRejected
+              ? `Unfortunately, our restaurant <strong style="color:${C.danger};">couldn't accept this order</strong>. This can happen if an item just went out of stock or we're at full capacity.`
+              : `Unfortunately, we were unable to verify your payment. Your order has been <strong style="color:${C.danger};">cancelled</strong>.`;
         return {
           subject: `${title} — Order ${orderNum} | ${BRAND.name}`,
-          text: `Hi ${name},\n\n${title} — order ${orderNum}.\n\n${isCancelled || isFailedDelivery ? "Please contact us if this doesn't sound right." : "Please contact us or try placing the order again with correct payment details."}\n\n${BRAND.name} — ${BRAND.phone} / WhatsApp ${BRAND.whatsapp}`,
+          text: `Hi ${name},\n\n${title} — order ${orderNum}.\n\n${isCancelled || isFailedDelivery || isRejected ? "Please contact us if this doesn't sound right." : "Please contact us or try placing the order again with correct payment details."}\n\n${BRAND.name} — ${BRAND.phone} / WhatsApp ${BRAND.whatsapp}`,
           html: masterLayout({
             previewText: `${title} — order ${orderNum}.`,
             bannerBg: C.dangerBg,
@@ -219,7 +252,7 @@ function subjectAndBody(event, order) {
                 C.warn,
                 C.warn,
                 `<strong>💡 What to do next?</strong><br/>
-                 ${isCancelled || isFailedDelivery
+                 ${isCancelled || isFailedDelivery || isRejected
                    ? `Please call us at <strong>${BRAND.phone}</strong> or WhatsApp <strong>${BRAND.whatsapp}</strong> if this doesn't sound right — we'll sort it out straight away.`
                    : `Please contact our team at <strong>${BRAND.phone}</strong> or WhatsApp <strong>${BRAND.whatsapp}</strong>. You're welcome to place a new order with correct payment details.`}`,
               )}

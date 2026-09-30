@@ -778,6 +778,91 @@
   max-width: 520px;
 }
 
+.pf-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.pf-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.pf-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.pf-rows {
+  display: flex;
+  flex-direction: column;
+}
+.pf-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14.5px;
+}
+.pf-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.pf-row__label {
+  color: var(--ink-soft);
+  flex-shrink: 0;
+}
+.pf-row__value {
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+}
+
+/* Edit Details modal */
+.lcp-modal-overlay[hidden] {
+  display: none;
+}
+.pf-modal {
+  max-width: 460px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+.pf-address-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.pf-address-row input {
+  flex: 1;
+  min-width: 0;
+}
+.pf-address-row input[readonly] {
+  background: #f8f5ee;
+  color: var(--ink);
+}
+.pf-address-row .btn {
+  flex-shrink: 0;
+}
+#pf-loc-status {
+  margin-top: 4px;
+}
+#pf-view-address .location-map {
+  margin: 6px 0 14px;
+}
+
 /* ---------------------------------------------------------------- success screen */
 .success-wrap {
   max-width: 480px;

@@ -83,24 +83,17 @@ const LCP_ADMIN = (() => {
         <div class="card"><h3>Popular Products</h3><div id="dash-popular"></div></div>
       </div>`;
 
-    let knownOrderIds = null; // tracks which order ids we've already seen, so we can toast only for genuinely NEW orders
-
     async function loadAndRender() {
       const [{ data: orders, error: ordersErr }, { data: products, error: productsErr }] = await Promise.all([
         LCP_DB.orders.listAll(), LCP_DB.catalog.listProducts(),
       ]);
       if (ordersErr || productsErr) LCP_UTIL.toast("Some dashboard data couldn't be loaded. Please refresh.", "error");
 
-      if (knownOrderIds) {
-        const newOnes = orders.filter((o) => !knownOrderIds.has(o.id));
-        newOnes.forEach((o) => LCP_UTIL.toast(`🔔 New order ${o.order_number} just came in!`, "info"));
-      }
-      knownOrderIds = new Set(orders.map((o) => o.id));
-
       const todays = orders.filter((o) => isToday(o.created_at));
       const revenueToday = todays.reduce((s, o) => s + o.total, 0);
       const awaitingPayment = orders.filter((o) => o.status === "payment_verification");
       const pending = orders.filter((o) => o.status === "pending");
+      const confirmed = orders.filter((o) => o.status === "confirmed");
       const outForDelivery = orders.filter((o) => o.status === "out_for_delivery");
       const delivered = orders.filter((o) => o.status === "delivered");
       const customers = new Set(orders.filter((o) => o.user_id).map((o) => o.user_id)).size;
@@ -110,6 +103,7 @@ const LCP_ADMIN = (() => {
         ["Today's Revenue", LCP_UTIL.pkr(revenueToday)],
         ["Awaiting Payment Verification", awaitingPayment.length],
         ["Pending Orders", pending.length],
+        ["Confirmed Orders", confirmed.length],
         ["Out for Delivery", outForDelivery.length],
         ["Delivered Orders", delivered.length],
         ["Total Customers", customers],
@@ -151,10 +145,10 @@ const LCP_ADMIN = (() => {
     if (s === "rejected") {
       return { cancelled: "Cancelled", failed_delivery: "Failed Delivery" }[rejectionReason] || "Rejected";
     }
-    return { payment_verification: "Payment Verification", pending: "Pending", out_for_delivery: "Out for Delivery", delivered: "Delivered", rejected: "Rejected" }[s] || s;
+    return { payment_verification: "Payment Verification", pending: "Pending", confirmed: "Confirmed", out_for_delivery: "Out for Delivery", delivered: "Delivered", rejected: "Rejected" }[s] || s;
   }
   function statusBadgeClass(s) {
-    return { payment_verification: "badge--warn", pending: "badge--gold", out_for_delivery: "badge--warn", delivered: "badge--success", rejected: "badge--danger" }[s] || "badge--muted";
+    return { payment_verification: "badge--warn", pending: "badge--gold", confirmed: "badge--success", out_for_delivery: "badge--warn", delivered: "badge--success", rejected: "badge--danger" }[s] || "badge--muted";
   }
 
   async function initOrders() {
@@ -166,7 +160,6 @@ const LCP_ADMIN = (() => {
       <div id="orders-section-wrap"></div>`;
 
     let orders = [];
-    let knownOrderIds = null; // tracks which order ids we've already seen, so we can toast only for genuinely NEW orders
     let activeSection = "payment_verification";
     let searchTerm = "";
 
@@ -174,11 +167,6 @@ const LCP_ADMIN = (() => {
       const { data, error: ordersErr } = await LCP_DB.orders.listAll();
       if (ordersErr) LCP_UTIL.toast("Unable to load orders: " + ordersErr, "error");
       orders = data;
-      if (knownOrderIds) {
-        const newOnes = orders.filter((o) => !knownOrderIds.has(o.id));
-        newOnes.forEach((o) => LCP_UTIL.toast(`🔔 New order ${o.order_number} just came in!`, "info"));
-      }
-      knownOrderIds = new Set(orders.map((o) => o.id));
       renderChips();
       render();
     }
@@ -186,6 +174,7 @@ const LCP_ADMIN = (() => {
     const SECTIONS = [
       ["payment_verification", "Payment Verification"],
       ["pending", "Pending Orders"],
+      ["confirmed", "Confirmed Orders"],
       ["out_for_delivery", "Out for Delivery"],
       ["delivered", "Delivered"],
       ["rejected", "Rejected Orders"],
@@ -263,14 +252,14 @@ const LCP_ADMIN = (() => {
         const approveBtn = document.createElement("button");
         approveBtn.className = "btn btn--sm btn--primary"; approveBtn.textContent = "Approve";
         approveBtn.addEventListener("click", async () => {
-          const ok = await LCP_UTIL.confirmDialog("Approve this payment? The order will move to Pending Orders.", { confirmText: "Approve" });
+          const ok = await LCP_UTIL.confirmDialog("Approve this payment? The order will move to Confirmed Orders.", { confirmText: "Approve" });
           if (!ok) return;
           LCP_UTIL.setLoading(approveBtn, true, "Approving…");
           const { data, error } = await LCP_DB.orders.approvePayment(o.id);
           LCP_UTIL.setLoading(approveBtn, false);
           if (error) return LCP_UTIL.toast(LCP_UTIL.friendlyError(error), "error");
           Object.assign(o, data);
-          LCP_UTIL.toast(`${o.order_number} approved — moved to Pending Orders.`, "success");
+          LCP_UTIL.toast(`${o.order_number} approved — moved to Confirmed Orders.`, "success");
           renderChips();
           render();
         });
@@ -290,6 +279,36 @@ const LCP_ADMIN = (() => {
         });
         actionsHost.append(approveBtn, rejectBtn);
       } else if (o.status === "pending") {
+        const confirmBtn = document.createElement("button");
+        confirmBtn.className = "btn btn--sm btn--primary"; confirmBtn.textContent = "Confirm Order";
+        confirmBtn.addEventListener("click", async () => {
+          const ok = await LCP_UTIL.confirmDialog("Confirm this order? It will move to Confirmed Orders.", { confirmText: "Confirm" });
+          if (!ok) return;
+          LCP_UTIL.setLoading(confirmBtn, true, "Confirming…");
+          const { data, error } = await LCP_DB.orders.confirmOrder(o.id);
+          LCP_UTIL.setLoading(confirmBtn, false);
+          if (error) return LCP_UTIL.toast(LCP_UTIL.friendlyError(error), "error");
+          Object.assign(o, data);
+          LCP_UTIL.toast(`${o.order_number} confirmed — moved to Confirmed Orders.`, "success");
+          renderChips();
+          render();
+        });
+        const rejectBtn = document.createElement("button");
+        rejectBtn.className = "btn btn--sm btn--danger"; rejectBtn.textContent = "Reject Order";
+        rejectBtn.addEventListener("click", async () => {
+          const ok = await LCP_UTIL.confirmDialog("Reject this order? It will move to Rejected Orders.", { confirmText: "Reject", danger: true });
+          if (!ok) return;
+          LCP_UTIL.setLoading(rejectBtn, true, "Rejecting…");
+          const { data, error } = await LCP_DB.orders.rejectOrder(o.id);
+          LCP_UTIL.setLoading(rejectBtn, false);
+          if (error) return LCP_UTIL.toast(LCP_UTIL.friendlyError(error), "error");
+          Object.assign(o, data);
+          LCP_UTIL.toast(`${o.order_number} rejected.`, "success");
+          renderChips();
+          render();
+        });
+        actionsHost.append(confirmBtn, rejectBtn);
+      } else if (o.status === "confirmed") {
         const btn = document.createElement("button");
         btn.className = "btn btn--sm btn--primary"; btn.textContent = "Out for Delivery";
         btn.addEventListener("click", async () => {

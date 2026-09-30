@@ -72,6 +72,7 @@ begin
         'customer_name',  new.customer_name,
         'customer_email', new.customer_email,
         'status',         new.status,
+        'rejection_reason', new.rejection_reason,
         'order_type',     new.order_type,
         'payment_method', new.payment_method,
         'total',          new.total,

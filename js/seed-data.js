@@ -696,6 +696,7 @@ const LCP_SEED = {
       description: "",
       // TODO: VERIFY THIS MENU ITEM/PRICE AGAINST ORIGINAL MENU IMAGE
       price: 210,
+      options: ["Coke", "Sprite"],
       available: true,
       featured: false,
       verified: false,

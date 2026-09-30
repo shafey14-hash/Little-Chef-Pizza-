@@ -9,20 +9,26 @@
       type="image/svg+xml"
       href="../assets/images/logo/favicon.svg"
     />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/customer.css" />
+    <link rel="stylesheet" href="../css/auth.css" />
     <link rel="stylesheet" href="../css/responsive.css" />
   </head>
   <body>
     <section class="section container">
       <h1>Your Profile</h1>
 
+      <!-- GUEST: only the clean message — nothing else -->
       <div id="guest-block" class="empty-state" hidden>
         <div class="empty-state__icon">🔒</div>
         <h3>Please log in first</h3>
         <p>
-          Log in or create an account to view your profile, save your details,
-          track your orders, and check out faster next time.
+          Log in or create an account first to view your profile and manage
+          your details.
         </p>
         <a
           href="../index.html"
@@ -32,53 +38,49 @@
         >
       </div>
 
+      <!-- LOGGED IN -->
       <div id="profile-content" class="stack gap-20" hidden>
-        <div
-          class="card"
-          style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap"
-        >
-          <div
-            style="
-              width: 56px;
-              height: 56px;
-              border-radius: 50%;
-              background: var(--gold);
-              color: var(--black);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-weight: 800;
-              font-size: 22px;
-              flex-shrink: 0;
-            "
-            id="pf-avatar"
-          >
-            ?
-          </div>
+        <div class="card pf-header">
+          <div class="pf-avatar" id="pf-avatar">?</div>
           <div class="stack flex-1" style="gap: 2px; min-width: 180px">
             <strong id="pf-header-name" style="font-size: 17px"></strong>
             <span class="muted" id="pf-header-since"></span>
           </div>
-          <button type="button" class="btn btn--ghost" id="pf-logout-btn">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-              focusable="false"
-              style="vertical-align: -3px; margin-right: 4px"
+        </div>
+
+        <div class="card">
+          <div class="pf-section-head">
+            <h3 style="margin: 0">Your Details</h3>
+            <button
+              type="button"
+              class="btn btn--ghost btn--sm"
+              id="pf-edit-btn"
             >
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-            Log Out
-          </button>
+              ✏️ Edit Details
+            </button>
+          </div>
+          <div class="pf-rows">
+            <div class="pf-row">
+              <span class="pf-row__label">Full Name</span>
+              <span class="pf-row__value" id="pf-view-name">—</span>
+            </div>
+            <div class="pf-row">
+              <span class="pf-row__label">Phone</span>
+              <span class="pf-row__value" id="pf-view-phone">—</span>
+            </div>
+            <div class="pf-row">
+              <span class="pf-row__label">Alternative Phone</span>
+              <span class="pf-row__value" id="pf-view-alt">—</span>
+            </div>
+            <div class="pf-row">
+              <span class="pf-row__label">Email</span>
+              <span class="pf-row__value" id="pf-view-email">—</span>
+            </div>
+            <div class="pf-row">
+              <span class="pf-row__label">Address</span>
+              <span class="pf-row__value" id="pf-view-address">—</span>
+            </div>
+          </div>
         </div>
 
         <div
@@ -123,36 +125,6 @@
           </a>
         </div>
 
-        <form class="card profile-card" id="profile-form">
-          <h3 style="margin-top: 0">Account Details</h3>
-          <div class="field">
-            <label for="pf-fullname">Full Name</label
-            ><input id="pf-fullname" required />
-          </div>
-          <div class="field">
-            <label for="pf-phone">Phone</label><input id="pf-phone" required />
-          </div>
-          <div class="field">
-            <label for="pf-alt-phone"
-              >Alternative Number <span class="muted">(optional)</span></label
-            ><input id="pf-alt-phone" type="tel" />
-          </div>
-          <div class="field">
-            <label for="pf-email">Email</label
-            ><input id="pf-email" type="email" disabled /><span
-              class="field__hint"
-              >Your login email — contact us to change it.</span
-            >
-          </div>
-          <div class="field">
-            <label for="pf-address">Saved Address</label
-            ><input id="pf-address" />
-          </div>
-          <button type="submit" class="btn btn--primary btn--block">
-            Save Changes
-          </button>
-        </form>
-
         <div class="card">
           <h3 style="margin-top: 0">Need Help?</h3>
           <p class="muted">
@@ -161,8 +133,154 @@
           </p>
           <div id="pf-contact" class="stack" style="gap: 4px"></div>
         </div>
+
+        <button type="button" class="btn btn--ghost btn--block" id="pf-logout-btn">
+          Log Out
+        </button>
       </div>
     </section>
+
+    <!-- EDIT DETAILS MODAL -->
+    <div class="lcp-modal-overlay" id="pf-modal" hidden>
+      <div
+        class="lcp-modal pf-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pf-modal-title"
+      >
+        <!-- VIEW 1: details form -->
+        <div id="pf-view-details">
+          <h3 id="pf-modal-title" style="margin-top: 0">Edit Details</h3>
+          <div class="field">
+            <label for="pf-fullname">Full Name</label>
+            <input id="pf-fullname" autocomplete="name" />
+          </div>
+          <div class="field">
+            <label for="pf-phone">Phone</label>
+            <input id="pf-phone" type="tel" autocomplete="tel" />
+          </div>
+          <div class="field">
+            <label for="pf-alt-phone"
+              >Alternative Phone <span class="muted">(optional)</span></label
+            >
+            <input id="pf-alt-phone" type="tel" />
+          </div>
+          <div class="field">
+            <label for="pf-email">Email</label>
+            <input id="pf-email" type="email" autocomplete="email" />
+            <span class="field__hint"
+              >Changing your email requires verification — we'll send a
+              6-digit code to the new address.</span
+            >
+          </div>
+          <div class="field">
+            <label for="pf-address">Address</label>
+            <div class="pf-address-row">
+              <input
+                id="pf-address"
+                readonly
+                placeholder="No address saved yet — tap Edit"
+              />
+              <button
+                type="button"
+                class="btn btn--ghost btn--sm"
+                id="pf-edit-address"
+              >
+                📍 Edit
+              </button>
+            </div>
+            <span class="field__hint"
+              >Your saved delivery address. Tap Edit to set it on the
+              map.</span
+            >
+          </div>
+          <div class="lcp-modal__actions">
+            <button type="button" class="btn btn--ghost" id="pf-cancel">
+              Cancel
+            </button>
+            <button type="button" class="btn btn--primary" id="pf-save">
+              Save Changes
+            </button>
+          </div>
+        </div>
+
+        <!-- VIEW 2: address editor -->
+        <div id="pf-view-address-editor" hidden>
+          <button type="button" class="auth-back" id="pf-address-back">
+            ← Back
+          </button>
+          <h3 style="margin-top: 0">Edit Address</h3>
+          <p class="muted" style="margin: 0 0 8px; font-size: 14px">
+            Set your delivery location — locate it automatically or type it
+            manually. Free delivery within 3 km, we deliver up to 5 km.
+          </p>
+          <div id="pf-map" class="location-map"></div>
+          <div class="field">
+            <label for="pf-address-input">Type Your Address</label>
+            <input
+              id="pf-address-input"
+              placeholder="House / street / area — e.g. Bhimber Road, Gujrat"
+            />
+          </div>
+          <button type="button" class="btn btn--ghost btn--block" id="pf-locate">
+            📍 Locate Me
+          </button>
+          <div id="pf-loc-status" class="location-status" aria-live="polite"></div>
+          <div class="lcp-modal__actions">
+            <button type="button" class="btn btn--ghost" id="pf-address-cancel">
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn--primary"
+              id="pf-address-confirm"
+              disabled
+            >
+              Confirm Address
+            </button>
+          </div>
+        </div>
+
+        <!-- VIEW 3: verify new email -->
+        <div id="pf-view-verify" hidden>
+          <h3 style="margin-top: 0">Verify Your New Email</h3>
+          <p class="muted" style="margin: 0 0 12px; font-size: 14px">
+            We've sent a 6-digit code to <strong id="pf-verify-email"></strong>.
+            Enter it below to finish changing your email.
+          </p>
+          <div class="field">
+            <label for="pf-otp">Verification Code</label>
+            <input
+              id="pf-otp"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              maxlength="6"
+              placeholder="123456"
+            />
+          </div>
+          <div class="lcp-modal__actions">
+            <button type="button" class="btn btn--ghost" id="pf-verify-later">
+              Later
+            </button>
+            <div class="row gap-12">
+              <button type="button" class="btn btn--ghost" id="pf-verify-resend">
+                Resend
+              </button>
+              <button
+                type="button"
+                class="btn btn--primary"
+                id="pf-verify-confirm"
+              >
+                Verify &amp; Finish
+              </button>
+            </div>
+          </div>
+          <p class="field__hint" style="margin-top: 12px">
+            Your current email stays active until the new one is verified.
+          </p>
+        </div>
+      </div>
+    </div>
 
     <script src="../js/seed-data.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -173,84 +291,422 @@
     <script src="../js/cart.js"></script>
     <script src="../js/cart-ui.js"></script>
     <script src="../js/nav.js"></script>
+    <script src="../js/notify.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="../js/location.js"></script>
     <script>
       (async () => {
         const user = await LCP_NAV.mountCustomer("profile");
+
         if (!user) {
           document.getElementById("guest-block").hidden = false;
-        } else {
-          document.getElementById("profile-content").hidden = false;
+          return;
+        }
+        document.getElementById("profile-content").hidden = false;
 
-          document.getElementById("pf-avatar").textContent = (
-            user.full_name || "?"
-          )
+        const r = LCP_SEED.restaurant;
+        document.getElementById("pf-contact").innerHTML =
+          `<span>📞 ${r.phone_primary}</span><span>💬 WhatsApp: ${r.phone_whatsapp}</span>`;
+
+        LCP_DB.orders.listForUser(user.id).then(({ data, error }) => {
+          document.getElementById("pf-order-count").textContent = error
+            ? "—"
+            : (data || []).length;
+        });
+
+        document
+          .getElementById("pf-logout-btn")
+          .addEventListener("click", (e) => LCP_NAV.doLogout(e.currentTarget));
+
+        if (user.created_at) {
+          const since = new Date(user.created_at).toLocaleDateString("en-GB", {
+            month: "long",
+            year: "numeric",
+          });
+          document.getElementById("pf-header-since").textContent =
+            "Member since " + since;
+        }
+
+        let DELIVERY_CHARGE = 250;
+        try {
+          const { data } = await LCP_DB.settings.get("delivery_charge");
+          const n = Number(data);
+          if (n > 0) DELIVERY_CHARGE = n;
+        } catch {
+          /* keep default */
+        }
+
+        // ---------------- summary rendering ----------------
+        function renderSummary() {
+          const u = LCP_DB.auth.currentUser() || user;
+          document.getElementById("pf-view-name").textContent =
+            u.full_name || "—";
+          document.getElementById("pf-view-phone").textContent = u.phone || "—";
+          document.getElementById("pf-view-alt").textContent =
+            u.alt_phone || "Not added";
+          document.getElementById("pf-view-email").textContent = u.email || "—";
+          document.getElementById("pf-view-address").textContent =
+            u.address || "Not set yet";
+          document.getElementById("pf-avatar").textContent = (u.full_name || "?")
             .trim()
             .charAt(0)
             .toUpperCase();
           document.getElementById("pf-header-name").textContent =
-            user.full_name;
-          if (user.created_at) {
-            const since = new Date(user.created_at).toLocaleDateString(
-              "en-GB",
-              { month: "long", year: "numeric" },
+            u.full_name || "";
+        }
+        renderSummary();
+
+        // ---------------- modal plumbing ----------------
+        const overlay = document.getElementById("pf-modal");
+        const views = {
+          details: document.getElementById("pf-view-details"),
+          address: document.getElementById("pf-view-address-editor"),
+          verify: document.getElementById("pf-view-verify"),
+        };
+        const fullNameIn = document.getElementById("pf-fullname");
+        const phoneIn = document.getElementById("pf-phone");
+        const altIn = document.getElementById("pf-alt-phone");
+        const emailIn = document.getElementById("pf-email");
+        const addressIn = document.getElementById("pf-address");
+        const otpIn = document.getElementById("pf-otp");
+        const saveBtn = document.getElementById("pf-save");
+
+        let pfPendingAddress = null; // confirmed in the address view, not saved yet
+        let pfSelection = null; // working selection inside the address view
+        let pfNewEmail = null; // email awaiting verification
+        let saving = false;
+        let mapHandles = null; // lazy — Leaflet can't measure a hidden container
+
+        function switchPfView(name) {
+          for (const [k, el] of Object.entries(views)) el.hidden = k !== name;
+        }
+
+        function clearFieldErrors() {
+          LCP_UTIL.qsa(".field__error", overlay).forEach((e) => (e.textContent = ""));
+          LCP_UTIL.qsa(".field--invalid", overlay).forEach((f) =>
+            f.classList.remove("field--invalid"),
+          );
+        }
+
+        function openModal() {
+          const u = LCP_DB.auth.currentUser() || user;
+          const stored = LCP_LOCATION.getStored();
+          pfPendingAddress = null;
+          pfSelection = null;
+          pfNewEmail = null;
+          saving = false;
+          fullNameIn.value = u.full_name || "";
+          phoneIn.value = u.phone || "";
+          altIn.value = u.alt_phone || "";
+          emailIn.value = u.email || "";
+          addressIn.value = u.address || (stored ? stored.address : "");
+          otpIn.value = "";
+          clearFieldErrors();
+          switchPfView("details");
+          overlay.hidden = false;
+          requestAnimationFrame(() => overlay.classList.add("show"));
+        }
+
+        function closeModal() {
+          overlay.classList.remove("show");
+          setTimeout(() => {
+            overlay.hidden = true;
+          }, 200);
+        }
+
+        document.getElementById("pf-edit-btn").addEventListener("click", openModal);
+        document.getElementById("pf-cancel").addEventListener("click", closeModal);
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay) closeModal();
+        });
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && !overlay.hidden) closeModal();
+        });
+
+        // ---------------- address view ----------------
+        function ensureMapMounted() {
+          if (mapHandles) {
+            requestAnimationFrame(() => mapHandles.map?.invalidateSize?.());
+            return;
+          }
+          try {
+            mapHandles = LCP_LOCATION.mountMap("pf-map");
+          } catch (err) {
+            console.error("Profile map failed to load:", err);
+            mapHandles = { setUserMarker: () => {}, map: null };
+            const mapEl = document.getElementById("pf-map");
+            if (mapEl)
+              mapEl.innerHTML =
+                '<div class="muted" style="padding:16px; text-align:center;">Map preview unavailable — you can still set your location below.</div>';
+          }
+        }
+
+        const locStatus = document.getElementById("pf-loc-status");
+        const addressInput = document.getElementById("pf-address-input");
+        const confirmAddressBtn = document.getElementById("pf-address-confirm");
+        const locateBtn = document.getElementById("pf-locate");
+
+        function renderLocStatus() {
+          if (!pfSelection) {
+            locStatus.innerHTML = `<div class="muted">Set your location to check delivery — free delivery within 3 km, up to 5 km.</div>`;
+            confirmAddressBtn.disabled = true;
+            return;
+          }
+          const distance = LCP_LOCATION.haversineKm(
+            LCP_LOCATION.CENTER.lat,
+            LCP_LOCATION.CENTER.lng,
+            pfSelection.lat,
+            pfSelection.lng,
+          );
+          if (distance <= LCP_LOCATION.RADIUS_KM) {
+            const freeMsg =
+              distance <= LCP_LOCATION.FREE_RADIUS_KM
+                ? " · Free delivery ✓"
+                : ` · Delivery fee Rs. ${DELIVERY_CHARGE} applies (over 3 km)`;
+            locStatus.innerHTML = `<div class="location-status--ok">✓ Within delivery range (${distance.toFixed(1)} km away)${freeMsg}</div>`;
+            confirmAddressBtn.disabled = false;
+          } else {
+            locStatus.innerHTML = `<div class="location-status--error">Delivery is only available within 5 km. You are too far.</div>`;
+            confirmAddressBtn.disabled = true;
+          }
+        }
+
+        async function useLocation(lat, lng, address) {
+          pfSelection = { lat, lng, address };
+          addressInput.value = address;
+          mapHandles?.setUserMarker(lat, lng);
+          renderLocStatus();
+        }
+
+        function openAddressView() {
+          const base = pfPendingAddress || LCP_LOCATION.getStored();
+          if (base && base.lat && base.lng && base.address) {
+            pfSelection = { lat: base.lat, lng: base.lng, address: base.address };
+            addressInput.value = base.address;
+          } else {
+            pfSelection = null;
+            addressInput.value = addressIn.value || "";
+          }
+          switchPfView("address");
+          ensureMapMounted();
+          if (pfSelection) mapHandles?.setUserMarker(pfSelection.lat, pfSelection.lng);
+          renderLocStatus();
+          requestAnimationFrame(() => mapHandles?.map?.invalidateSize?.());
+        }
+
+        document
+          .getElementById("pf-edit-address")
+          .addEventListener("click", openAddressView);
+
+        function backFromAddress() {
+          pfSelection = null;
+          switchPfView("details");
+        }
+        document
+          .getElementById("pf-address-back")
+          .addEventListener("click", backFromAddress);
+        document
+          .getElementById("pf-address-cancel")
+          .addEventListener("click", backFromAddress);
+
+        locateBtn.addEventListener("click", () => {
+          if (!navigator.geolocation) {
+            locStatus.innerHTML = `<div class="location-status--error">Your browser doesn't support location access. Please type your address instead.</div>`;
+            return;
+          }
+          LCP_UTIL.setLoading(locateBtn, true, "Locating…");
+          navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+              const { latitude, longitude } = pos.coords;
+              try {
+                const address = await LCP_LOCATION.reverseGeocode(
+                  latitude,
+                  longitude,
+                );
+                await useLocation(latitude, longitude, address);
+              } catch {
+                await useLocation(
+                  latitude,
+                  longitude,
+                  `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+                );
+              }
+              LCP_UTIL.setLoading(locateBtn, false);
+            },
+            () => {
+              LCP_UTIL.setLoading(locateBtn, false);
+              locStatus.innerHTML = `<div class="location-status--error">Location access denied. Please allow location access, or type your address below.</div>`;
+            },
+            { enableHighAccuracy: true, timeout: 10000 },
+          );
+        });
+
+        const geocodeAddress = LCP_UTIL.debounce(async (query) => {
+          if (!query || query.trim().length < 3) return;
+          locStatus.innerHTML = `<div class="muted">Checking location…</div>`;
+          try {
+            const result = await LCP_LOCATION.forwardGeocode(query.trim());
+            if (!result) {
+              locStatus.innerHTML = `<div class="location-status--error">Couldn't find that address. Try being more specific, or use Locate Me.</div>`;
+              confirmAddressBtn.disabled = true;
+              return;
+            }
+            await useLocation(
+              result.lat,
+              result.lng,
+              addressInput.value.trim() || result.address,
             );
-            document.getElementById("pf-header-since").textContent =
-              "Member since " + since;
+          } catch {
+            locStatus.innerHTML = `<div class="location-status--error">Couldn't check that address right now. Please try again.</div>`;
+            confirmAddressBtn.disabled = true;
+          }
+        }, 900);
+        addressInput.addEventListener("input", (e) =>
+          geocodeAddress(e.target.value),
+        );
+
+        confirmAddressBtn.addEventListener("click", () => {
+          if (!pfSelection) return;
+          pfPendingAddress = { ...pfSelection };
+          addressIn.value = pfSelection.address;
+          switchPfView("details");
+        });
+
+        // ---------------- save details ----------------
+        saveBtn.addEventListener("click", async () => {
+          if (saving) return;
+          clearFieldErrors();
+
+          const u = LCP_DB.auth.currentUser() || user;
+          const fullName = fullNameIn.value.trim();
+          const phone = phoneIn.value.trim();
+          const altPhone = altIn.value.trim();
+          const email = emailIn.value.trim();
+          const address = addressIn.value.trim();
+
+          const errs = [];
+          if (LCP_VALID.fullName(fullName)) {
+            LCP_VALID.applyFieldError(fullNameIn, "Please enter your full name.");
+            errs.push("Please enter your full name.");
+          }
+          if (LCP_VALID.phone(phone)) {
+            LCP_VALID.applyFieldError(phoneIn, "Please enter a valid phone number.");
+            errs.push("Please enter a valid phone number.");
+          }
+          if (altPhone && LCP_VALID.phone(altPhone)) {
+            LCP_VALID.applyFieldError(altIn, "Please enter a valid alternative number.");
+            errs.push("Please enter a valid alternative number.");
+          }
+          if (!email) {
+            LCP_VALID.applyFieldError(emailIn, "Please enter your email address.");
+            errs.push("Please enter your email address.");
+          } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            LCP_VALID.applyFieldError(emailIn, "Please enter a valid email address.");
+            errs.push("Please enter a valid email address.");
+          }
+          if (!address) {
+            LCP_VALID.applyFieldError(addressIn, "Please set your address first.");
+            errs.push("Please set your address first.");
+          }
+          if (errs.length) {
+            const anyEmpty = !fullName || !phone || !email || !address;
+            return LCP_UTIL.toast(
+              anyEmpty
+                ? "Please fill in all the fields — only the alternative phone is optional."
+                : errs[0],
+              "error",
+            );
           }
 
-          const r = LCP_SEED.restaurant;
-          document.getElementById("pf-contact").innerHTML =
-            `<span>📞 ${r.phone_primary}</span><span>💬 WhatsApp: ${r.phone_whatsapp}</span>`;
+          const emailChanged = email.toLowerCase() !== (u.email || "").toLowerCase();
 
-          LCP_DB.orders.listForUser(user.id).then(({ data, error }) => {
-            document.getElementById("pf-order-count").textContent = error
-              ? "—"
-              : (data || []).length;
+          saving = true;
+          LCP_UTIL.setLoading(saveBtn, true, "Saving…");
+          const { error } = await LCP_DB.auth.updateProfile(u.id, {
+            full_name: fullName,
+            phone,
+            alt_phone: altPhone || null,
+            address,
           });
+          if (error) {
+            LCP_UTIL.setLoading(saveBtn, false);
+            saving = false;
+            return LCP_UTIL.toast(error, "error");
+          }
 
-          document
-            .getElementById("pf-logout-btn")
-            .addEventListener("click", (e) =>
-              LCP_NAV.doLogout(e.currentTarget),
-            );
+          if (pfPendingAddress) LCP_LOCATION.save(pfPendingAddress);
 
-          const form = document.getElementById("profile-form");
-          document.getElementById("pf-fullname").value = user.full_name;
-          document.getElementById("pf-phone").value = user.phone;
-          document.getElementById("pf-alt-phone").value = user.alt_phone || "";
-          document.getElementById("pf-email").value = user.email || "";
-          document.getElementById("pf-address").value = user.address || "";
+          if (emailChanged) {
+            LCP_UTIL.setLoading(saveBtn, true, "Sending code…");
+            const res = await LCP_DB.auth.requestEmailChange(email);
+            LCP_UTIL.setLoading(saveBtn, false);
+            saving = false;
+            renderSummary();
+            if (res.error) return LCP_UTIL.toast(res.error, "error");
+            pfNewEmail = res.data.email;
+            document.getElementById("pf-verify-email").textContent = pfNewEmail;
+            otpIn.value = "";
+            switchPfView("verify");
+            return;
+          }
 
-          form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const btn = form.querySelector("button[type=submit]");
-            const patch = {
-              full_name: document.getElementById("pf-fullname").value.trim(),
-              phone: document.getElementById("pf-phone").value.trim(),
-              alt_phone:
-                document.getElementById("pf-alt-phone").value.trim() || null,
-              address:
-                document.getElementById("pf-address").value.trim() || null,
-            };
-            const errs = [
-              LCP_VALID.fullName(patch.full_name),
-              LCP_VALID.phone(patch.phone),
-            ].filter(Boolean);
-            if (patch.alt_phone) {
-              const e2 = LCP_VALID.phone(patch.alt_phone);
-              if (e2)
-                errs.push(
-                  "Alternative " + e2.charAt(0).toLowerCase() + e2.slice(1),
-                );
-            }
-            if (errs.length) return LCP_UTIL.toast(errs[0], "error");
-            LCP_UTIL.setLoading(btn, true, "Saving…");
-            const { error } = await LCP_DB.auth.updateProfile(user.id, patch);
+          LCP_UTIL.setLoading(saveBtn, false);
+          saving = false;
+          renderSummary();
+          closeModal();
+          LCP_UTIL.toast("Your details have been saved.", "success");
+        });
+
+        // ---------------- verify new email ----------------
+        document
+          .getElementById("pf-verify-confirm")
+          .addEventListener("click", async () => {
+            const code = otpIn.value.trim();
+            if (!/^\d{6}$/.test(code))
+              return LCP_UTIL.toast(
+                "Please enter the 6-digit code from your new email.",
+                "error",
+              );
+            const btn = document.getElementById("pf-verify-confirm");
+            LCP_UTIL.setLoading(btn, true, "Verifying…");
+            const { error } = await LCP_DB.auth.verifyEmailChange({
+              email: pfNewEmail,
+              token: code,
+            });
             LCP_UTIL.setLoading(btn, false);
             if (error) return LCP_UTIL.toast(error, "error");
-            LCP_UTIL.toast("Profile updated.", "success");
+            renderSummary();
+            closeModal();
+            LCP_UTIL.toast(
+              "Email updated — use your new email to log in from now on.",
+              "success",
+            );
           });
-        }
+
+        document
+          .getElementById("pf-verify-resend")
+          .addEventListener("click", async () => {
+            if (!pfNewEmail) return;
+            const btn = document.getElementById("pf-verify-resend");
+            LCP_UTIL.setLoading(btn, true, "Sending…");
+            const { error } = await LCP_DB.auth.requestEmailChange(pfNewEmail);
+            LCP_UTIL.setLoading(btn, false);
+            LCP_UTIL.toast(
+              error || "A new code has been sent to your new email.",
+              error ? "error" : "success",
+            );
+          });
+
+        document
+          .getElementById("pf-verify-later")
+          .addEventListener("click", () => {
+            renderSummary();
+            closeModal();
+            LCP_UTIL.toast(
+              "Email not verified yet — your current email stays active. You can finish this anytime from Edit Details.",
+              "info",
+            );
+          });
       })();
     </script>
   </body>
