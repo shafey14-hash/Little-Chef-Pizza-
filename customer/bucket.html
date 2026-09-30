@@ -109,7 +109,12 @@
             const newQty = item.qty - 1;
             isDeal
               ? LCP_CART.setDealQty(item.deal_id, newQty)
-              : LCP_CART.setProductQty(item.product_id, item.size, newQty);
+              : LCP_CART.setProductQty(
+                  item.product_id,
+                  item.size,
+                  newQty,
+                  item.option,
+                );
             renderBucket();
           });
           plus.addEventListener("click", () => {
@@ -119,6 +124,7 @@
                   item.product_id,
                   item.size,
                   item.qty + 1,
+                  item.option,
                 );
             renderBucket();
           });
@@ -139,7 +145,7 @@
           remove.addEventListener("click", () => {
             isDeal
               ? LCP_CART.removeDeal(item.deal_id)
-              : LCP_CART.removeProduct(item.product_id, item.size);
+              : LCP_CART.removeProduct(item.product_id, item.size, item.option);
             renderBucket();
           });
           row.append(name, stepper, total, remove);

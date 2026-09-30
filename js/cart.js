@@ -22,21 +22,27 @@ const LCP_CART = (() => {
     listeners.push(fn);
   }
 
-  function lineKey(productId, size) {
-    return productId + "::" + (size || "default");
+  // A line's identity is product + size + option (e.g. a 500ml Coke and a
+  // 500ml Sprite are two separate lines). Legacy lines saved before options
+  // existed fall back to "default" so nothing already in a bucket breaks.
+  function lineKey(productId, size, option) {
+    return (
+      productId + "::" + (size || "default") + "::" + (option || "default")
+    );
   }
 
-  function addProduct(product, size, qty = 1) {
+  function addProduct(product, size, qty = 1, option = null) {
     const raw = readRaw();
-    const key = lineKey(product.id, size);
+    const key = lineKey(product.id, size, option);
     const existing = raw.items.find(
-      (i) => lineKey(i.product_id, i.size) === key,
+      (i) => lineKey(i.product_id, i.size, i.option) === key,
     );
     if (existing) existing.qty = Math.min(50, existing.qty + qty);
     else
       raw.items.push({
         product_id: product.id,
         size: size || null,
+        option: option || null,
         qty: Math.min(50, qty),
       });
     writeRaw(raw);
@@ -48,11 +54,13 @@ const LCP_CART = (() => {
     else raw.deals.push({ deal_id: deal.id, qty: Math.min(20, qty) });
     writeRaw(raw);
   }
-  function setProductQty(productId, size, qty) {
+  function setProductQty(productId, size, qty, option) {
     const raw = readRaw();
-    const key = lineKey(productId, size);
+    const key = lineKey(productId, size, option);
     raw.items = raw.items
-      .map((i) => (lineKey(i.product_id, i.size) === key ? { ...i, qty } : i))
+      .map((i) =>
+        lineKey(i.product_id, i.size, i.option) === key ? { ...i, qty } : i,
+      )
       .filter((i) => i.qty > 0);
     writeRaw(raw);
   }
@@ -63,8 +71,8 @@ const LCP_CART = (() => {
       .filter((d) => d.qty > 0);
     writeRaw(raw);
   }
-  function removeProduct(productId, size) {
-    setProductQty(productId, size, 0);
+  function removeProduct(productId, size, option) {
+    setProductQty(productId, size, 0, option);
   }
   function removeDeal(dealId) {
     setDealQty(dealId, 0);
@@ -101,7 +109,10 @@ const LCP_CART = (() => {
         : product.price;
       return {
         ...line,
-        name: product.name + (line.size ? ` (${line.size})` : ""),
+        name:
+          product.name +
+          (line.size ? ` (${line.size})` : "") +
+          (line.option ? ` (${line.option})` : ""),
         unavailable: !product.available,
         unit_price,
         line_total: unit_price * line.qty,

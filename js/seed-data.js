@@ -174,6 +174,16 @@ const LCP_SEED = {
       featured: false,
       verified: true,
     },
+    {
+      id: "p-double-donner",
+      category_id: "cat-special-pizza",
+      name: "Double Donner Pizza",
+      description: "",
+      sizes: { M: 1400, L: 2100, F: 2800 },
+      available: true,
+      featured: false,
+      verified: true,
+    },
 
     // ---------------- OUR REGULAR PIZZAS ----------------
     {
@@ -632,6 +642,7 @@ const LCP_SEED = {
       name: "Soft Drink 500ml",
       description: "",
       price: 130,
+      options: ["Coke", "Sprite"],
       available: true,
       featured: false,
       verified: true,
@@ -642,6 +653,7 @@ const LCP_SEED = {
       name: "Soft Drink Tin",
       description: "",
       price: 70,
+      options: ["Coke", "Sprite"],
       available: true,
       featured: false,
       verified: true,
@@ -652,6 +664,7 @@ const LCP_SEED = {
       name: "Soft Drink 1 Liter",
       description: "",
       price: 170,
+      options: ["Coke", "Sprite"],
       available: true,
       featured: false,
       verified: true,

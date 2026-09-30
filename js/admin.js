@@ -78,7 +78,7 @@ const LCP_ADMIN = (() => {
   async function initDashboard() {
     const host = document.getElementById("admin-content");
     host.innerHTML = `<div class="kpi-grid" id="kpi-grid"></div>
-      <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:22px;">
+      <div class="dash-cols">
         <div class="card"><h3>Recent Orders</h3><div id="dash-recent"></div></div>
         <div class="card"><h3>Popular Products</h3><div id="dash-popular"></div></div>
       </div>`;

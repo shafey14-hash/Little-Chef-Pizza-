@@ -88,6 +88,30 @@ const LCP_MENU = (() => {
       wrap.appendChild(sizeRow);
     }
 
+    // Drinks carry `options` (Coke / Sprite) — the customer picks one, first
+    // preselected just like sizes. Kept inside the card so adding stays one tap.
+    let selectedOption = product.options ? product.options[0] : null;
+    if (product.options) {
+      const optionRow = LCP_UTIL.el("div", { class: "size-picker" });
+      product.options.forEach((opt, i) => {
+        const b = LCP_UTIL.el(
+          "button",
+          { type: "button", class: i === 0 ? "active" : "" },
+          opt,
+        );
+        b.addEventListener("click", (e) => {
+          e.stopPropagation(); // don't navigate to the detail page when just picking an option
+          selectedOption = opt;
+          LCP_UTIL.qsa("button", optionRow).forEach((x) =>
+            x.classList.remove("active"),
+          );
+          b.classList.add("active");
+        });
+        optionRow.appendChild(b);
+      });
+      wrap.appendChild(optionRow);
+    }
+
     const footer = LCP_UTIL.el("div", { class: "product-card__footer" });
     const priceEl = LCP_UTIL.el(
       "span",
@@ -105,10 +129,13 @@ const LCP_MENU = (() => {
     }
     addBtn.addEventListener("click", (e) => {
       e.stopPropagation(); // don't navigate to the detail page when adding to the bucket
-      LCP_CART.addProduct(product, selectedSize, 1);
+      LCP_CART.addProduct(product, selectedSize, 1, selectedOption);
       addBtn.textContent = "Added ✓";
       addBtn.classList.add("btn--gold");
-      LCP_UTIL.toast(`1 × ${product.name} added to your bucket.`, "success");
+      LCP_UTIL.toast(
+        `1 × ${product.name}${selectedOption ? " (" + selectedOption + ")" : ""} added to your bucket.`,
+        "success",
+      );
       setTimeout(() => {
         addBtn.textContent = "Add to Bucket";
         addBtn.classList.remove("btn--gold");
@@ -154,7 +181,7 @@ const LCP_MENU = (() => {
     right.appendChild(
       LCP_UTIL.el(
         "span",
-        { class: "price", style: "font-size:19px;" },
+        { class: "price" },
         LCP_UTIL.pkr(deal.price),
       ),
     );
@@ -297,6 +324,7 @@ const LCP_MENU = (() => {
     const hasSizes = !!product.sizes;
     const sizeKeys = hasSizes ? Object.keys(product.sizes) : null;
     let selectedSize = hasSizes ? sizeKeys[0] : null;
+    let selectedOption = product.options ? product.options[0] : null;
     let qty = 1;
 
     root.hidden = false;
@@ -310,6 +338,7 @@ const LCP_MENU = (() => {
           <p>${LCP_NAV.escapeHtml(product.description || "")}</p>
           ${!product.available ? '<div class="notice-box">This item is currently unavailable.</div>' : ""}
           <div id="pd-sizes"></div>
+          <div id="pd-options"></div>
           <div class="row gap-16" style="align-items:center; margin:18px 0;">
             <span class="price" id="pd-price" style="font-size:24px;"></span>
             <div class="qty-stepper" id="pd-qty-stepper">
@@ -368,6 +397,30 @@ const LCP_MENU = (() => {
       sizeHost.appendChild(row);
     }
 
+    if (product.options) {
+      const optionHost = document.getElementById("pd-options");
+      const row = LCP_UTIL.el("div", {
+        class: "size-picker",
+        style: "margin:14px 0;",
+      });
+      product.options.forEach((opt, i) => {
+        const b = LCP_UTIL.el(
+          "button",
+          { type: "button", class: i === 0 ? "active" : "" },
+          opt,
+        );
+        b.addEventListener("click", () => {
+          selectedOption = opt;
+          LCP_UTIL.qsa("button", row).forEach((x) =>
+            x.classList.remove("active"),
+          );
+          b.classList.add("active");
+        });
+        row.appendChild(b);
+      });
+      optionHost.appendChild(row);
+    }
+
     const qtyValueEl = document.getElementById("pd-qty-value");
     document.getElementById("pd-qty-minus").addEventListener("click", () => {
       qty = Math.max(1, qty - 1);
@@ -379,9 +432,9 @@ const LCP_MENU = (() => {
     });
 
     document.getElementById("pd-add-btn").addEventListener("click", (e) => {
-      LCP_CART.addProduct(product, selectedSize, qty);
+      LCP_CART.addProduct(product, selectedSize, qty, selectedOption);
       LCP_UTIL.toast(
-        `${qty} × ${product.name} added to your bucket.`,
+        `${qty} × ${product.name}${selectedOption ? " (" + selectedOption + ")" : ""} added to your bucket.`,
         "success",
       );
       const btn = e.currentTarget;

@@ -2,6 +2,8 @@
    Responsive overrides. Base styles above are already mobile-
    reasonable; this file tightens layout at the breakpoints
    called out in the brief: 1440 / 1280 / 1024 / 768 / 480 / 390.
+   Mobile rule of thumb (per brief): body text 12–14px, headings
+   16–18px, everything compact but still easy to tap.
    ============================================================ */
 
 html,
@@ -29,6 +31,10 @@ body {
   .product-detail {
     grid-template-columns: 1fr;
     gap: 22px;
+  }
+  .dash-cols {
+    grid-template-columns: 1fr;
+    gap: 14px;
   }
 }
 
@@ -107,6 +113,9 @@ body {
     display: none;
   } /* mobile has the bottom tab bar + bucket bar; this button is redundant clutter here */
 
+  /* Admin shell on tablet/mobile: top strip instead of a sidebar. Only the
+     nav scrolls horizontally — the logout button is pinned so it's always
+     reachable (it used to scroll off-screen with the nav). */
   .admin-shell {
     flex-direction: column;
   }
@@ -115,17 +124,72 @@ body {
     height: auto;
     position: relative;
     flex-direction: row;
-    overflow-x: auto;
+    align-items: center;
+    overflow: hidden;
   }
   .admin-sidebar .brand {
     display: none;
   }
   .admin-nav {
     flex-direction: row;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    padding: 8px 4px;
+    scrollbar-width: none;
+  }
+  .admin-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .admin-nav a {
+    padding: 9px 12px;
+    font-size: 13px;
+    border-radius: 8px;
+    white-space: nowrap;
   }
   .admin-logout {
-    margin: 10px;
     flex-shrink: 0;
+    margin: 8px 10px 8px 0;
+    padding: 9px 14px;
+    font-size: 12.5px;
+    border-radius: 8px;
+  }
+  .admin-topbar {
+    height: 56px;
+    padding: 0 14px;
+  }
+  .admin-content {
+    padding: 16px 0 48px;
+  }
+  .kpi-grid {
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .kpi-card {
+    padding: 13px 14px;
+  }
+  .kpi-card__label {
+    font-size: 11.5px;
+    margin-bottom: 4px;
+  }
+  .kpi-card__value {
+    font-size: 20px;
+  }
+  .admin-toolbar {
+    margin-bottom: 12px;
+  }
+  .chip-row {
+    margin-bottom: 14px;
+  }
+  .chip {
+    padding: 9px 15px;
+    font-size: 12.5px;
+  }
+  .admin-orders-search {
+    max-width: none;
+    height: 42px;
+    margin-bottom: 14px;
+    font-size: 13.5px;
   }
   .admin-table {
     font-size: 12.5px;
@@ -137,28 +201,142 @@ body {
 }
 
 @media (max-width: 620px) {
+  /* Typography scale for phones: normal text 12–14px, headings 16–18px. */
+  body {
+    font-size: 14px;
+  }
   h1 {
-    font-size: 26px;
+    font-size: 18px;
+  }
+  h2 {
+    font-size: 18px;
+  }
+  h3 {
+    font-size: 16px;
+  }
+  h4 {
+    font-size: 14px;
+  }
+  p {
+    font-size: 13px;
+  }
+  .muted {
+    font-size: 12.5px;
+  }
+  .section {
+    padding: 26px 0;
+  }
+
+  /* Hero: compact banner, not a full-screen splash. */
+  .hero {
+    padding: 26px 0 30px;
   }
   .hero h1 {
-    font-size: 28px;
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+  .hero__eyebrow {
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  .hero p {
+    font-size: 13px;
+  }
+  .hero__actions {
+    margin-top: 16px;
+    gap: 10px;
+  }
+  .hero__actions .btn {
+    height: 42px;
+    font-size: 14px;
+  }
+  .hero__art {
+    aspect-ratio: 16/8;
+  }
+  .section-head {
+    margin-bottom: 16px;
+  }
+
+  /* Cards + product grid: noticeably smaller boxes, all still tappable. */
+  .card {
+    padding: 12px;
+    border-radius: 12px;
   }
   .product-grid {
-    grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+  }
+  .product-card__img {
+    margin-bottom: 8px;
+  }
+  .product-card h3 {
+    font-size: 16px;
+    margin-bottom: 2px;
+  }
+  .product-card p {
+    font-size: 12px;
+    min-height: 0;
+    margin-bottom: 6px;
+  }
+  .size-picker {
+    gap: 5px;
+    margin-bottom: 8px;
+  }
+  .size-picker button {
+    padding: 5px 9px;
+    font-size: 11.5px;
+    border-radius: 6px;
+  }
+  .chip {
+    padding: 8px 14px;
+    font-size: 12.5px;
+  }
+  .chip-row {
+    margin-bottom: 14px;
+  }
+  .search-box {
+    margin-bottom: 14px;
+  }
+  .search-box input {
+    height: 44px;
+    font-size: 13.5px;
   }
   .auth-modal {
     padding: 26px 18px;
   }
   .kpi-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
   .checkout-steps__step {
     font-size: 10.5px;
   }
+  .checkout-steps {
+    margin-bottom: 18px;
+  }
+  .order-type-card {
+    padding: 12px;
+  }
+  .order-type-card__icon {
+    font-size: 22px;
+    margin-bottom: 4px;
+  }
+  .payment-method-card {
+    padding: 12px;
+    font-size: 13px;
+  }
+  .payment-method-card__icon {
+    font-size: 22px;
+  }
+  .easypaisa-box {
+    padding: 12px 14px;
+  }
+
+  /* Deals: smaller box, badge and text scaled down. */
   .deal-card {
     grid-template-columns: auto 1fr;
     row-gap: 10px;
+    gap: 12px;
   }
   .deal-card > div:last-child {
     grid-column: 1/-1;
@@ -168,8 +346,16 @@ body {
     display: flex;
   }
   .deal-card__badge {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
+    font-size: 12px;
+  }
+  .deal-card .price {
+    font-size: 16px;
+  }
+  .deal-card .btn {
+    height: 36px;
+    padding: 0 13px;
     font-size: 13px;
   }
 
@@ -177,10 +363,12 @@ body {
      let them stack instead of squeezing/overflowing. */
   .product-card__footer {
     flex-wrap: wrap;
-    row-gap: 8px;
+    row-gap: 6px;
   }
   .product-card__footer .btn {
     flex: 1 1 100%;
+    height: 36px;
+    font-size: 13px;
   }
 
   /* Bucket line items: name / stepper / price / remove no longer fit in
@@ -188,18 +376,137 @@ body {
   .bucket-line {
     flex-wrap: wrap;
     row-gap: 8px;
+    padding: 10px 0;
+    gap: 10px;
   }
   .bucket-line__name {
     flex: 1 1 100%;
   }
+  .qty-stepper button {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+  .summary-row {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  .summary-row--total {
+    font-size: 15px;
+    padding-top: 8px;
+    margin-top: 4px;
+  }
+
+  /* Order cards (customer + admin): compact, not a wall of text. */
+  .order-card {
+    padding: 12px 13px;
+    margin-bottom: 10px;
+  }
+  .order-card__num {
+    font-size: 14px;
+  }
+  .order-card .badge {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+  .order-card__meta {
+    font-size: 12px;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .order-card__line-items {
+    font-size: 12.5px;
+    margin-bottom: 8px;
+  }
+  .order-card__line-items li {
+    padding: 2px 0;
+  }
+  .order-card .btn--sm {
+    height: 36px;
+    padding: 0 12px;
+    font-size: 12.5px;
+  }
+
+  /* Product detail page + misc. */
+  .product-detail {
+    gap: 16px;
+  }
+  .product-detail__info h1 {
+    font-size: 18px;
+  }
+  .product-detail__img {
+    border-radius: 16px;
+  }
+  .success-wrap {
+    margin: 30px auto;
+  }
+  .success-check {
+    width: 60px;
+    height: 60px;
+    font-size: 28px;
+  }
+  .success-num {
+    font-size: 22px;
+  }
+  .empty-state {
+    padding: 36px 14px;
+  }
+  .empty-state__icon {
+    font-size: 30px;
+  }
+  .notice-box {
+    padding: 12px 14px;
+    font-size: 12.5px;
+    margin: 14px 0;
+  }
+  .field label {
+    font-size: 12.5px;
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    height: 44px;
+    font-size: 14px;
+  }
+  .btn {
+    height: 42px;
+    font-size: 14px;
+    padding: 0 18px;
+  }
+  .btn--sm {
+    height: 36px;
+    font-size: 13px;
+    padding: 0 13px;
+  }
+
+  /* Header + footer: shorter strips so content owns the screen. */
+  .topnav__inner {
+    height: 58px;
+  }
+  .brand__mark {
+    width: 36px;
+    height: 36px;
+  }
+  .site-footer {
+    padding: 34px 0 0;
+    margin-top: 34px;
+  }
+  .footer__grid {
+    padding-bottom: 26px;
+  }
 
   .topbar-title,
   .admin-topbar strong {
-    font-size: 14px;
+    font-size: 13.5px;
   }
   .admin-topbar .muted {
     display: none;
   } /* today's date — hide on tiny screens to avoid crowding */
+  .admin-table th,
+  .admin-table td {
+    padding: 8px 7px;
+    font-size: 12px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -208,6 +515,17 @@ body {
   }
   .kpi-grid {
     grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .kpi-card__value {
+    font-size: 18px;
+  }
+  .admin-content {
+    padding: 12px 0 40px;
+  }
+  .chip {
+    padding: 8px 12px;
+    font-size: 12px;
   }
   .admin-table {
     display: block;
@@ -227,6 +545,11 @@ body {
   .success-num {
     font-size: 24px;
   }
+  .deal-card__badge {
+    width: 36px;
+    height: 36px;
+    font-size: 11px;
+  }
 }
 
 @media (max-width: 380px) {
@@ -238,7 +561,7 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
   }
   h1 {
-    font-size: 23px;
+    font-size: 17px;
   }
   .bucket-pill {
     padding: 0 12px;

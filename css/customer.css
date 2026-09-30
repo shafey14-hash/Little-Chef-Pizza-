@@ -517,6 +517,9 @@
   background: #f0ece3;
   display: block;
 }
+.deal-card .price {
+  font-size: 19px;
+}
 
 /* ---------------------------------------------------------------- bucket */
 .bucket-layout {

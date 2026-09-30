@@ -144,12 +144,22 @@ const LCP_CART_UI = (() => {
       minus.addEventListener("click", () => {
         isDeal
           ? LCP_CART.setDealQty(item.deal_id, item.qty - 1)
-          : LCP_CART.setProductQty(item.product_id, item.size, item.qty - 1);
+          : LCP_CART.setProductQty(
+              item.product_id,
+              item.size,
+              item.qty - 1,
+              item.option,
+            );
       });
       plus.addEventListener("click", () => {
         isDeal
           ? LCP_CART.setDealQty(item.deal_id, item.qty + 1)
-          : LCP_CART.setProductQty(item.product_id, item.size, item.qty + 1);
+          : LCP_CART.setProductQty(
+              item.product_id,
+              item.size,
+              item.qty + 1,
+              item.option,
+            );
       });
       stepper.append(minus, qtyEl, plus);
       row.appendChild(stepper);

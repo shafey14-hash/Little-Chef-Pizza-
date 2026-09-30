@@ -9,6 +9,9 @@
 .admin-topbar{ height:70px; background:#fff; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; padding:0 28px; position:sticky; top:0; z-index:5; }
 .admin-content{ padding:28px 0 60px; }
 
+/* Dashboard two-column row (Recent Orders / Popular Products) */
+.dash-cols{ display:grid; grid-template-columns:1.4fr 1fr; gap:22px; }
+
 .kpi-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:18px; margin-bottom:30px; }
 .kpi-card{ background:#fff; border-radius:var(--radius-m); padding:20px; border:1px solid var(--line); }
 .kpi-card__label{ font-size:13px; color:var(--ink-soft); font-weight:600; margin-bottom:8px; }
