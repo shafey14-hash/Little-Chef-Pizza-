@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin/
+Disallow: /api/
+Disallow: /app/
+Disallow: /supabase/
+
+Disallow: /customer/bucket.html
+Disallow: /customer/checkout.html
+Disallow: /customer/orders.html
+Disallow: /customer/profile.html
+
+Sitemap: https://little-chef-pizza.vercel.app/sitemap.xml

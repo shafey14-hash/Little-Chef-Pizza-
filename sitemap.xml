@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://little-chef-pizza.vercel.app/</loc>
+  </url>
+  <url>
+    <loc>https://little-chef-pizza.vercel.app/customer/home.html</loc>
+  </url>
+  <url>
+    <loc>https://little-chef-pizza.vercel.app/customer/menu.html</loc>
+  </url>
+  <url>
+    <loc>https://little-chef-pizza.vercel.app/customer/deals.html</loc>
+  </url>
+  <url>
+    <loc>https://little-chef-pizza.vercel.app/customer/download.html</loc>
+  </url>
+</urlset>
