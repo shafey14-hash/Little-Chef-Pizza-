@@ -4,8 +4,9 @@
 //
 //  1. WEBHOOK (x-webhook-secret header) — called by the Postgres trigger in
 //     supabase/push_notifications.sql whenever an order is created or its
-//     status changes. Sends a Web Push notification via the browser's own
-//     push service, so it arrives even when the site is closed:
+//     status changes. Delivers through BOTH push channels:
+//       • Web Push (VAPID)  → browsers, even when the tab/browser is closed
+//       • FCM (native)      → the Android app, even when it is swiped away
 //       • new order      → every admin device
 //       • status changed → that customer's own devices
 //
@@ -18,6 +19,9 @@
 //   VAPID_SUBJECT       (optional; mailto:you@gmail.com — defaults to the
 //                        site URL)
 //   EMAIL_WEBHOOK_SECRET (re-used here to authorize the DB trigger)
+//   FCM_SERVICE_ACCOUNT (optional; full Firebase service-account JSON — only
+//                        needed for the Android app channel. Missing = FCM
+//                        silently skipped, Web Push keeps working.)
 
 const webpush = require("web-push");
 const {
@@ -25,6 +29,7 @@ const {
   bearerToken,
   dbRest,
 } = require("./_lib/supabase-admin");
+const { fcmConfigured, sendToAppTokens } = require("./_lib/fcm");
 
 // Public by design — the same key also ships in js/config.js.
 const VAPID_PUBLIC_KEY =
@@ -121,6 +126,42 @@ async function subsFor(query) {
   return Array.isArray(data) ? data : [];
 }
 
+// ── Android app channel (FCM) ─────────────────────────────────
+// app_push_tokens rows for the same audience as the Web Push query above:
+//   role=eq.admin              → every admin device
+//   profile_id=eq.<id>         → one customer's devices
+async function appTokensFor(query) {
+  const { data } = await dbRest(
+    `app_push_tokens?${query}&select=fcm_token`,
+  );
+  if (!Array.isArray(data)) return [];
+  return data.map((r) => r.fcm_token).filter(Boolean);
+}
+
+async function pruneAppToken(token) {
+  await dbRest(
+    `app_push_tokens?fcm_token=eq.${encodeURIComponent(token)}`,
+    { method: "DELETE" },
+  );
+}
+
+// Fires the same payload at every app token; never throws — FCM is an
+// add-on channel, a failure here must not break Web Push delivery.
+async function sendFcm(query, payload) {
+  if (!fcmConfigured()) return { sent: 0, removed: 0 };
+  try {
+    const tokens = await appTokensFor(query);
+    if (!tokens.length) return { sent: 0, removed: 0 };
+    return await sendToAppTokens(tokens, {
+      ...payload,
+      onDeadToken: pruneAppToken,
+    });
+  } catch (err) {
+    console.error("FCM fan-out failed:", err.message);
+    return { sent: 0, removed: 0 };
+  }
+}
+
 // ─────────────────────────────────────────────────────────────
 // Handler
 // ─────────────────────────────────────────────────────────────
@@ -141,9 +182,12 @@ module.exports = async (req, res) => {
       if (!event || !order)
         return res.status(400).json({ error: "Missing event/order." });
 
+      const payload = payloadFor(event, order);
       let subs = [];
+      let appQuery = "";
       if (event === "order_placed") {
         subs = await subsFor("role=eq.admin");
+        appQuery = "role=eq.admin";
       } else {
         if (!order.user_id)
           return res
@@ -152,10 +196,17 @@ module.exports = async (req, res) => {
         subs = await subsFor(
           `profile_id=eq.${encodeURIComponent(order.user_id)}`,
         );
+        appQuery = `profile_id=eq.${encodeURIComponent(order.user_id)}`;
       }
 
-      const result = await sendToSubscriptions(subs, payloadFor(event, order));
-      return res.status(200).json({ ok: true, ...result });
+      const result = await sendToSubscriptions(subs, payload);
+      const appResult = await sendFcm(appQuery, payload);
+      return res.status(200).json({
+        ok: true,
+        ...result,
+        appSent: appResult.sent,
+        appRemoved: appResult.removed,
+      });
     }
 
     // ── 2. "Send test" button — caller's own devices only ──
@@ -168,15 +219,17 @@ module.exports = async (req, res) => {
     const profile = Array.isArray(prof.data) ? prof.data[0] : null;
     if (!profile) return res.status(403).json({ error: "No profile found." });
 
-    const subs = await subsFor(
-      `profile_id=eq.${encodeURIComponent(profile.id)}`,
-    );
-    if (!subs.length)
+    const profQuery = `profile_id=eq.${encodeURIComponent(profile.id)}`;
+    const subs = await subsFor(profQuery);
+    // The APK has no Web Push, so a test must reach it through FCM alone —
+    // fetch both audiences up front and only refuse when NEITHER exists.
+    const appTokens = fcmConfigured() ? await appTokensFor(profQuery) : [];
+    if (!subs.length && !appTokens.length)
       return res
         .status(200)
         .json({ ok: true, sent: 0, note: "This device isn't subscribed." });
 
-    const result = await sendToSubscriptions(subs, {
+    const testPayload = {
       title: "🍕 Test Notification",
       body: "Background notifications are working on this device. Order updates will arrive here even when the app is closed.",
       url:
@@ -184,8 +237,19 @@ module.exports = async (req, res) => {
           ? "/admin/orders.html"
           : "/customer/orders.html",
       tag: "lcp-test",
-    });
-    return res.status(200).json({ ok: true, ...result });
+    };
+    const result = subs.length
+      ? await sendToSubscriptions(subs, testPayload)
+      : { sent: 0, removed: 0 };
+    const appResult = appTokens.length
+      ? await sendToAppTokens(appTokens, {
+          ...testPayload,
+          onDeadToken: pruneAppToken,
+        })
+      : { sent: 0, removed: 0 };
+    return res
+      .status(200)
+      .json({ ok: true, ...result, appSent: appResult.sent });
   } catch (err) {
     console.error("push-notify failed:", err);
     return res.status(500).json({ error: "Unexpected error." });

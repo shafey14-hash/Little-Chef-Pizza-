@@ -22,7 +22,7 @@ body {
   .bucket-layout {
     grid-template-columns: 1fr;
   }
-  .footer__grid {
+  .footer__main {
     grid-template-columns: 1fr 1fr;
   }
   .admin-sidebar {
@@ -54,9 +54,10 @@ body {
   .order-type-grid {
     grid-template-columns: 1fr;
   }
-  .footer__grid {
+  .footer__main {
     grid-template-columns: 1fr;
     gap: 28px;
+    padding: 40px 0 28px;
   }
 
   /* Bottom tab bar replaces the hamburger/drawer: Home/Menu/Deals/My
@@ -489,11 +490,10 @@ body {
     height: 36px;
   }
   .site-footer {
-    padding: 34px 0 0;
-    margin-top: 34px;
+    margin-top: 40px;
   }
-  .footer__grid {
-    padding-bottom: 26px;
+  .footer__main {
+    padding: 34px 0 26px;
   }
 
   .topbar-title,

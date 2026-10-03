@@ -506,5 +506,5 @@ const LCP_NOTIFY = (() => {
     });
   }
 
-  return { start };
+  return { start, poke: scheduleSync };
 })();

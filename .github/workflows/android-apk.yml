@@ -27,6 +27,10 @@ jobs:
       # True once the 4 keystore secrets exist in the repo. Until then a debug
       # APK is built, so the whole pipeline works before secrets are added.
       HAS_SECRETS: ${{ secrets.KEYSTORE_BASE64 != '' }}
+      # True once the Firebase config secret exists. Until then the APK builds
+      # fine but native push notifications stay disabled (gradle skips the
+      # google-services plugin when the JSON file is absent).
+      HAS_FCM: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 != '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -44,6 +48,25 @@ jobs:
       - name: Sync web assets into the Android project
         working-directory: app
         run: npx cap sync android
+
+      # Firebase config for native push (@capacitor/push-notifications). The
+      # gradle build only applies the google-services plugin when this file
+      # exists, so this step is skipped (and the APK still builds) until the
+      # secret is added. GOOGLE_SERVICES_JSON_BASE64 = base64 of the
+      # google-services.json downloaded from Firebase Console.
+      - name: Decode google-services.json (checks GOOGLE_SERVICES_JSON_BASE64)
+        if: env.HAS_FCM == 'true'
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        working-directory: app/android/app
+        run: |
+          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > google-services.json
+          if ! grep -q '"project_id"' google-services.json; then
+            echo "FAIL: GOOGLE_SERVICES_JSON_BASE64 decoded but is not a google-services.json."
+            echo "Re-create it: base64 your google-services.json (Firebase Console → Project settings → Your apps) and update the secret — single line, no label, no quotes."
+            exit 1
+          fi
+          echo "OK: google-services.json decoded"
 
       - uses: actions/setup-java@v4
         with:

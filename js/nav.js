@@ -9,6 +9,32 @@ const LCP_NAV = (() => {
     document.documentElement.classList.add("is-app");
   }
 
+  // Native Firebase push (Android app only): lazily load the bridge and keep
+  // whichever user is signed in attached to this device's FCM token. Every
+  // page that uses nav.js lives exactly one folder deep, so the relative
+  // path is the same for customer/ and admin/. NOTE: app-push.js declares a
+  // top-level `const LCP_APP_PUSH`, which does NOT become a window property —
+  // reach it through this helper with a typeof guard, never window.*.
+  let appPushUser = null;
+  function appPush() {
+    return typeof LCP_APP_PUSH !== "undefined" ? LCP_APP_PUSH : null;
+  }
+  function startAppPush(user) {
+    appPushUser = user || null;
+    if (!window.Capacitor?.isNativePlatform?.()) return;
+    if (appPush()) {
+      appPush().start(appPushUser);
+      return;
+    }
+    if (!document.getElementById("lcp-app-push-script")) {
+      const s = document.createElement("script");
+      s.id = "lcp-app-push-script";
+      s.src = "../js/app-push.js";
+      s.onload = () => appPush()?.start(appPushUser);
+      document.head.appendChild(s);
+    }
+  }
+
   function isGuest() {
     return (
       !LCP_DB.auth.currentUser() && sessionStorage.getItem("lcp_guest") === "1"
@@ -97,35 +123,48 @@ const LCP_NAV = (() => {
 
   function customerFooter() {
     const r = LCP_SEED.restaurant;
+    const tel1 = String(r.phone_primary).replace(/[^0-9+]/g, "");
+    const tel2 = String(r.phone_secondary).replace(/[^0-9+]/g, "");
+    const wa = String(r.phone_whatsapp).replace(/\D/g, "").replace(/^0/, "92");
     document.body.insertAdjacentHTML(
       "beforeend",
       `
       <footer class="site-footer">
-        <div class="container footer__grid">
-          <div>
-            <div class="brand brand--on-dark">
-              <img class="brand__mark" src="../assets/images/logo/logo-badge.png" alt="Little Chef Pizza logo" width="44" height="44" />
-              <span class="brand__text">
-                <span class="brand__name">${r.name}</span>
-                <span class="brand__tag">Pizza &amp; Fast Food</span>
-              </span>
+        <div class="container">
+          <div class="footer__main">
+            <div class="footer__col footer__col--brand">
+              <a href="home.html" class="brand brand--on-dark">
+                <img class="brand__mark" src="../assets/images/logo/logo-badge.png" alt="Little Chef Pizza logo" width="44" height="44" />
+                <span class="brand__text">
+                  <span class="brand__name">${r.name}</span>
+                  <span class="brand__tag">Pizza &amp; Fast Food</span>
+                </span>
+              </a>
+              <p class="footer__about">Freshly made pizza, wings, rolls &amp; more — delivered fast across Gujrat, or ready for takeaway &amp; dine-in.</p>
             </div>
-            <p class="footer__about">Freshly made pizza, wings, rolls &amp; more — delivered fast across Gujrat city, or ready for takeaway and dine-in.</p>
+            <nav class="footer__col footer__links" aria-label="Footer">
+              <h4>Explore</h4>
+              <a href="menu.html">Menu</a>
+              <a href="deals.html">Deals</a>
+              <a href="orders.html">My Orders</a>
+              <a href="bucket.html">Order Now</a>
+              <a href="download.html" class="app-only-hide">Get the App</a>
+            </nav>
+            <div class="footer__col footer__col--contact">
+              <h4>Contact</h4>
+              <p class="footer__addr">${r.address}</p>
+              <div class="footer__phones">
+                <a class="footer__phone" href="tel:${tel1}"><span class="footer__phone-label">Tel</span>${r.phone_primary}</a>
+                <a class="footer__phone" href="tel:${tel2}"><span class="footer__phone-label">Phone</span>${r.phone_secondary}</a>
+                <a class="footer__phone" href="https://wa.me/${wa}" target="_blank" rel="noopener"><span class="footer__phone-label">WhatsApp</span>${r.phone_whatsapp}</a>
+              </div>
+              <p class="footer__delivery-note">${r.delivery_note}</p>
+              <a class="btn btn--gold btn--sm" target="_blank" rel="noopener"
+                 href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.address)}">Get Directions</a>
+            </div>
           </div>
-          <div>
-            <h4>Quick Links</h4>
-            <a href="menu.html">Menu</a><a href="deals.html">Deals</a><a href="orders.html">My Orders</a><a href="bucket.html">Order Now</a><a href="download.html" class="app-only-hide">Get the App</a>
-          </div>
-          <div>
-            <h4>Contact</h4>
-            <p>${r.address}</p>
-            <p>Tel: ${r.phone_primary}<br>Phone: ${r.phone_secondary}<br>WhatsApp: ${r.phone_whatsapp}</p>
-            <p class="footer__delivery-note">${r.delivery_note}</p>
-            <a class="btn btn--gold btn--sm" target="_blank" rel="noopener"
-               href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.address)}">Get Directions</a>
-          </div>
+          <div class="footer__bottom">© ${new Date().getFullYear()} Little Chef Pizza — All rights reserved.</div>
         </div>
-        <div class="footer__bottom">© ${new Date().getFullYear()} Little Chef Pizza. All rights reserved.</div>
       </footer>
     `,
     );
@@ -133,6 +172,14 @@ const LCP_NAV = (() => {
 
   async function doLogout(triggerBtn) {
     if (triggerBtn) LCP_UTIL.setLoading(triggerBtn, true, "Logging out…");
+    // Detach this device's FCM token BEFORE the session dies (the endpoint
+    // needs a live access token), so a logged-out device stops receiving
+    // order notifications.
+    try {
+      await appPush()?.unregister?.();
+    } catch (e) {
+      /* best-effort */
+    }
     try {
       await LCP_DB.auth.signOut();
     } catch (err) {
@@ -156,11 +203,14 @@ const LCP_NAV = (() => {
     await LCP_DB.auth.init(); // wait for the real Supabase session before rendering who's logged in
     LCP_UTIL.flashPop();
     customerHeader(activePage);
-    customerFooter();
+    // The big site footer belongs to the landing page only — inner sections
+    // stay clean and scroll-focused.
+    if (activePage === "home") customerFooter();
     opts.noBucketBar
       ? await LCP_CART_UI.mountWithoutBar()
       : await LCP_CART_UI.mount();
     LCP_NOTIFY?.start("customer", currentUser());
+    startAppPush(currentUser());
     return currentUser();
   }
 
@@ -244,6 +294,7 @@ const LCP_NAV = (() => {
     }
 
     LCP_NOTIFY?.start("admin", admin);
+    startAppPush(admin);
     return admin;
   }
 
