@@ -7,9 +7,17 @@ const LCP_CART = (() => {
   const KEY = "lcp_bucket";
   const listeners = [];
 
+  const MAX_PRODUCT_QTY = 50;
+  const MAX_DEAL_QTY = 20;
+
   function readRaw() {
     try {
-      return JSON.parse(localStorage.getItem(KEY)) || { items: [], deals: [] };
+      const parsed = JSON.parse(localStorage.getItem(KEY));
+      if (!parsed || typeof parsed !== "object") return { items: [], deals: [] };
+      return {
+        items: Array.isArray(parsed.items) ? parsed.items : [],
+        deals: Array.isArray(parsed.deals) ? parsed.deals : [],
+      };
     } catch {
       return { items: [], deals: [] };
     }
@@ -34,32 +42,52 @@ const LCP_CART = (() => {
   function addProduct(product, size, qty = 1, option = null) {
     const raw = readRaw();
     const key = lineKey(product.id, size, option);
+    const unit_price = product.sizes ? product.sizes[size] : product.price;
     const existing = raw.items.find(
       (i) => lineKey(i.product_id, i.size, i.option) === key,
     );
-    if (existing) existing.qty = Math.min(50, existing.qty + qty);
-    else
+    if (existing) {
+      existing.qty = Math.min(MAX_PRODUCT_QTY, existing.qty + qty);
+      existing.unit_price = unit_price ?? null;
+    } else {
       raw.items.push({
         product_id: product.id,
         size: size || null,
         option: option || null,
-        qty: Math.min(50, qty),
+        qty: Math.min(MAX_PRODUCT_QTY, qty),
+        unit_price: unit_price ?? null,
       });
+    }
     writeRaw(raw);
   }
   function addDeal(deal, qty = 1) {
     const raw = readRaw();
     const existing = raw.deals.find((d) => d.deal_id === deal.id);
-    if (existing) existing.qty = Math.min(20, existing.qty + qty);
-    else raw.deals.push({ deal_id: deal.id, qty: Math.min(20, qty) });
+    if (existing) {
+      existing.qty = Math.min(MAX_DEAL_QTY, existing.qty + qty);
+      existing.unit_price = deal.price ?? null;
+    } else {
+      raw.deals.push({
+        deal_id: deal.id,
+        qty: Math.min(MAX_DEAL_QTY, qty),
+        unit_price: deal.price ?? null,
+      });
+    }
     writeRaw(raw);
+  }
+  function clampQty(qty, max) {
+    const n = Math.floor(Number(qty));
+    if (!Number.isFinite(n) || n < 0) return 0;
+    return Math.min(max, n);
   }
   function setProductQty(productId, size, qty, option) {
     const raw = readRaw();
     const key = lineKey(productId, size, option);
     raw.items = raw.items
       .map((i) =>
-        lineKey(i.product_id, i.size, i.option) === key ? { ...i, qty } : i,
+        lineKey(i.product_id, i.size, i.option) === key
+          ? { ...i, qty: clampQty(qty, MAX_PRODUCT_QTY) }
+          : i,
       )
       .filter((i) => i.qty > 0);
     writeRaw(raw);
@@ -67,7 +95,9 @@ const LCP_CART = (() => {
   function setDealQty(dealId, qty) {
     const raw = readRaw();
     raw.deals = raw.deals
-      .map((d) => (d.deal_id === dealId ? { ...d, qty } : d))
+      .map((d) =>
+        d.deal_id === dealId ? { ...d, qty: clampQty(qty, MAX_DEAL_QTY) } : d,
+      )
       .filter((d) => d.qty > 0);
     writeRaw(raw);
   }
@@ -101,6 +131,8 @@ const LCP_CART = (() => {
           ...line,
           missing: true,
           name: "Unavailable item",
+          base_name: "Unavailable item",
+          variant: "",
           unit_price: 0,
           line_total: 0,
         };
@@ -109,11 +141,16 @@ const LCP_CART = (() => {
         : product.price;
       return {
         ...line,
+        base_name: product.name,
+        variant: [line.size, line.option].filter(Boolean).join(" · "),
+        image_url: product.image_url || null,
         name:
           product.name +
           (line.size ? ` (${line.size})` : "") +
           (line.option ? ` (${line.option})` : ""),
         unavailable: !product.available,
+        priceChanged:
+          line.unit_price != null && line.unit_price !== unit_price,
         unit_price,
         line_total: unit_price * line.qty,
       };
@@ -126,13 +163,19 @@ const LCP_CART = (() => {
           ...line,
           missing: true,
           name: "Unavailable deal",
+          base_name: "Unavailable deal",
+          variant: "",
           unit_price: 0,
           line_total: 0,
         };
       return {
         ...line,
+        base_name: deal.name,
+        variant: "",
+        image_url: deal.image_url || null,
         name: deal.name,
         unavailable: !deal.available,
+        priceChanged: line.unit_price != null && line.unit_price !== deal.price,
         unit_price: deal.price,
         line_total: deal.price * line.qty,
       };

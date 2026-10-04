@@ -63,7 +63,7 @@ body {
   /* Bottom tab bar replaces the hamburger/drawer: Home/Menu/Deals/My
      Orders/Profile are directly visible, no extra tap needed. */
   body {
-    padding-bottom: 62px;
+    padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px));
   }
   .mobile-tabbar {
     display: flex;
@@ -71,7 +71,8 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 140;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    z-index: var(--z-tabbar);
     background: #fff;
     border-top: 1px solid var(--line);
     box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
@@ -95,24 +96,72 @@ body {
   .mobile-tabbar__item--active {
     color: var(--red);
   }
-  .bucket-bar {
-    bottom: 66px;
-    left: 8px;
-    right: 8px;
+  /* Floating cart bar: full-width strip parked just above the tab bar
+     (safe-area aware), never overlapping it. */
+  .cartbar {
+    left: 12px;
+    right: 12px;
+    bottom: calc(62px + env(safe-area-inset-bottom, 0px) + 10px);
     transform: none;
+    justify-content: space-between;
     max-width: none;
-    border-radius: 14px;
-    padding: 9px 12px;
-  } /* sit above the tab bar instead of overlapping it, full-width strip */
-  .bucket-bar:hover {
+  }
+  .cartbar:hover {
     transform: none;
   }
-  .bucket-bar__label-full {
-    display: none;
-  } /* "Bucket —" text: drop on mobile, chips speak for themselves */
+  .cartbar:active {
+    transform: scale(0.98);
+  }
   .topnav .bucket-pill {
     display: none;
-  } /* mobile has the bottom tab bar + bucket bar; this button is redundant clutter here */
+  } /* mobile has the bottom tab bar + cart bar; this button is redundant clutter here */
+
+  /* Cart drawer becomes a bottom sheet: rounded top, drag handle, dvh
+     height, safe-area padding. Same DOM as desktop — presentation only. */
+  .cart-overlay {
+    justify-content: stretch;
+    align-items: flex-end;
+  }
+  .cart-sheet {
+    width: 100%;
+    height: auto;
+    max-height: 92dvh;
+    border-radius: 22px 22px 0 0;
+    transform: translateY(103%);
+    box-shadow: 0 -14px 44px rgba(12, 11, 10, 0.25);
+  }
+  .cart-overlay.open .cart-sheet {
+    transform: none;
+  }
+  .cart-sheet__handle {
+    display: block;
+    width: 100%;
+    padding: 10px 0 2px;
+    cursor: grab;
+    touch-action: none;
+  }
+  .cart-sheet__handle::before {
+    content: "";
+    display: block;
+    width: 44px;
+    height: 5px;
+    border-radius: 999px;
+    background: #ddd4c4;
+    margin: 0 auto;
+  }
+  .cart-sheet__header {
+    padding: 8px 18px 12px;
+  }
+  .cart-sheet__body {
+    padding: 2px 18px;
+  }
+  .cart-sheet__footer {
+    padding: 12px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+  /* Toasts lift above tab bar + cart bar so nothing collides. */
+  body.has-cartbar .lcp-toast-host {
+    bottom: calc(126px + env(safe-area-inset-bottom, 0px));
+  }
 
   /* Admin shell on tablet/mobile: the header bar (topbar) owns the very
      top; the nav becomes a compact horizontal strip directly BELOW it
@@ -373,21 +422,25 @@ body {
     font-size: 13px;
   }
 
-  /* Bucket line items: name / stepper / price / remove no longer fit in
-     one row on small phones — wrap into two lines cleanly. */
-  .bucket-line {
-    flex-wrap: wrap;
-    row-gap: 8px;
-    padding: 10px 0;
+  /* Cart line items: tighter rows on small phones. */
+  .cart-line {
     gap: 10px;
+    padding: 12px 0;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
   }
-  .bucket-line__name {
-    flex: 1 1 100%;
+  .cart-line__thumb {
+    width: 48px;
+    height: 48px;
+  }
+  .cart-line__name {
+    font-size: 14px;
+  }
+  .cart-line__variant,
+  .cart-line__unit {
+    font-size: 12px;
   }
   .qty-stepper button {
-    width: 28px;
-    height: 28px;
-    font-size: 14px;
+    font-size: 15px;
   }
   .summary-row {
     font-size: 13px;
@@ -507,6 +560,24 @@ body {
   .admin-table td {
     padding: 8px 7px;
     font-size: 12px;
+  }
+}
+
+/* Coarse pointers (touch): qty steppers must stay ≥44px per accessibility
+   guidelines — never let any breakpoint shrink them below this. */
+@media (pointer: coarse) {
+  .qty-stepper button {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* Landscape phones / short viewports: the bottom sheet gets almost the
+   full screen height so the fixed summary + checkout always fit. */
+@media (max-width: 860px) and (max-height: 500px) {
+  .cart-sheet {
+    max-height: 100dvh;
+    border-radius: 18px 18px 0 0;
   }
 }
 

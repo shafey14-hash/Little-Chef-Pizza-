@@ -36,6 +36,17 @@
   --font-body: "Inter", sans-serif;
 
   --container: 1180px;
+
+  /* Unified layering scale — never add arbitrary z-index values; extend
+     this ladder instead. Order: page content < sticky header < mobile
+     tab bar < floating cart bar < cart drawer < popups < modal < toast. */
+  --z-sticky: 100;
+  --z-tabbar: 140;
+  --z-cartbar: 150;
+  --z-cart-sheet: 200;
+  --z-popup: 400;
+  --z-modal: 9998;
+  --z-toast: 9999;
 }
 
 *,
@@ -373,8 +384,14 @@ input:disabled {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  z-index: 9999;
+  z-index: var(--z-toast);
   width: min(92vw, 380px);
+  transition: bottom 0.25s ease;
+}
+/* When the floating cart bar is visible, lift toasts above it so they
+   never cover (or get covered by) the bar. */
+body.has-cartbar .lcp-toast-host {
+  bottom: 92px;
 }
 .lcp-toast {
   background: var(--black);
@@ -402,6 +419,16 @@ input:disabled {
   border-left-color: var(--danger);
 }
 
+/* ---------------------------------------------------------------- scroll lock
+   Applied by cart-ui.js while the cart drawer is open: freezes the page
+   exactly where it was (scroll position is restored on unlock). */
+body.cart-locked {
+  position: fixed;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+}
+
 /* ---------------------------------------------------------------- modal */
 .lcp-modal-overlay {
   position: fixed;
@@ -411,7 +438,7 @@ input:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9998;
+  z-index: var(--z-modal);
   opacity: 0;
   transition: opacity 0.2s ease;
   padding: 20px;

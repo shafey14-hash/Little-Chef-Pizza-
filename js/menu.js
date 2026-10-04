@@ -130,6 +130,8 @@ const LCP_MENU = (() => {
     addBtn.addEventListener("click", (e) => {
       e.stopPropagation(); // don't navigate to the detail page when adding to the bucket
       LCP_CART.addProduct(product, selectedSize, 1, selectedOption);
+      if (typeof LCP_CART_UI !== "undefined")
+        LCP_CART_UI.flyToCart(addBtn, product.image_url);
       addBtn.textContent = "Added ✓";
       addBtn.classList.add("btn--gold");
       LCP_UTIL.toast(
@@ -193,6 +195,8 @@ const LCP_MENU = (() => {
     if (!deal.available) btn.disabled = true;
     btn.addEventListener("click", () => {
       LCP_CART.addDeal(deal, 1);
+      if (typeof LCP_CART_UI !== "undefined")
+        LCP_CART_UI.flyToCart(btn, deal.image_url);
       LCP_UTIL.toast(`1 × ${deal.name} added to your bucket.`, "success");
     });
     right.appendChild(btn);
@@ -433,6 +437,8 @@ const LCP_MENU = (() => {
 
     document.getElementById("pd-add-btn").addEventListener("click", (e) => {
       LCP_CART.addProduct(product, selectedSize, qty, selectedOption);
+      if (typeof LCP_CART_UI !== "undefined")
+        LCP_CART_UI.flyToCart(e.currentTarget, product.image_url);
       LCP_UTIL.toast(
         `${qty} × ${product.name}${selectedOption ? " (" + selectedOption + ")" : ""} added to your bucket.`,
         "success",
