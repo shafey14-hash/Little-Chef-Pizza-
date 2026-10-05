@@ -1167,8 +1167,10 @@
   gap: 36px;
   align-items: start;
 }
+/* Photo boxes hug the image's own ratio so nothing is ever cropped —
+   food shots are wide (1408×768), and a fixed square + cover cut ~45% of
+   the left/right off every product page. */
 .product-detail__img {
-  aspect-ratio: 1/1;
   border-radius: var(--radius-l);
   overflow: hidden;
   background: #f0ece3;
@@ -1180,9 +1182,19 @@
   text-align: center;
 }
 .product-detail__img img {
+  display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  max-height: 62vh;
+  object-fit: contain;
+}
+/* No photo uploaded yet: stop the text placeholder from collapsing flat. */
+.product-detail__img > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 190px;
+  padding: 24px 16px;
 }
 .product-detail__info h1 {
   margin: 10px 0 6px;

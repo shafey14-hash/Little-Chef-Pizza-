@@ -34,7 +34,9 @@ function lcpRenderOrderSuccess(data, user) {
 }
 
 (async function () {
-  const user = await LCP_NAV.mountCustomer(null);
+  // No floating cart bar from checkout onward: the order review is already on
+  // the page, and on mobile the bar sat on top of "Place Order".
+  const user = await LCP_NAV.mountCustomer(null, { noBucketBar: true });
 
   // Admin accounts can't place customer orders — blocks "Restaurant Admin"
   // test orders from ever appearing in the admin panel again.

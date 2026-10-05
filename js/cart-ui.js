@@ -100,6 +100,9 @@ const LCP_CART_UI = (() => {
     if (mounted) return;
     await mount();
     byId("cartbar")?.remove();
+    // render() already ran while the bar existed and set this for the toast
+    // lift — with no bar there is nothing to lift them over.
+    document.body.classList.remove("has-cartbar");
   }
 
   function inCustomerFolder() {
