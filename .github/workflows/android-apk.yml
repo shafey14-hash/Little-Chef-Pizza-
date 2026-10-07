@@ -96,18 +96,17 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           echo "Submitting EAS build..."
+          # Redirect stderr to stdout so everything shows in GitHub log
           eas build \
             --platform android \
             --profile preview \
             --non-interactive \
             --no-wait \
-            2>"$RUNNER_TEMP/eas-err.txt" | tee "$RUNNER_TEMP/eas-out.txt"
+            2>&1 | tee "$RUNNER_TEMP/eas-out.txt"
 
           EXIT_CODE=${PIPESTATUS[0]}
           if [ "$EXIT_CODE" -ne 0 ]; then
-            echo "FAIL: eas build exited with code $EXIT_CODE."
-            echo "---- stderr ----"
-            cat "$RUNNER_TEMP/eas-err.txt"
+            echo "FAIL: eas build exited with code $EXIT_CODE (see output above)."
             exit 1
           fi
 
