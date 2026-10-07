@@ -748,6 +748,14 @@ const LCP_DB = (() => {
   }
 
   const orders = {
+    async track(orderNumber) {
+      if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
+      const { data, error } = await sb.rpc("track_order", {
+        p_order_number: String(orderNumber).trim(),
+      });
+      if (error) return { error: friendlyDbError(error) };
+      return { data };
+    },
     async create(payload) {
       if (!CONFIGURED) return { error: NOT_CONFIGURED_MSG };
       const { data, error } = await sb.rpc("create_order", {

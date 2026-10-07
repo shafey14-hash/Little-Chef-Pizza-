@@ -52,6 +52,7 @@ const LCP_NAV = (() => {
       ["home", "Home", "home.html", "🏠"],
       ["menu", "Menu", "menu.html", "🍕"],
       ["deals", "Deals", "deals.html", "🏷️"],
+      ["track", "Track", "track.html", "🔍"],
       ["orders", "My Orders", "orders.html", "🧾"],
       ["profile", "Profile", "profile.html", "👤"],
     ];
@@ -146,6 +147,7 @@ const LCP_NAV = (() => {
               <h4>Explore</h4>
               <a href="menu.html">Menu</a>
               <a href="deals.html">Deals</a>
+              <a href="track.html">Track Order</a>
               <a href="orders.html">My Orders</a>
               <a href="bucket.html">Order Now</a>
               <a href="download.html" class="app-only-hide">Get the App</a>

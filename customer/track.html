@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Track Order — Little Chef Pizza</title>
+<link rel="icon" type="image/svg+xml" href="../assets/images/logo/favicon.svg" />
+<link rel="manifest" href="../manifest.webmanifest" />
+<meta name="theme-color" content="#e2222a" />
+<link rel="stylesheet" href="../css/global.css" />
+<link rel="stylesheet" href="../css/customer.css" />
+<link rel="stylesheet" href="../css/responsive.css" />
+<style>
+  .track-hero {
+    text-align: center;
+    padding: 60px 20px 40px;
+    background: linear-gradient(135deg, rgba(226,34,42,0.08) 0%, rgba(226,34,42,0) 100%);
+    border-radius: 0 0 40px 40px;
+    margin-bottom: 30px;
+  }
+  .track-hero h1 {
+    font-size: 32px;
+    margin-bottom: 12px;
+    color: var(--red);
+  }
+  .track-search-box {
+    max-width: 480px;
+    margin: 0 auto;
+    position: relative;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.06);
+    border-radius: 50px;
+    background: #fff;
+    display: flex;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+  }
+  .track-search-box:focus-within {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 32px rgba(226,34,42,0.12);
+  }
+  .track-input {
+    flex: 1;
+    border: none;
+    padding: 16px 24px;
+    font-size: 16px;
+    background: transparent;
+    outline: none;
+  }
+  .track-btn {
+    border: none;
+    background: var(--red);
+    color: #fff;
+    padding: 0 28px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .track-btn:hover { background: #c1121f; }
+  
+  .track-result {
+    max-width: 540px;
+    margin: 0 auto 60px;
+    padding: 0 20px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .track-result.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .status-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+    text-align: center;
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+  .status-icon {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    background: rgba(0,0,0,0.04);
+  }
+  .status-card.pending .status-icon { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+  .status-card.confirmed .status-icon { background: rgba(59, 130, 246, 0.15); color: #2563eb; }
+  .status-card.out_for_delivery .status-icon { background: rgba(139, 92, 246, 0.15); color: #7c3aed; }
+  .status-card.delivered .status-icon { background: rgba(16, 185, 129, 0.15); color: #059669; }
+  .status-card.rejected .status-icon { background: rgba(239, 68, 68, 0.15); color: #dc2626; }
+  
+  .status-title {
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .status-time {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+  
+  .items-list {
+    text-align: left;
+    border-top: 1px solid rgba(0,0,0,0.08);
+    padding-top: 20px;
+  }
+  .items-list h4 {
+    margin-bottom: 12px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+  }
+  .track-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed rgba(0,0,0,0.06);
+  }
+  .track-item:last-child { border-bottom: none; }
+  .track-item__qty {
+    background: var(--bg-alt);
+    color: var(--text-main);
+    font-weight: 700;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    font-size: 13px;
+  }
+  .track-item__name {
+    flex: 1;
+    font-weight: 500;
+  }
+  .track-item__size {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: 8px;
+  }
+</style>
+</head>
+<body>
+<script src="../js/seed-data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/db.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/cart.js"></script>
+<script src="../js/cart-ui.js"></script>
+<script src="../js/nav.js"></script>
+<script src="../js/notify.js"></script>
+
+<main style="min-height: 80vh;">
+  <section class="track-hero">
+    <h1>Track Your Order</h1>
+    <p class="muted" style="margin-bottom:24px;">Enter your order number to see live status.</p>
+    <form id="track-form" class="track-search-box">
+      <input type="text" id="track-input" class="track-input" placeholder="e.g. LCP-12345" required autocomplete="off" />
+      <button type="submit" class="track-btn" id="track-btn">Track</button>
+    </form>
+  </section>
+
+  <div id="track-result" class="track-result"></div>
+</main>
+
+<script>
+  (async () => {
+    // Mount without the floating bucket bar as requested
+    await LCP_NAV.mountCustomer("track", { noBucketBar: true });
+    
+    const form = document.getElementById("track-form");
+    const input = document.getElementById("track-input");
+    const btn = document.getElementById("track-btn");
+    const resultBox = document.getElementById("track-result");
+
+    // Pre-fill from URL if provided (e.g., track.html?id=LCP-123)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has("id")) {
+      input.value = urlParams.get("id");
+      doTrack();
+    }
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      doTrack();
+    });
+
+    async function doTrack() {
+      const val = input.value.trim().toUpperCase();
+      if (!val) return;
+      
+      resultBox.classList.remove("show");
+      LCP_UTIL.setLoading(btn, true, "...");
+      
+      // small delay for smooth exit animation
+      await new Promise(r => setTimeout(r, 200)); 
+      
+      const { data, error } = await LCP_DB.orders.track(val);
+      LCP_UTIL.setLoading(btn, false, "Track");
+      
+      if (error) {
+        resultBox.innerHTML = `<div class="status-card"><p class="muted">${LCP_NAV.escapeHtml(error)}</p></div>`;
+      } else if (!data) {
+        resultBox.innerHTML = `
+          <div class="status-card">
+            <div class="status-icon">🤷</div>
+            <h3 class="status-title" style="font-size:20px;">Order not found</h3>
+            <p class="muted" style="margin-top:8px;">Please check the order number and try again.</p>
+          </div>`;
+      } else {
+        renderOrder(data);
+      }
+      
+      // small delay to let DOM update before triggering enter animation
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          resultBox.classList.add("show");
+        });
+      });
+    }
+
+    function renderOrder(o) {
+      const map = {
+        payment_verification: { label: "Payment Verification", icon: "⏳", class: "pending" },
+        pending: { label: "Pending", icon: "🕒", class: "pending" },
+        confirmed: { label: "Preparing", icon: "👨‍🍳", class: "confirmed" },
+        out_for_delivery: { label: "On the way", icon: "🛵", class: "out_for_delivery" },
+        delivered: { label: "Delivered", icon: "✅", class: "delivered" },
+        rejected: { label: "Cancelled", icon: "❌", class: "rejected" }
+      };
+      
+      const info = map[o.status] || { label: o.status, icon: "📌", class: "pending" };
+      let reasonHtml = "";
+      if (o.status === "rejected" && o.rejection_reason) {
+        reasonHtml = `<p class="muted" style="color:var(--red); margin-bottom:16px;">Reason: ${LCP_NAV.escapeHtml(o.rejection_reason)}</p>`;
+      }
+
+      const itemsHtml = o.items.map(i => `
+        <div class="track-item">
+          <div class="track-item__qty">${i.quantity}</div>
+          <div class="track-item__name">
+            ${LCP_NAV.escapeHtml(i.name)}
+            ${i.size ? `<span class="track-item__size">(${LCP_NAV.escapeHtml(i.size)})</span>` : ""}
+          </div>
+        </div>
+      `).join("");
+
+      resultBox.innerHTML = `
+        <div class="status-card ${info.class}">
+          <div class="status-icon">${info.icon}</div>
+          <h2 class="status-title">${info.label}</h2>
+          <div class="status-time">Ordered ${LCP_UTIL.timeAgo(o.created_at)}</div>
+          ${reasonHtml}
+          
+          <div class="items-list">
+            <h4>Order Items</h4>
+            ${itemsHtml}
+          </div>
+        </div>
+      `;
+    }
+  })();
+</script>
+</body>
+</html>
