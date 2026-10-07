@@ -31,6 +31,20 @@ const LCP_APP_PUSH = (() => {
     return push || null;
   }
 
+  // Setup outcome ka visible proof on the phone — ek dafa per app session,
+  // taake har launch par spam na ho lekin Shafey dekh sake ke registration
+  // hua ya fail hua (pehle sirf console tha, phone par kuch nazar nahi aata).
+  function toastOnce(key, message, type) {
+    try {
+      const k = "lcp_app_push_toast_" + key;
+      if (sessionStorage.getItem(k)) return;
+      sessionStorage.setItem(k, "1");
+      LCP_UTIL.toast(message, type);
+    } catch (e) {
+      /* toast utility ya storage available nahi — registration phir bhi chalega */
+    }
+  }
+
   async function api(path, body) {
     const base = ((LCP_CONFIG && LCP_CONFIG.API_BASE_URL) || "").replace(
       /\/+$/,
@@ -56,8 +70,10 @@ const LCP_APP_PUSH = (() => {
     if (!currentUserId) return; // guest — nothing to attach the device to
     try {
       await api("/api/app-push-subscribe", { action: "subscribe", token });
+      toastOnce("registered", "Background notifications active", "success");
     } catch (err) {
       console.warn("app push register failed (will retry next launch):", err.message);
+      toastOnce("register-failed", "Push setup failed: " + err.message, "error");
     }
   }
 
@@ -71,6 +87,12 @@ const LCP_APP_PUSH = (() => {
 
     push.addListener("registrationError", (err) => {
       console.error("FCM registration error:", err?.error || err);
+      toastOnce(
+        "reg-error",
+        "Push setup error: " + (err?.error || "FCM registration failed") +
+          " — check google-services.json in the APK",
+        "error",
+      );
     });
 
     push.addListener("pushNotificationReceived", () => {
@@ -107,10 +129,22 @@ const LCP_APP_PUSH = (() => {
 
     try {
       const perm = await push.requestPermissions();
-      if (perm.receive !== "granted") return; // user said no — stay quiet
+      if (perm.receive !== "granted") {
+        toastOnce(
+          "perm-denied",
+          "Notifications blocked — phone Settings → Apps → Little Chef Pizza → Notifications se allow karein",
+          "error",
+        );
+        return;
+      }
       await push.register(); // fires "registration" with the FCM token
     } catch (err) {
       console.error("FCM setup failed:", err?.message || err);
+      toastOnce(
+        "setup-failed",
+        "Push setup failed: " + (err?.message || "unknown error"),
+        "error",
+      );
     }
   }
 
