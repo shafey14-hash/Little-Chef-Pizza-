@@ -171,9 +171,9 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          echo "Waiting for build $BUILD_ID to finish (max 30 minutes)..."
+          echo "Waiting for build $BUILD_ID to finish (max 60 minutes)..."
           STATUS="UNKNOWN"
-          for i in $(seq 1 60); do
+          for i in $(seq 1 120); do
             STATUS=$(eas build:list \
               --platform android \
               --limit 10 \
@@ -186,7 +186,7 @@ jobs:
                   const b=JSON.parse(d).find(x=>x.id===process.env.BUILD_ID);
                   console.log(b?b.status:'UNKNOWN');
                 })")
-            echo "[$i/60] status: $STATUS"
+            echo "[$i/120] status: $STATUS"
             case "$STATUS" in
               FINISHED|ERRORED|CANCELED) break ;;
             esac
