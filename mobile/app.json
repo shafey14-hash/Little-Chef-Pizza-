@@ -38,7 +38,14 @@
           "backgroundColor": "#0c0b0a"
         }
       ],
-      "@react-native-firebase/app",
+      [
+        "@react-native-firebase/app",
+        {
+          "android": {
+            "googleServicesFile": "./google-services.json"
+          }
+        }
+      ],
       [
         "expo-image-picker",
         {
