@@ -1,18 +1,12 @@
-# Builds the React Native (Expo) Android app with EAS Build and publishes the
+# Builds the React Native (Expo) Android app locally on GitHub Actions and publishes the
 # APK to the website root as app.apk — Vercel then serves it at
-# https://little-chef-pizza.vercel.app/app.apk, the exact URL the in-app
-# update modal and the homepage/download-page buttons point to.
+# https://little-chef-pizza.vercel.app/app.apk.
 #
-# One-time GitHub secrets (repo → Settings → Secrets and variables → Actions):
-#   EXPO_TOKEN                    — expo.dev → Account settings → Access tokens
+# One-time GitHub secrets:
 #   GOOGLE_SERVICES_JSON_BASE64   — single-line base64 of google-services.json
-#                                   (Firebase Console → Project settings →
-#                                   Your apps → Android com.littlechefpizza.app)
 #                                   created with: base64 -w0 google-services.json
-# The build fails fast with instructions if either is missing, so a red run
-# always names the exact secret to fix.
 
-name: Build Android APK (EAS)
+name: Build Android APK (Local CI)
 
 on:
   push:
@@ -20,16 +14,15 @@ on:
     paths:
       - "mobile/**"
       - ".github/workflows/android-apk.yml"
-  workflow_dispatch: # rebuild manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # app.apk is committed back to the repo (Vercel deploys it)
+      contents: write
     env:
       HAS_FCM: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 != '' }}
-      HAS_TOKEN: ${{ secrets.EXPO_TOKEN != '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -38,14 +31,16 @@ jobs:
         with:
           node-version: 22
 
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
       - name: Fail fast if the Firebase config secret is missing
         if: env.HAS_FCM != 'true'
         run: |
           echo "FAIL: the GOOGLE_SERVICES_JSON_BASE64 secret is not set."
-          echo "@react-native-firebase cannot compile without google-services.json."
-          echo "Fix: GitHub repo → Settings → Secrets and variables → Actions →"
-          echo "New repository secret GOOGLE_SERVICES_JSON_BASE64, value = output of"
-          echo "  base64 -w0 google-services.json"
           exit 1
 
       - name: Decode google-services.json
@@ -57,173 +52,26 @@ jobs:
           echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > google-services.json
           if ! grep -q '"project_id"' google-services.json; then
             echo "FAIL: GOOGLE_SERVICES_JSON_BASE64 decoded but is not a google-services.json."
-            echo "Re-create it with: base64 -w0 google-services.json"
-            echo "(single line, no label, no quotes) and update the secret."
             exit 1
           fi
           echo "OK: google-services.json decoded"
-
-      - name: Install EAS CLI
-        run: npm install -g eas-cli@latest
-
-      - name: Fail fast if the EXPO_TOKEN secret is missing
-        if: env.HAS_TOKEN != 'true'
-        run: |
-          echo "FAIL: the EXPO_TOKEN secret is not set, so eas-cli cannot"
-          echo "submit any build (expo.dev never sees a build at all)."
-          echo "Fix: expo.dev → Account settings → Access tokens → Create token"
-          echo "(a normal access token — not a robot), copy the value, then"
-          echo "GitHub repo → Settings → Secrets and variables → Actions →"
-          echo "New repository secret EXPO_TOKEN = that value."
-          exit 1
-
-      - name: Verify Expo authentication
-        working-directory: mobile
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          eas whoami || {
-            echo "FAIL: eas whoami failed — EXPO_TOKEN is invalid or expired."
-            echo "Fix: expo.dev → Account settings → Access tokens → create a new token"
-            echo "and update the EXPO_TOKEN secret in GitHub."
-            exit 1
-          }
-          echo "OK: Expo authentication verified."
 
       - name: Install mobile app dependencies
         working-directory: mobile
         run: npm ci
 
-      - name: Push google-services.json to EAS (as env file secret)
-        if: env.HAS_FCM == 'true'
+      - name: Expo Prebuild (Generate Android Native Code)
         working-directory: mobile
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx expo prebuild --platform android --clean
+
+      - name: Build Android APK (Gradle)
+        working-directory: mobile/android
+        run: ./gradlew assembleRelease
+
+      - name: Copy APK to Root
         run: |
-          # EAS build runs on EAS servers — google-services.json must be there too.
-          # eas env:set is the current command to create/update env variables.
-          eas env:set \
-            --scope project \
-            --name GOOGLE_SERVICES_JSON \
-            --type file \
-            --value ./google-services.json \
-            --environment production \
-            --non-interactive
-          echo "OK: google-services.json pushed to EAS."
-
-
-
-
-
-
-      - name: Submit EAS Build (preview profile → APK)
-        working-directory: mobile
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          echo "Submitting EAS build..."
-          # Redirect stderr to stdout so everything shows in GitHub log
-          eas build \
-            --platform android \
-            --profile preview \
-            --non-interactive \
-            --no-wait \
-            2>&1 | tee "$RUNNER_TEMP/eas-out.txt"
-
-          EXIT_CODE=${PIPESTATUS[0]}
-          if [ "$EXIT_CODE" -ne 0 ]; then
-            echo "FAIL: eas build exited with code $EXIT_CODE (see output above)."
-            exit 1
-          fi
-
-          # EAS prints the build URL like: https://expo.dev/accounts/.../builds/<uuid>
-          BUILD_URL=$(grep -o 'https://expo\.dev/accounts/[^ ]*' "$RUNNER_TEMP/eas-out.txt" | head -1 || true)
-
-          if [ -n "$BUILD_URL" ]; then
-            BUILD_ID=$(echo "$BUILD_URL" | grep -o '[a-f0-9-]*$' || true)
-            echo "Submitted EAS build: $BUILD_ID"
-            echo "Build URL: $BUILD_URL"
-          else
-            echo "Could not parse build URL from output — querying build list as fallback..."
-            BUILD_ID=$(eas build:list \
-              --platform android \
-              --limit 1 \
-              --json \
-              --non-interactive \
-              2>/dev/null \
-              | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d)[0].id))")
-            echo "Latest build ID: $BUILD_ID"
-          fi
-
-          if [ -z "$BUILD_ID" ]; then
-            echo "FAIL: could not determine EAS build ID."
-            echo "---- stdout ----"
-            cat "$RUNNER_TEMP/eas-out.txt"
-            echo "---- stderr ----"
-            cat "$RUNNER_TEMP/eas-err.txt"
-            exit 1
-          fi
-
-          echo "BUILD_ID=$BUILD_ID" >> "$GITHUB_ENV"
-
-      - name: Wait for the build to finish
-        working-directory: mobile
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          echo "Waiting for build $BUILD_ID to finish (max 60 minutes)..."
-          STATUS="UNKNOWN"
-          for i in $(seq 1 120); do
-            STATUS=$(eas build:list \
-              --platform android \
-              --limit 10 \
-              --json \
-              --non-interactive \
-              2>/dev/null \
-              | BUILD_ID="$BUILD_ID" node -e "
-                let d='';
-                process.stdin.on('data',c=>d+=c).on('end',()=>{
-                  const b=JSON.parse(d).find(x=>x.id===process.env.BUILD_ID);
-                  console.log(b?b.status:'UNKNOWN');
-                })")
-            echo "[$i/120] status: $STATUS"
-            case "$STATUS" in
-              FINISHED|ERRORED|CANCELED) break ;;
-            esac
-            sleep 30
-          done
-          if [ "$STATUS" != "FINISHED" ]; then
-            echo "FAIL: EAS build $BUILD_ID ended as $STATUS."
-            echo "Open https://expo.dev and check your project builds for $BUILD_ID"
-            exit 1
-          fi
-          echo "OK: build finished"
-
-      - name: Download the APK
-        working-directory: mobile
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          APK_URL=$(eas build:list \
-            --platform android \
-            --limit 10 \
-            --json \
-            --non-interactive \
-            2>/dev/null \
-            | BUILD_ID="$BUILD_ID" node -e "
-              let d='';
-              process.stdin.on('data',c=>d+=c).on('end',()=>{
-                const b=JSON.parse(d).find(x=>x.id===process.env.BUILD_ID);
-                console.log((b&&b.artifacts&&b.artifacts.buildUrl)||'');
-              })")
-          if [ -z "$APK_URL" ]; then
-            echo "FAIL: finished build $BUILD_ID has no artifact URL."
-            exit 1
-          fi
-          echo "Downloading APK from: $APK_URL"
-          curl -sL "$APK_URL" -o ../app.apk
-          test -s ../app.apk || { echo "FAIL: downloaded app.apk is empty."; exit 1; }
-          ls -lh ../app.apk
+          cp mobile/android/app/build/outputs/apk/release/app-release.apk app.apk
+          ls -lh app.apk
 
       - name: Publish app.apk to the website root
         run: |
@@ -234,6 +82,6 @@ jobs:
             echo "APK unchanged — nothing to commit."
             exit 0
           fi
-          git commit -m "Publish latest app.apk (EAS build $BUILD_ID)"
+          git commit -m "Publish latest app.apk (Local CI build)"
           git push
-          echo "Pushed app.apk — Vercel will serve it at /app.apk in a minute."
+          echo "Pushed app.apk"
