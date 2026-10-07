@@ -90,6 +90,11 @@ jobs:
           }
           echo "OK: Expo authentication verified."
 
+      - name: Install mobile app dependencies
+        working-directory: mobile
+        run: npm ci
+
+
       - name: Submit EAS Build (preview profile → APK)
         working-directory: mobile
         env:
