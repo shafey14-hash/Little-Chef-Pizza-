@@ -99,12 +99,21 @@ body {
   /* Floating cart bar: full-width strip parked just above the tab bar
      (safe-area aware), never overlapping it. */
   .cartbar {
-    left: 12px;
+    left: auto;
     right: 12px;
-    bottom: calc(62px + env(safe-area-inset-bottom, 0px) + 10px);
+    bottom: calc(62px + env(safe-area-inset-bottom, 0px) + 12px);
     transform: none;
-    justify-content: space-between;
+    justify-content: center;
     max-width: none;
+    width: auto;
+    border-radius: 999px;
+    padding: 10px 16px;
+    box-shadow: 0 4px 16px rgba(226, 34, 42, 0.4);
+    transition: transform 0.2s ease, right 0.3s ease, left 0.3s ease;
+  }
+  .cartbar--avoid-left {
+    right: auto;
+    left: 12px;
   }
   .cartbar:hover {
     transform: none;

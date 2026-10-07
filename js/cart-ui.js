@@ -86,6 +86,28 @@ const LCP_CART_UI = (() => {
     document.addEventListener("keydown", onKeydown);
     bindSwipeClose();
 
+    let scrollThrottle;
+    window.addEventListener("scroll", () => {
+      if (scrollThrottle) return;
+      scrollThrottle = setTimeout(() => {
+        scrollThrottle = null;
+        if (!bar || bar.hidden || window.innerWidth > 860) return;
+        const rect = bar.getBoundingClientRect();
+        const y = rect.top + rect.height / 2;
+        bar.style.pointerEvents = "none";
+        bar.style.opacity = "0";
+        const el = document.elementFromPoint(window.innerWidth - 40, y);
+        const elLeft = document.elementFromPoint(40, y);
+        bar.style.pointerEvents = "";
+        bar.style.opacity = "1";
+        const check = (e) => e && (e.tagName === "BUTTON" || e.tagName === "A" || e.closest("button, a, input, .btn"));
+        const rightBlocked = check(el);
+        const leftBlocked = check(elLeft);
+        if (rightBlocked && !leftBlocked) bar.classList.add("cartbar--avoid-left");
+        else if (!rightBlocked) bar.classList.remove("cartbar--avoid-left");
+      }, 100);
+    }, { passive: true });
+
     LCP_CART.onChange(render);
     // Load the catalog BEFORE the first render — otherwise items restored
     // from a previous page flash "Unavailable" until the next cart change.
