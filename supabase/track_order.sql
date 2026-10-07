@@ -1,6 +1,12 @@
+-- Public order lookup by order number (customer Track Order page).
+-- Run in Supabase SQL Editor after schema.sql / policies.sql.
+
 create or replace function public.track_order(p_order_number text)
 returns json
-language plpgsql security definer as $$
+language plpgsql
+security definer
+set search_path = public
+as $$
 declare
   v_order record;
   v_items json;
@@ -14,18 +20,22 @@ begin
     return null;
   end if;
 
+  -- Size is stored inside product_name_snapshot as "Name (Size)" at order time;
+  -- order_items has no separate size column (see schema.sql).
   select json_agg(json_build_object(
     'name', coalesce(i.product_name_snapshot, i.deal_name_snapshot),
     'quantity', i.quantity,
-    'size', i.size_snapshot
+    'size', null
   ))
   into v_items
   from (
-    select product_name_snapshot, null as deal_name_snapshot, quantity, size_snapshot
-    from public.order_items where order_id = v_order.id
+    select product_name_snapshot, null::text as deal_name_snapshot, quantity
+    from public.order_items
+    where order_id = v_order.id
     union all
-    select null, deal_name_snapshot, quantity, null
-    from public.order_deals where order_id = v_order.id
+    select null::text, deal_name_snapshot, quantity
+    from public.order_deals
+    where order_id = v_order.id
   ) i;
 
   return json_build_object(
@@ -37,3 +47,5 @@ begin
   );
 end;
 $$;
+
+grant execute on function public.track_order(text) to anon, authenticated;

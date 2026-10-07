@@ -234,12 +234,14 @@ const LCP_NAV = (() => {
     await LCP_DB.auth.init(); // wait for the real Supabase session before checking the role
     const admin = requireAdmin();
     if (!admin) return null;
+    // Absolute /admin/… paths — relative "orders.html" breaks when the URL is
+    // /admin (no trailing slash): the browser resolves it to /orders.html (404).
     const links = [
-      ["dashboard", "Dashboard", "index.html"],
-      ["orders", "Orders", "orders.html"],
-      ["products", "Products & Prices", "products.html"],
-      ["deals", "Deals", "deals.html"],
-      ["history", "Order History", "history.html"],
+      ["dashboard", "Dashboard", "/admin/index.html"],
+      ["orders", "Orders", "/admin/orders.html"],
+      ["products", "Products & Prices", "/admin/products.html"],
+      ["deals", "Deals", "/admin/deals.html"],
+      ["history", "Order History", "/admin/history.html"],
     ];
     document.body.insertAdjacentHTML(
       "afterbegin",

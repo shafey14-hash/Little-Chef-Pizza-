@@ -423,7 +423,7 @@ const LCP_NOTIFY = (() => {
           </div>
           <div class="notify-list" id="lcp-notify-list"></div>
           <div class="notify-push" id="lcp-notify-push" hidden></div>
-          <div class="notify-panel__foot"><a href="orders.html">View all orders →</a></div>
+          <div class="notify-panel__foot"><a href="${scope === "admin" ? "/admin/orders.html" : "orders.html"}">View all orders →</a></div>
         </div>
       </div>`;
   }
