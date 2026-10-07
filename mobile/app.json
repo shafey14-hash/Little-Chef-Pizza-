@@ -1,0 +1,71 @@
+{
+  "expo": {
+    "name": "Little Chef Pizza",
+    "slug": "little-chef-pizza",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "littlechefpizza",
+    "updates": {
+      "url": "https://u.expo.dev/accounts/shafey14-hash/projects/little-chef-pizza"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.littlechefpizza.app"
+    },
+    "android": {
+      "package": "com.littlechefpizza.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0c0b0a"
+      },
+      "permissions": ["android.permission.RECORD_AUDIO"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-logo.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0c0b0a"
+        }
+      ],
+      "@react-native-firebase/app",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Little Chef Pizza to pick your EasyPaisa payment screenshot."
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Baloo2_500Medium.ttf",
+            "./assets/fonts/Baloo2_600SemiBold.ttf",
+            "./assets/fonts/Baloo2_700Bold.ttf",
+            "./assets/fonts/Baloo2_800ExtraBold.ttf",
+            "./assets/fonts/Inter_400Regular.ttf",
+            "./assets/fonts/Inter_500Medium.ttf",
+            "./assets/fonts/Inter_600SemiBold.ttf",
+            "./assets/fonts/Inter_700Bold.ttf"
+          ]
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7962480b-e342-48d2-a882-0da6a8860469"
+      }
+    },
+    "owner": "shafey14-hash"
+  }
+}

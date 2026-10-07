@@ -103,34 +103,39 @@ completely separate. A Postgres trigger (`handle_new_user` in
 `public.profiles` row — with `role` read from signup metadata — every time
 someone signs up, so the client never inserts into `profiles` directly.
 
-## Mobile app (Android APK)
+## Mobile app (React Native / Expo)
 
-`app/` is a **Capacitor 6 wrapper** that loads the live website (`server.url`
-in `app/capacitor.config.json`). The app is literally the same website, so it
-shares the same Supabase database, auth, APIs and realtime subscriptions —
-and **almost every website change applies to the app instantly with no new
-APK**, because the app renders the live site. Only changes to `app/` itself
-(icons, native config, plugins) need a rebuild.
+`mobile/` is a standalone **React Native (Expo SDK 57)** app — native screens
+that mirror the website's mobile UI and talk straight to Supabase + the same
+`/api` endpoints (no WebView). It replaces the old Capacitor wrapper in
+`app/` (left in place for reference; safe to delete once the new APK ships).
 
-- **Build & release** — `.github/workflows/android-apk.yml` builds the APK in
-  the cloud (GitHub Actions: npm ci → cap sync → gradle → sign with
-  apksigner) and publishes it as a Release tagged `latest`. The asset is
-  always named `little-chef-pizza.apk`, so the download link and the QR code
-  (`assets/images/app-download-qr.png`) never change:
-  `https://github.com/shafey14-hash/Little-Chef-Pizza-/releases/latest/download/little-chef-pizza.apk`
-- **Signing** — the release APK is signed with a PKCS#12 keystore
-  (`littlechef-keystore.p12`, gitignored). The matching values live in repo
-  secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` (the keystore
-  uses one password for both store and key, so no separate key password is
-  needed). Until those secrets exist, the workflow builds a **debug APK** so
-  the pipeline works end-to-end from day one. Never lose the keystore —
-  Android refuses to install a new APK over an old one if the signing key
-  differs.
-- **Website download section** — `customer/download.html` + a home-page
-  banner offer the direct APK link and QR code. Inside the app these are
-  hidden automatically (`window.Capacitor.isNativePlatform()` adds an `is-app`
-  class to `<html>` and CSS hides the download section + footer link), so
-  customers only see the download prompt on the website.
+- **Build & release** — `.github/workflows/android-apk.yml` submits the build
+  to **EAS Build** (`eas build -p android --profile preview` → APK) whenever
+  `mobile/` changes on `main`, waits for it to finish, and commits the
+  artifact to the repo root as `app.apk`. Vercel serves it at
+  `https://little-chef-pizza.vercel.app/app.apk` — the link hard-wired into
+  the homepage/download-page buttons, the QR code
+  (`assets/images/app-download-qr.png`) and the app's own update modal.
+- **Secrets** — two repo secrets: `EXPO_TOKEN` (expo.dev → Account settings →
+  Access tokens) and `GOOGLE_SERVICES_JSON_BASE64` (single-line
+  `base64 -w0` of the Firebase `google-services.json` for
+  `com.littlechefpizza.app`). The build fails fast naming the exact secret
+  when one is missing. Android signing is handled by EAS credentials
+  (uploaded once via `eas credentials`).
+- **OTA updates** — JS-only fixes ship without a new APK: `expo-updates`
+  checks EAS Update on launch and applies newer bundles automatically
+  (`runtimeVersion: appVersion` policy, EAS channel `preview`).
+- **Forced upgrades** — on launch the app fetches `app-version.json` from the
+  site root; if the installed version (`expo.version` in `mobile/app.json`)
+  is below `minVersion`, it shows a blocking "A new version of the app is
+  available!" modal linking to `/app.apk`. Raise `minVersion` whenever a
+  release changes native code or the database schema.
+- **Push notifications** — native FCM via `@react-native-firebase/messaging`
+  (same backend as the old wrapper: `/api/app-push-subscribe` +
+  `FCM_SERVICE_ACCOUNT` on Vercel), with token registration on login,
+  foreground/background/killed handling and tap-through to the matching
+  screen.
 
 ## Emails
 

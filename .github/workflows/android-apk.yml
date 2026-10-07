@@ -1,20 +1,24 @@
-# Builds an Android APK on every push that touches app/ and publishes it as a
-# GitHub Release tagged "latest". The asset keeps the same name
-# (little-chef-pizza.apk), so the download URL + QR code never change:
-#   https://github.com/shafey14-hash/Little-Chef-Pizza-/releases/latest/download/little-chef-pizza.apk
+# Builds the React Native (Expo) Android app with EAS Build and publishes the
+# APK to the website root as app.apk — Vercel then serves it at
+# https://little-chef-pizza.vercel.app/app.apk, the exact URL the in-app
+# update modal and the homepage/download-page buttons point to.
 #
-# The app loads the LIVE website via server.url, so most website changes never
-# need a new APK — this only rebuilds when app/ files actually change (icons,
-# config, native code). Signing is done with apksigner directly so the PKCS#12
-# keystore type is explicit (no third-party signing action needed).
+# One-time GitHub secrets (repo → Settings → Secrets and variables → Actions):
+#   EXPO_TOKEN                    — expo.dev → Account settings → Access tokens
+#   GOOGLE_SERVICES_JSON_BASE64   — single-line base64 of google-services.json
+#                                   (Firebase Console → Project settings →
+#                                   Your apps → Android com.littlechefpizza.app)
+#                                   created with: base64 -w0 google-services.json
+# The build fails fast with instructions if either is missing, so a red run
+# always names the exact secret to fix.
 
-name: Build Android APK
+name: Build Android APK (EAS)
 
 on:
   push:
     branches: [main]
     paths:
-      - "app/**"
+      - "mobile/**"
       - ".github/workflows/android-apk.yml"
   workflow_dispatch: # rebuild manually from the Actions tab
 
@@ -22,14 +26,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # required to create/update the GitHub Release
+      contents: write # app.apk is committed back to the repo (Vercel deploys it)
     env:
-      # True once the 4 keystore secrets exist in the repo. Until then a debug
-      # APK is built, so the whole pipeline works before secrets are added.
-      HAS_SECRETS: ${{ secrets.KEYSTORE_BASE64 != '' }}
-      # True once the Firebase config secret exists. Until then the APK builds
-      # fine but native push notifications stay disabled (gradle skips the
-      # google-services plugin when the JSON file is absent).
       HAS_FCM: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 != '' }}
 
     steps:
@@ -38,143 +36,89 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: app/package-lock.json
 
-      - name: Install Capacitor dependencies
-        working-directory: app
-        run: npm ci
+      - name: Fail fast if the Firebase config secret is missing
+        if: env.HAS_FCM != 'true'
+        run: |
+          echo "FAIL: the GOOGLE_SERVICES_JSON_BASE64 secret is not set."
+          echo "@react-native-firebase cannot compile without google-services.json."
+          echo "Fix: GitHub repo → Settings → Secrets and variables → Actions →"
+          echo "New repository secret GOOGLE_SERVICES_JSON_BASE64, value = output of"
+          echo "  base64 -w0 google-services.json"
+          exit 1
 
-      - name: Sync web assets into the Android project
-        working-directory: app
-        run: npx cap sync android
-
-      # Firebase config for native push (@capacitor/push-notifications). The
-      # gradle build only applies the google-services plugin when this file
-      # exists, so this step is skipped (and the APK still builds) until the
-      # secret is added. GOOGLE_SERVICES_JSON_BASE64 = base64 of the
-      # google-services.json downloaded from Firebase Console.
-      - name: Decode google-services.json (checks GOOGLE_SERVICES_JSON_BASE64)
+      - name: Decode google-services.json
         if: env.HAS_FCM == 'true'
         env:
           GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
-        working-directory: app/android/app
+        working-directory: mobile
         run: |
           echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > google-services.json
           if ! grep -q '"project_id"' google-services.json; then
             echo "FAIL: GOOGLE_SERVICES_JSON_BASE64 decoded but is not a google-services.json."
-            echo "Re-create it: base64 your google-services.json (Firebase Console → Project settings → Your apps) and update the secret — single line, no label, no quotes."
+            echo "Re-create it with: base64 -w0 google-services.json"
+            echo "(single line, no label, no quotes) and update the secret."
             exit 1
           fi
           echo "OK: google-services.json decoded"
 
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+      - name: Install EAS CLI
+        run: npm install -g eas-cli@latest
 
-      - uses: gradle/actions/setup-gradle@v4
-
-      - name: Build unsigned release APK
-        if: env.HAS_SECRETS == 'true'
-        working-directory: app/android
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleRelease
-
-      - name: Build debug APK (no signing secrets yet)
-        if: env.HAS_SECRETS != 'true'
-        working-directory: app/android
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug
-
-      # --- Signing, split into small named steps so a bad secret is identified
-      # by the failing step name alone (GitHub annotations are unreliable here). ---
-
-      - name: Sign step 1/4 - Decode keystore (checks KEYSTORE_BASE64)
-        if: env.HAS_SECRETS == 'true'
+      - name: Submit EAS Build (preview profile → APK)
+        working-directory: mobile
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > keystore.p12
-          # A valid PKCS#12 file starts with DER bytes 30 82
-          if ! od -An -tx1 -N2 keystore.p12 | tr -s ' ' | grep -q "30 82"; then
-            echo "FAIL: KEYSTORE_BASE64 is invalid - the decoded file is not a PKCS#12 keystore."
-            echo "Re-paste it from APP-SECRETS-SETUP.txt: copy ONLY the long line AFTER 'KEYSTORE_BASE64 =', no label, no quotes, single line."
+          OUT=$(eas build --platform android --profile preview --non-interactive --no-wait --json)
+          BUILD_ID=$(echo "$OUT" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d)[0].id))")
+          echo "Submitted EAS build: $BUILD_ID"
+          echo "BUILD_ID=$BUILD_ID" >> "$GITHUB_ENV"
+
+      - name: Wait for the build to finish
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          STATUS="UNKNOWN"
+          for i in $(seq 1 60); do
+            STATUS=$(eas build:list --platform android --limit 5 --json --non-interactive \
+              | BUILD_ID="$BUILD_ID" node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const b=JSON.parse(d).find(x=>x.id===process.env.BUILD_ID);console.log(b?b.status:'UNKNOWN')})")
+            echo "[$i/60] status: $STATUS"
+            case "$STATUS" in
+              FINISHED|ERRORED|CANCELED) break ;;
+            esac
+            sleep 30
+          done
+          if [ "$STATUS" != "FINISHED" ]; then
+            echo "FAIL: EAS build $BUILD_ID ended as $STATUS."
+            echo "Open https://expo.dev → your project → builds → $BUILD_ID for the real build logs."
             exit 1
           fi
-          echo "OK: keystore.p12 decoded ($(stat -c%s keystore.p12) bytes)"
+          echo "OK: build finished"
 
-      - name: Sign step 2/4 - Open keystore (checks KEYSTORE_PASSWORD + KEY_ALIAS)
-        if: env.HAS_SECRETS == 'true'
+      - name: Download the APK
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          if ! keytool -list -keystore keystore.p12 -storetype PKCS12 -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" >/dev/null 2>&1; then
-            echo "FAIL: keystore did not open. One of these two secrets is wrong: KEYSTORE_PASSWORD or KEY_ALIAS."
-            echo "From APP-SECRETS-SETUP.txt: KEYSTORE_PASSWORD must match EXACTLY (no extra spaces), KEY_ALIAS must be 'littlechef' (all lowercase, no spaces)."
-            echo "--- keytool's own error message (tells you which one): ---"
-            keytool -list -keystore keystore.p12 -storetype PKCS12 -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" 2>&1 | head -5 || true
+          APK_URL=$(eas build:list --platform android --limit 5 --json --non-interactive \
+            | BUILD_ID="$BUILD_ID" node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const b=JSON.parse(d).find(x=>x.id===process.env.BUILD_ID);console.log((b.artifacts&&b.artifacts.buildUrl)||'')})")
+          if [ -z "$APK_URL" ]; then
+            echo "FAIL: finished build $BUILD_ID has no artifact URL."
             exit 1
           fi
-          echo "OK: keystore opened with the given password and alias"
+          curl -sL "$APK_URL" -o app.apk
+          test -s app.apk || { echo "FAIL: downloaded app.apk is empty."; exit 1; }
+          ls -lh app.apk
 
-      - name: Sign step 3/4 - Build zipaligned APK
-        if: env.HAS_SECRETS == 'true'
+      - name: Publish app.apk to the website root
         run: |
-          BT_ROOT=$ANDROID_SDK_ROOT/build-tools
-          BT=$(ls -d "$BT_ROOT"/* 2>/dev/null | sort -V | tail -1)
-          if [ -z "$BT" ]; then
-            SDKMANAGER=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager
-            [ -x "$SDKMANAGER" ] || SDKMANAGER=$(find "$ANDROID_SDK_ROOT/cmdline-tools" -name sdkmanager -type f 2>/dev/null | head -1)
-            yes | "$SDKMANAGER" "build-tools;34.0.0" >/dev/null || true
-            BT=$BT_ROOT/34.0.0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.apk
+          if git diff --cached --quiet; then
+            echo "APK unchanged — nothing to commit."
+            exit 0
           fi
-          echo "Using build-tools at: $BT"
-          "$BT/zipalign" -f -p 4 \
-            app/android/app/build/outputs/apk/release/app-release-unsigned.apk \
-            aligned.apk
-          echo "OK: aligned.apk created"
-
-      - name: Sign step 4/4 - Sign + verify APK
-        if: env.HAS_SECRETS == 'true'
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        run: |
-          BT=$(ls -d "$ANDROID_SDK_ROOT"/build-tools/* | sort -V | tail -1)
-          "$BT/apksigner" sign \
-            --ks keystore.p12 \
-            --ks-type PKCS12 \
-            --ks-key-alias "$KEY_ALIAS" \
-            --ks-pass "pass:$KEYSTORE_PASSWORD" \
-            --out little-chef-pizza.apk aligned.apk
-          "$BT/apksigner" verify --print-certs little-chef-pizza.apk
-
-      - name: Stage the APK under a stable name
-        run: |
-          if [ "${{ env.HAS_SECRETS }}" != "true" ]; then
-            cp app/android/app/build/outputs/apk/debug/app-debug.apk little-chef-pizza.apk
-          fi
-          test -f little-chef-pizza.apk
-          ls -lh little-chef-pizza.apk
-
-      - name: Publish Release "latest"
-        uses: ncipollo/release-action@v1
-        with:
-          tag: latest
-          name: Little Chef Pizza App (latest)
-          artifacts: little-chef-pizza.apk
-          artifactContentType: application/vnd.android.package-archive
-          allowUpdates: true
-          replacesArtifacts: true
-          removeArtifacts: true # purge the old app.apk from this release
-          makeLatest: true
-          body: |
-            Latest build of the Little Chef Pizza Android app.
-
-            - Signed release (once keystore secrets are configured), otherwise a debug build.
-            - The app loads the live website, so website updates apply automatically —
-              only native/app changes require a new APK from this release.
+          git commit -m "Publish latest app.apk (EAS build $BUILD_ID)"
+          git push
+          echo "Pushed app.apk — Vercel will serve it at /app.apk in a minute."
