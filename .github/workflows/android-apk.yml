@@ -29,13 +29,14 @@ jobs:
       contents: write # app.apk is committed back to the repo (Vercel deploys it)
     env:
       HAS_FCM: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 != '' }}
+      HAS_TOKEN: ${{ secrets.EXPO_TOKEN != '' }}
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Fail fast if the Firebase config secret is missing
         if: env.HAS_FCM != 'true'
@@ -65,24 +66,101 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli@latest
 
+      - name: Fail fast if the EXPO_TOKEN secret is missing
+        if: env.HAS_TOKEN != 'true'
+        run: |
+          echo "FAIL: the EXPO_TOKEN secret is not set, so eas-cli cannot"
+          echo "submit any build (expo.dev never sees a build at all)."
+          echo "Fix: expo.dev → Account settings → Access tokens → Create token"
+          echo "(a normal access token — not a robot), copy the value, then"
+          echo "GitHub repo → Settings → Secrets and variables → Actions →"
+          echo "New repository secret EXPO_TOKEN = that value."
+          exit 1
+
+      - name: Verify Expo authentication
+        working-directory: mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          eas whoami || {
+            echo "FAIL: eas whoami failed — EXPO_TOKEN is invalid or expired."
+            echo "Fix: expo.dev → Account settings → Access tokens → create a new token"
+            echo "and update the EXPO_TOKEN secret in GitHub."
+            exit 1
+          }
+          echo "OK: Expo authentication verified."
+
       - name: Submit EAS Build (preview profile → APK)
         working-directory: mobile
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          OUT=$(eas build --platform android --profile preview --non-interactive --no-wait --json)
-          BUILD_ID=$(echo "$OUT" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d)[0].id))")
-          echo "Submitted EAS build: $BUILD_ID"
+          echo "Submitting EAS build..."
+          eas build \
+            --platform android \
+            --profile preview \
+            --non-interactive \
+            --no-wait \
+            2>"$RUNNER_TEMP/eas-err.txt" | tee "$RUNNER_TEMP/eas-out.txt"
+
+          EXIT_CODE=${PIPESTATUS[0]}
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            echo "FAIL: eas build exited with code $EXIT_CODE."
+            echo "---- stderr ----"
+            cat "$RUNNER_TEMP/eas-err.txt"
+            exit 1
+          fi
+
+          # EAS prints the build URL like: https://expo.dev/accounts/.../builds/<uuid>
+          BUILD_URL=$(grep -o 'https://expo\.dev/accounts/[^ ]*' "$RUNNER_TEMP/eas-out.txt" | head -1 || true)
+
+          if [ -n "$BUILD_URL" ]; then
+            BUILD_ID=$(echo "$BUILD_URL" | grep -o '[a-f0-9-]*$' || true)
+            echo "Submitted EAS build: $BUILD_ID"
+            echo "Build URL: $BUILD_URL"
+          else
+            echo "Could not parse build URL from output — querying build list as fallback..."
+            BUILD_ID=$(eas build:list \
+              --platform android \
+              --limit 1 \
+              --json \
+              --non-interactive \
+              2>/dev/null \
+              | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d)[0].id))")
+            echo "Latest build ID: $BUILD_ID"
+          fi
+
+          if [ -z "$BUILD_ID" ]; then
+            echo "FAIL: could not determine EAS build ID."
+            echo "---- stdout ----"
+            cat "$RUNNER_TEMP/eas-out.txt"
+            echo "---- stderr ----"
+            cat "$RUNNER_TEMP/eas-err.txt"
+            exit 1
+          fi
+
           echo "BUILD_ID=$BUILD_ID" >> "$GITHUB_ENV"
 
       - name: Wait for the build to finish
+        working-directory: mobile
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
+          echo "Waiting for build $BUILD_ID to finish (max 30 minutes)..."
           STATUS="UNKNOWN"
           for i in $(seq 1 60); do
-            STATUS=$(eas build:list --platform android --limit 5 --json --non-interactive \
-              | BUILD_ID="$BUILD_ID" node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const b=JSON.parse(d).find(x=>x.id===process.env.BUILD_ID);console.log(b?b.status:'UNKNOWN')})")
+            STATUS=$(eas build:list \
+              --platform android \
+              --limit 10 \
+              --json \
+              --non-interactive \
+              2>/dev/null \
+              | BUILD_ID="$BUILD_ID" node -e "
+                let d='';
+                process.stdin.on('data',c=>d+=c).on('end',()=>{
+                  const b=JSON.parse(d).find(x=>x.id===process.env.BUILD_ID);
+                  console.log(b?b.status:'UNKNOWN');
+                })")
             echo "[$i/60] status: $STATUS"
             case "$STATUS" in
               FINISHED|ERRORED|CANCELED) break ;;
@@ -91,24 +169,36 @@ jobs:
           done
           if [ "$STATUS" != "FINISHED" ]; then
             echo "FAIL: EAS build $BUILD_ID ended as $STATUS."
-            echo "Open https://expo.dev → your project → builds → $BUILD_ID for the real build logs."
+            echo "Open https://expo.dev and check your project builds for $BUILD_ID"
             exit 1
           fi
           echo "OK: build finished"
 
       - name: Download the APK
+        working-directory: mobile
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          APK_URL=$(eas build:list --platform android --limit 5 --json --non-interactive \
-            | BUILD_ID="$BUILD_ID" node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const b=JSON.parse(d).find(x=>x.id===process.env.BUILD_ID);console.log((b.artifacts&&b.artifacts.buildUrl)||'')})")
+          APK_URL=$(eas build:list \
+            --platform android \
+            --limit 10 \
+            --json \
+            --non-interactive \
+            2>/dev/null \
+            | BUILD_ID="$BUILD_ID" node -e "
+              let d='';
+              process.stdin.on('data',c=>d+=c).on('end',()=>{
+                const b=JSON.parse(d).find(x=>x.id===process.env.BUILD_ID);
+                console.log((b&&b.artifacts&&b.artifacts.buildUrl)||'');
+              })")
           if [ -z "$APK_URL" ]; then
             echo "FAIL: finished build $BUILD_ID has no artifact URL."
             exit 1
           fi
-          curl -sL "$APK_URL" -o app.apk
-          test -s app.apk || { echo "FAIL: downloaded app.apk is empty."; exit 1; }
-          ls -lh app.apk
+          echo "Downloading APK from: $APK_URL"
+          curl -sL "$APK_URL" -o ../app.apk
+          test -s ../app.apk || { echo "FAIL: downloaded app.apk is empty."; exit 1; }
+          ls -lh ../app.apk
 
       - name: Publish app.apk to the website root
         run: |
