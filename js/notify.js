@@ -28,6 +28,36 @@ const LCP_NOTIFY = (() => {
   let debounceTimer = null;
   let unsubscribeRealtime = null;
 
+  // ------------------------------------------------------------- sound
+  // Custom notification sound player.
+  // Place your sound file at /assets/sounds/notification.mp3
+  // The service worker posts a "LCP_PLAY_SOUND" message when a background
+  // push arrives with a page tab open; we also call playSound() directly
+  // when a new in-app toast fires (so sound plays even without push).
+  let audioCtx = null;
+
+  function playSound() {
+    try {
+      const audio = new Audio("/assets/sounds/notification.mp3");
+      audio.volume = 1.0;
+      audio.play().catch(() => {
+        // Autoplay policy blocked it — user must interact first.
+        // After the first bell click the policy is lifted and sounds work.
+      });
+    } catch (e) {
+      /* Audio API unavailable — silent fallback */
+    }
+  }
+
+  // Listen for the service worker telling us to play the sound.
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.addEventListener("message", (event) => {
+      if (event.data && event.data.type === "LCP_PLAY_SOUND") {
+        playSound();
+      }
+    });
+  }
+
   function u() {
     return LCP_UTIL || {};
   }
@@ -454,6 +484,8 @@ const LCP_NOTIFY = (() => {
         state.items = [...fresh, ...state.items].slice(0, MAX_ITEMS);
         renderBadge();
         renderPanel();
+        // Play custom sound for every new in-app notification batch
+        playSound();
         fresh
           .slice(0, 3)
           .forEach((i) => u().toast?.(i.text.replace("🔔 ", ""), "info"));

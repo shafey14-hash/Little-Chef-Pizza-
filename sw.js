@@ -36,9 +36,26 @@ self.addEventListener("push", (event) => {
     tag: data.tag || "lcp-order",
     renotify: true,
     data: { url: data.url || "/customer/orders.html" },
+    // Custom sound for browser notifications (Chrome on Android/Desktop).
+    // Place your sound file at /assets/sounds/notification.mp3
+    // Most browsers do NOT support the 'sound' field in showNotification —
+    // instead we message the open page to play it (see the message below).
+    // Some Android browsers (Samsung Internet) do honour this field:
+    sound: "/assets/sounds/notification.mp3",
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(
+    self.registration.showNotification(title, options).then(() => {
+      // Tell every open tab of this site to play the custom sound.
+      // js/notify.js listens for this message and plays the audio.
+      return self.clients.matchAll({ type: "window", includeUncontrolled: true })
+        .then((clients) => {
+          clients.forEach((client) => {
+            client.postMessage({ type: "LCP_PLAY_SOUND" });
+          });
+        });
+    })
+  );
 });
 
 self.addEventListener("notificationclick", (event) => {

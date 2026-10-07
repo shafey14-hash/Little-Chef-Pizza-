@@ -155,7 +155,19 @@ async function sendToAppTokens(tokens, payload) {
                   url: String(payload.url || "/customer/orders.html"),
                   tag: String(payload.tag || "lcp-order"),
                 },
-                android: { priority: "HIGH" },
+                android: {
+                  priority: "HIGH",
+                  notification: {
+                    // Custom sound: file must be at
+                    // app/android/app/src/main/res/raw/notification.mp3
+                    // (without the .mp3 extension here)
+                    sound: "notification",
+                    channel_id: "lcp_orders",
+                    icon: "ic_stat_notify",
+                    color: "#e2222a",
+                    click_action: "FLUTTER_NOTIFICATION_CLICK",
+                  },
+                },
               },
             }),
           },
