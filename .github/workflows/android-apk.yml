@@ -90,27 +90,28 @@ jobs:
           }
           echo "OK: Expo authentication verified."
 
-      - name: Push google-services.json to EAS secrets
+      - name: Install mobile app dependencies
+        working-directory: mobile
+        run: npm ci
+
+      - name: Push google-services.json to EAS (as env file secret)
         if: env.HAS_FCM == 'true'
         working-directory: mobile
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           # EAS build runs on EAS servers — google-services.json must be there too.
-          # Push it as a file secret so EAS prebuild can access it during build.
-          eas secret:create \
+          # eas env:set is the current command to create/update env variables.
+          eas env:set \
             --scope project \
             --name GOOGLE_SERVICES_JSON \
             --type file \
             --value ./google-services.json \
-            --force \
+            --environment production \
             --non-interactive
-          echo "OK: google-services.json pushed to EAS as file secret."
+          echo "OK: google-services.json pushed to EAS."
 
 
-      - name: Install mobile app dependencies
-        working-directory: mobile
-        run: npm ci
 
 
 
