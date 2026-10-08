@@ -121,9 +121,6 @@ body {
   .cartbar:active {
     transform: scale(0.98);
   }
-  .topnav .bucket-pill {
-    display: none;
-  } /* mobile has the bottom tab bar + cart bar; this button is redundant clutter here */
 
   /* Cart drawer becomes a bottom sheet: rounded top, drag handle, dvh
      height, safe-area padding. Same DOM as desktop — presentation only. */

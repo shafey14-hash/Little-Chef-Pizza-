@@ -412,10 +412,16 @@ const LCP_ADMIN = (() => {
     window.addEventListener("beforeunload", unsubscribe);
   }
 
+  /** Save image for hardcoded products/deals (writes to menu_item_images) */
   function imageSaveFn(itemId) {
     return (patch) => patch.image_url
       ? LCP_DB.catalog.setMenuImage(itemId, patch.image_url)
       : LCP_DB.catalog.removeMenuImage(itemId);
+  }
+
+  /** Save image for admin-created deals (writes image_url directly on the deals table row) */
+  function adminDealImageSaveFn(dealId) {
+    return (patch) => LCP_DB.catalog.updateDeal(dealId, { image_url: patch.image_url || null });
   }
 
   async function initProducts() {
@@ -681,7 +687,10 @@ const LCP_ADMIN = (() => {
             ${!isHardcoded ? `<button class="btn btn--sm btn--danger" data-delete-deal>Delete</button>` : ""}
           </div>
           <div data-deal-image-cell style="margin-top:12px;"></div>`;
-        card.querySelector("[data-deal-image-cell]").appendChild(buildImageCell(d, "deals", imageSaveFn(d.id)));
+        // Hardcoded deals: image stored in menu_item_images (keyed by seed id).
+        // Admin deals: image_url stored directly on the deals table row.
+        const dealImgFn = isHardcoded ? imageSaveFn(d.id) : adminDealImageSaveFn(d.id);
+        card.querySelector("[data-deal-image-cell]").appendChild(buildImageCell(d, "deals", dealImgFn));
 
         card.querySelector("[data-edit-price]").addEventListener("click", async () => {
           const newPrice = Number(prompt(`New price for "${d.name}" (PKR):`, d.price));
