@@ -23,8 +23,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0c0b0a"
       },
-      "permissions": ["android.permission.RECORD_AUDIO"],
-      "googleServicesFile": "./google-services.json"
+      "permissions": ["android.permission.RECORD_AUDIO", "android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.VIBRATE"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,7 +38,7 @@
           "backgroundColor": "#0c0b0a"
         }
       ],
-      "@react-native-firebase/app",
+      "expo-notifications",
       [
         "expo-image-picker",
         {
