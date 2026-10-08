@@ -195,9 +195,9 @@ const LCP_NAV = (() => {
     if (window.location.pathname.includes("/admin/")) {
       window.location.href = "login.html";
     } else if (window.location.pathname.includes("/customer/")) {
-      window.location.href = "../index.html";
+      window.location.href = "../auth.html";
     } else {
-      window.location.href = "index.html";
+      window.location.href = "auth.html";
     }
   }
 

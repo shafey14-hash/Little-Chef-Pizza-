@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Little Chef Pizza — Freshly Made, Seriously Delicious</title>
+    <meta
+      name="description"
+      content="Order pizza, wings, rolls and more from Little Chef Pizza, Gujrat. Delivery, takeaway and dine-in."
+    />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="assets/images/logo/favicon.svg"
+    />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#e2222a" />
+    <meta
+      name="google-site-verification"
+      content="tI5_0VRebF80Ls7wZdneBHnuS1PvLdLxgFVTrUFhuT0"
+    />
+    <link rel="stylesheet" href="css/global.css" />
+    <link rel="stylesheet" href="css/auth.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Restaurant",
+        "name": "Little Chef Pizza",
+        "description": "Order pizza, wings, rolls and more from Little Chef Pizza, Gujrat. Delivery, takeaway and dine-in.",
+        "url": "https://little-chef-pizza.vercel.app/",
+        "image": "https://little-chef-pizza.vercel.app/assets/images/logo/logo-badge.png",
+        "servesCuisine": ["Pizza", "Fast Food"],
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Gujrat",
+          "addressRegion": "Punjab",
+          "addressCountry": "PK"
+        },
+        "areaServed": {
+          "@type": "City",
+          "name": "Gujrat"
+        }
+      }
+    </script>
+  </head>
+  <body class="auth-body">
+    <div class="auth-backdrop" aria-hidden="true">
+      <div class="auth-backdrop__glow"></div>
+      <svg
+        class="auth-backdrop__pizza"
+        viewBox="0 0 200 200"
+        width="220"
+        height="220"
+      >
+        <!-- Lightweight procedural pseudo-3D pizza slice — pure CSS/SVG, no model loading, works even with animations disabled -->
+        <circle cx="100" cy="100" r="88" fill="#e7b93f" opacity="0.15" />
+        <circle cx="100" cy="100" r="60" fill="#ef7a22" opacity="0.18" />
+        <circle cx="100" cy="100" r="30" fill="#e2222a" opacity="0.16" />
+      </svg>
+      <svg
+        class="auth-backdrop__pizza auth-backdrop__pizza--2"
+        viewBox="0 0 200 200"
+        width="150"
+        height="150"
+      >
+        <circle cx="100" cy="100" r="88" fill="#e2222a" opacity="0.10" />
+        <circle cx="100" cy="100" r="50" fill="#e7b93f" opacity="0.14" />
+      </svg>
+    </div>
+
+    <main class="auth-stage">
+      <div class="auth-modal" id="auth-modal">
+        <!-- LOCATION GATE — shown first, before any login/signup/guest option -->
+        <section class="auth-view location-gate" data-view="location-gate">
+          <div class="auth-modal__brand">
+            <img
+              class="brand__mark"
+              src="assets/images/logo/logo-badge.png"
+              alt="Little Chef Pizza logo"
+              style="width: 56px; height: 56px"
+              width="56"
+              height="56"
+            />
+            <h2 class="text-center" style="margin-top: 8px">
+              Select Your Delivery Location
+            </h2>
+          </div>
+          <p class="muted text-center" style="margin-bottom: 14px">
+            Free delivery within 3 km of Gujrat — we deliver up to 5 km.
+          </p>
+
+          <div id="location-map" class="location-map"></div>
+
+          <div class="field">
+            <label for="loc-city">City</label>
+            <input id="loc-city" value="Gujrat, Punjab, Pakistan" disabled />
+          </div>
+          <div class="field">
+            <label for="loc-address">Choose Area</label>
+            <input
+              id="loc-address"
+              placeholder="Choose Area — type your street/area"
+            />
+          </div>
+          <button
+            type="button"
+            class="btn btn--ghost btn--block"
+            id="btn-locate-me"
+          >
+            📍 Locate Me
+          </button>
+
+          <div
+            id="location-status"
+            class="location-status"
+            aria-live="polite"
+          ></div>
+
+          <button
+            type="button"
+            class="btn btn--primary btn--block"
+            id="btn-location-continue"
+            disabled
+            style="margin-top: 14px"
+          >
+            Continue
+          </button>
+        </section>
+
+        <!-- WELCOME VIEW -->
+        <section class="auth-view" data-view="welcome" hidden>
+          <div class="auth-modal__brand">
+            <img
+              class="brand__mark"
+              src="assets/images/logo/logo-badge.png"
+              alt="Little Chef Pizza logo"
+              style="width: 64px; height: 64px"
+              width="64"
+              height="64"
+            />
+            <h1 class="auth-modal__title">Little Chef Pizza</h1>
+            <p class="auth-modal__tag">PIZZA &amp; FAST FOOD</p>
+          </div>
+          <p class="auth-welcome-line">
+            Welcome. How would you like to continue?
+          </p>
+
+          <div class="auth-actions">
+            <button
+              class="btn btn--primary btn--block"
+              data-goto="customer-login"
+            >
+              Login as Customer
+            </button>
+            <button class="btn btn--ghost btn--block" id="btn-guest">
+              Continue as Guest
+            </button>
+          </div>
+
+          <p class="auth-signup-line">
+            New customer?
+            <a href="#" data-goto="customer-signup">Create Account</a>
+          </p>
+        </section>
+
+        <!-- CUSTOMER LOGIN -->
+        <section class="auth-view" data-view="customer-login" hidden>
+          <button class="auth-back" data-goto="welcome" aria-label="Back">
+            ← Back
+          </button>
+          <h2 class="text-center">Customer Login</h2>
+          <form id="form-customer-login" novalidate>
+            <div class="field">
+              <label for="cl-identifier">Email or Phone Number</label>
+              <input
+                id="cl-identifier"
+                name="identifier"
+                autocomplete="username"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="cl-password">Password</label>
+              <div class="input-group">
+                <input
+                  id="cl-password"
+                  name="password"
+                  type="password"
+                  autocomplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  class="input-group__toggle"
+                  data-toggle="cl-password"
+                >
+                  Show
+                </button>
+              </div>
+            </div>
+            <div
+              class="row"
+              style="justify-content: space-between; margin-bottom: 16px"
+            >
+              <label class="row gap-8" style="font-size: 13px"
+                ><input type="checkbox" id="cl-remember" /> Remember me</label
+              >
+              <a href="#" id="cl-forgot" style="font-size: 13px"
+                >Forgot password?</a
+              >
+            </div>
+            <button type="submit" class="btn btn--primary btn--block">
+              Log In
+            </button>
+          </form>
+          <p class="auth-signup-line">
+            New customer?
+            <a href="#" data-goto="customer-signup">Create Account</a>
+          </p>
+        </section>
+
+        <!-- CUSTOMER SIGNUP -->
+        <section class="auth-view" data-view="customer-signup" hidden>
+          <button class="auth-back" data-goto="welcome" aria-label="Back">
+            ← Back
+          </button>
+          <h2 class="text-center">Create Your Account</h2>
+          <form id="form-customer-signup" novalidate>
+            <div class="field">
+              <label for="su-fullname">Full Name</label
+              ><input id="su-fullname" required />
+            </div>
+            <div class="field">
+              <label for="su-email">Email</label
+              ><input
+                id="su-email"
+                type="email"
+                placeholder="you@example.com"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="su-password">Password</label>
+              <div class="input-group">
+                <input
+                  id="su-password"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                />
+                <button
+                  type="button"
+                  class="input-group__toggle"
+                  data-toggle="su-password"
+                >
+                  Show
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="su-phone">Contact Number</label
+              ><input id="su-phone" type="tel" required />
+            </div>
+            <div class="field">
+              <label for="su-alt-phone"
+                >Alternative Number <span class="muted">(optional)</span></label
+              ><input id="su-alt-phone" type="tel" />
+            </div>
+            <div class="field">
+              <label for="su-address">Address</label>
+              <input
+                id="su-address"
+                placeholder="House / street / details"
+                maxlength="400"
+              />
+              <span class="field__hint"
+                >Pre-filled from the location you selected — edit if
+                needed.</span
+              >
+            </div>
+            <button type="submit" class="btn btn--primary btn--block">
+              Create Account
+            </button>
+          </form>
+        </section>
+
+        <!-- EMAIL VERIFICATION (OTP) -->
+        <section class="auth-view" data-view="verify-email" hidden>
+          <h2 class="text-center">Verify Your Email</h2>
+          <p class="text-center muted" id="verify-email-note">
+            We've sent a 6-digit code to your email. Enter it below to finish
+            creating your account.
+          </p>
+          <form id="form-verify-email" novalidate>
+            <div class="field">
+              <label for="ve-code">Verification Code</label>
+              <input
+                id="ve-code"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                placeholder="123456"
+                required
+              />
+            </div>
+            <button type="submit" class="btn btn--primary btn--block">
+              Verify &amp; Continue
+            </button>
+          </form>
+          <p class="auth-signup-line">
+            Didn't get it? <a href="#" id="ve-resend">Resend code</a>
+          </p>
+        </section>
+
+        <!-- ADMIN LOGIN (app only — the corner button that reaches this view
+             is hidden on the website via CSS; it only renders inside the app) -->
+        <section class="auth-view" data-view="admin-login" hidden>
+          <button class="auth-back" data-goto="welcome" aria-label="Back">
+            ← Back
+          </button>
+          <h2 class="text-center">Admin Login</h2>
+          <p class="muted text-center" style="margin-bottom: 18px">
+            Restaurant staff only.
+          </p>
+          <form id="form-admin-login" novalidate>
+            <div class="field">
+              <label for="al-username">Username</label>
+              <input
+                id="al-username"
+                autocomplete="username"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="al-password">Password</label>
+              <div class="input-group">
+                <input
+                  id="al-password"
+                  type="password"
+                  autocomplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  class="input-group__toggle"
+                  data-toggle="al-password"
+                >
+                  Show
+                </button>
+              </div>
+            </div>
+            <button type="submit" class="btn btn--primary btn--block">
+              Log In
+            </button>
+          </form>
+        </section>
+      </div>
+    </main>
+
+    <button
+      type="button"
+      id="admin-corner-btn"
+      class="admin-corner-btn"
+      title="Restaurant staff only"
+    >
+      Log in as Admin
+    </button>
+
+    <script src="js/seed-data.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/validation.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/location.js"></script>
+    <script src="js/auth.js"></script>
+  </body>
+</html>

@@ -124,7 +124,7 @@ function lcpRenderOrderSuccess(data, user) {
   document.getElementById("step1-next").addEventListener("click", () => {
     if (orderType === "delivery" && !storedLocation) {
       LCP_UTIL.toast("Please select your delivery location again first.", "error");
-      setTimeout(() => { window.location.href = "../index.html"; }, 1200);
+      setTimeout(() => { window.location.href = "../auth.html"; }, 1200);
       return;
     }
     document.getElementById("delivery-fields").hidden = orderType !== "delivery";
