@@ -30,6 +30,7 @@ const {
   dbRest,
 } = require("./_lib/supabase-admin");
 const { fcmConfigured, sendToAppTokens } = require("./_lib/fcm");
+const { sendToExpoTokens } = require("./_lib/expo-push");
 
 // Public by design — the same key also ships in js/config.js.
 const VAPID_PUBLIC_KEY =
@@ -148,16 +149,37 @@ async function pruneAppToken(token) {
 // Fires the same payload at every app token; never throws — FCM is an
 // add-on channel, a failure here must not break Web Push delivery.
 async function sendFcm(query, payload) {
-  if (!fcmConfigured()) return { sent: 0, removed: 0 };
   try {
     const tokens = await appTokensFor(query);
     if (!tokens.length) return { sent: 0, removed: 0 };
-    return await sendToAppTokens(tokens, {
+    
+    let sent = 0;
+    let removed = 0;
+
+    // Send Expo push
+    const expoResult = await sendToExpoTokens(tokens, {
       ...payload,
       onDeadToken: pruneAppToken,
     });
+    sent += expoResult.sent;
+    removed += expoResult.removed;
+
+    // Send FCM push if configured
+    if (fcmConfigured()) {
+      const fcmTokens = tokens.filter(t => !t.startsWith("ExpoPushToken") && !t.startsWith("ExponentPushToken"));
+      if (fcmTokens.length > 0) {
+        const fcmResult = await sendToAppTokens(fcmTokens, {
+          ...payload,
+          onDeadToken: pruneAppToken,
+        });
+        sent += fcmResult.sent;
+        removed += fcmResult.removed;
+      }
+    }
+
+    return { sent, removed };
   } catch (err) {
-    console.error("FCM fan-out failed:", err.message);
+    console.error("FCM/Expo fan-out failed:", err.message);
     return { sent: 0, removed: 0 };
   }
 }
