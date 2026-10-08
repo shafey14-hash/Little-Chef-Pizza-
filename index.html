@@ -1,849 +1,384 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0b0b0c" />
-  <title>Little Chef Pizza</title>
-
-<style>
-    :root {
-      color-scheme: dark;
-      --bg: #0b0b0c;
-      --text: #f7f4ed;
-      --muted: #a5a39e;
-      --accent: #ffba59;
-      --ease: cubic-bezier(.22, 1, .36, 1);
-    }
-
-* { box-sizing: border-box; }
-
-body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: "Segoe UI", Arial, sans-serif;
-      -webkit-font-smoothing: antialiased;
-    }
-
-button, a { -webkit-tap-highlight-color: transparent; }
-    button { font: inherit; }
-    a { color: inherit; text-decoration: none; }
-    button { cursor: pointer; }
-
-:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 6px;
-    }
-
-.hero {
-      position: relative;
-      isolation: isolate;
-      overflow: hidden;
-      min-height: 690px;
-      background:
-        radial-gradient(ellipse at 78% 47%, #292018 0%, transparent 44%),
-        linear-gradient(125deg, #161617 0%, #0b0b0c 48%, #11100e 100%);
-    }
-
-/* Quiet background texture, no external assets. */
-    .hero::before {
-      content: "";
-      position: absolute;
-      z-index: -1;
-      inset: 0;
-      opacity: .13;
-      background-image: radial-gradient(#b7a68b 0.6px, transparent 0.6px);
-      background-size: 9px 9px;
-      mask-image: linear-gradient(to right, transparent, #000);
-      pointer-events: none;
-    }
-
-.container {
-      width: min(1160px, calc(100% - 80px));
-      margin-inline: auto;
-    }
-
-.nav {
-      height: 100px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid #ffffff0d;
-    }
-
-.brand {
-      display: inline-flex;
-      align-items: center;
-      gap: 11px;
-    }
-
-.brand-mark {
-      width: 43px;
-      height: 43px;
-      padding: 9px;
-      border: 1px solid #ffba5938;
-      border-radius: 14px;
-      color: var(--accent);
-      background: #ffba5909;
-      transform: rotate(-7deg);
-      transition: transform .4s var(--ease);
-    }
-
-.brand:hover .brand-mark { transform: rotate(0deg); }
-
-.brand-name {
-      display: block;
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: -.6px;
-    }
-
-.brand-sub {
-      display: block;
-      margin-top: 4px;
-      color: var(--accent);
-      font-size: 9px;
-      letter-spacing: 4.2px;
-      text-transform: uppercase;
-    }
-
-.nav-right {
-      display: flex;
-      align-items: center;
-      gap: 30px;
-    }
-
-.nav-note {
-      color: var(--muted);
-      font-size: 12px;
-      letter-spacing: .3px;
-    }
-
-.menu-button {
-      padding: 11px 18px;
-      border: 1px solid #ffffff25;
-      border-radius: 100px;
-      color: var(--text);
-      background: #ffffff03;
-      font-size: 12px;
-      transition: border-color .25s, background .25s;
-    }
-
-.menu-button:hover {
-      background: #ffba590c;
-      border-color: #ffba5970;
-    }
-
-.hero-grid {
-      display: grid;
-      grid-template-columns: 1fr 1.05fr;
-      align-items: center;
-      min-height: 540px;
-      gap: 12px;
-      padding-block: 42px 54px;
-    }
-
-.copy { position: relative; z-index: 2; }
-
-.eyebrow {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      color: var(--accent);
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 2.7px;
-      text-transform: uppercase;
-    }
-
-.eyebrow::before {
-      content: "";
-      width: 23px;
-      height: 1px;
-      background: var(--accent);
-    }
-
-h1 {
-      margin: 23px 0 20px;
-      font-size: clamp(54px, 6.6vw, 86px);
-      font-weight: 850;
-      line-height: 1.01;
-      letter-spacing: -5px;
-    }
-
-h1 em {
-      color: var(--accent);
-      font-family: Georgia, serif;
-      font-weight: 400;
-      letter-spacing: -4px;
-    }
-
-.description {
-      max-width: 350px;
-      margin: 0;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.85;
-    }
-
-.actions { margin-top: 30px; }
-
-.primary-button {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 28px;
-      overflow: hidden;
-      padding: 17px 23px;
-      border: 0;
-      border-radius: 100px;
-      background: var(--accent);
-      color: #1b140b;
-      font-size: 13px;
-      font-weight: 750;
-      box-shadow: 0 8px 32px #ffba5912;
-      transition: transform .3s var(--ease), box-shadow .3s;
-    }
-
-.primary-button::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(110deg, transparent 30%, #ffffff55, transparent 70%);
-      transform: translateX(-120%);
-      transition: transform .7s var(--ease);
-    }
-
-.primary-button:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 12px 35px #ffba5924;
-    }
-
-.primary-button:hover::before { transform: translateX(120%); }
-
-.button-arrow {
-      transition: transform .3s var(--ease);
-      font-size: 18px;
-    }
-
-.primary-button:hover .button-arrow { transform: translateX(4px); }
-
-.small-note {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 25px;
-      color: #8e8b85;
-      font-size: 11px;
-    }
-
-.small-note svg { color: var(--accent); flex-shrink: 0; }
-
-/* Visual motion is split across layers to avoid transform conflicts. */
-    .scene {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 1;
-      max-width: 535px;
-      justify-self: end;
-      display: grid;
-      place-items: center;
-      perspective: 1000px;
-    }
-
-.ambient-glow {
-      position: absolute;
-      width: 76%;
-      height: 76%;
-      border-radius: 50%;
-      background: #e8a13b;
-      opacity: .07;
-      filter: blur(50px);
-      pointer-events: none;
-    }
-
-.orbit {
-      position: absolute;
-      inset: 2%;
-      border: 1px solid #ffffff0b;
-      border-radius: 50%;
-      transform: rotate(-22deg);
-    }
-
-.orbit::before {
-      content: "";
-      position: absolute;
-      width: 6px;
-      height: 6px;
-      top: 15%;
-      left: 13%;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 16px #ffba5955;
-    }
-
-.orbit.inner {
-      inset: 9%;
-      border-style: dashed;
-      opacity: .45;
-      transform: rotate(12deg);
-    }
-
-.pizza-parallax {
-      position: relative;
-      width: 89%;
-      transition: transform .65s var(--ease);
-      will-change: transform;
-    }
-
-.pizza-float { animation: pizzaFloat 6s ease-in-out infinite; }
-
-.pizza-art {
-      display: block;
-      width: 100%;
-      height: auto;
-      filter: drop-shadow(0 30px 25px #00000080);
-      transform: rotate(-12deg);
-      transition: filter .5s;
-    }
-
-.scene:hover .pizza-art {
-      filter: drop-shadow(0 35px 30px #00000099);
-    }
-
-.tag {
-      position: absolute;
-      z-index: 3;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 16px;
-      border: 1px solid #ffffff16;
-      border-radius: 14px;
-      background: #191817e8;
-      box-shadow: 0 12px 30px #00000030;
-      backdrop-filter: blur(12px);
-      pointer-events: none;
-    }
-
-.tag-top { top: 9%; right: -1%; transform: rotate(7deg); }
-    .tag-bottom { bottom: 12%; left: -4%; transform: rotate(-6deg); }
-
-.tag-icon { font-size: 20px; color: var(--accent); }
-    .tag strong { display: block; font-size: 12px; font-weight: 650; }
-    .tag small { display: block; margin-top: 4px; font-size: 10px; color: var(--muted); }
-
-.visual-caption {
-      position: absolute;
-      bottom: 0;
-      right: 12%;
-      color: #82786b;
-      font: italic 14px Georgia, serif;
-      letter-spacing: .2px;
-    }
-
-.hero-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-block: 19px 23px;
-      border-top: 1px solid #ffffff0d;
-      color: #777570;
-      font-size: 10px;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-    }
-
-.footer-accent { color: #bcaa8f; }
-
-.reveal {
-      animation: reveal .9s var(--ease) both;
-      animation-delay: var(--delay, 0s);
-    }
-
-@keyframes reveal {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-@keyframes pizzaFloat {
-      0%, 100% { transform: translateY(0) rotate(0); }
-      50% { transform: translateY(-11px) rotate(1.5deg); }
-    }
-
-/* Working menu preview. Replace demo copy with your actual menu. */
-    dialog {
-      width: min(460px, calc(100% - 32px));
-      max-height: 85dvh;
-      padding: 28px;
-      color: var(--text);
-      background: #171615;
-      border: 1px solid #ffffff20;
-      border-radius: 22px;
-      box-shadow: 0 30px 100px #0009;
-    }
-
-dialog::backdrop {
-      background: #000b;
-      backdrop-filter: blur(6px);
-    }
-
-.dialog-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-.dialog-header h2 {
-      margin: 0;
-      font-size: 26px;
-      letter-spacing: -1px;
-    }
-
-.close-button {
-      width: 36px;
-      height: 36px;
-      border: 1px solid #ffffff20;
-      border-radius: 50%;
-      background: transparent;
-      color: var(--text);
-      font-size: 22px;
-    }
-
-.menu-item { padding: 18px 0; border-bottom: 1px solid #ffffff10; }
-    .menu-item h3 { margin: 0 0 6px; font-size: 15px; color: var(--accent); }
-    .menu-item p, .demo-note { color: var(--muted); font-size: 12px; line-height: 1.7; }
-    .menu-item p { margin: 0; }
-    .demo-note { margin: 18px 0 0; }
-    
-    /* ADDED: A beautiful order now button for the dialog */
-    .order-now-btn {
-      display: block;
-      width: 100%;
-      margin-top: 24px;
-      padding: 16px;
-      background: var(--accent);
-      color: #1b140b;
-      font-size: 14px;
-      font-weight: 750;
-      border: none;
-      border-radius: 12px;
-      text-align: center;
-      text-decoration: none;
-      transition: opacity 0.2s;
-    }
-    .order-now-btn:hover { opacity: 0.9; }
-
-@media (min-width: 1500px) {
-      .hero { min-height: 760px; }
-      .hero-grid { min-height: 610px; }
-    }
-
-@media (max-width: 900px) {
-      .container { width: calc(100% - 48px); }
-      .hero { min-height: auto; }
-      .nav { height: 82px; }
-      .hero-grid { min-height: 480px; }
-      h1 { font-size: 60px; letter-spacing: -3.5px; }
-      .tag { padding: 10px 12px; }
-      .tag-top { right: -3%; }
-      .tag-bottom { left: -6%; }
-      .tag strong { font-size: 10px; }
-      .tag small { font-size: 9px; }
-    }
-
-@media (max-width: 600px) {
-      .container { width: calc(100% - 36px); }
-      .nav { height: 70px; }
-      .brand-mark { width: 35px; height: 35px; padding: 7px; border-radius: 11px; }
-      .brand-name { font-size: 15px; }
-      .brand-sub { font-size: 8px; letter-spacing: 3px; }
-      .nav-note { display: none; }
-      .menu-button { padding: 9px 14px; font-size: 11px; }
-
-.hero-grid {
-        grid-template-columns: 1fr;
-        gap: 6px;
-        min-height: auto;
-        padding-block: 32px 12px;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Little Chef Pizza — Freshly Made, Seriously Delicious</title>
+    <meta
+      name="description"
+      content="Order pizza, wings, rolls and more from Little Chef Pizza, Gujrat. Delivery, takeaway and dine-in."
+    />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="assets/images/logo/favicon.svg"
+    />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#e2222a" />
+    <meta
+      name="google-site-verification"
+      content="tI5_0VRebF80Ls7wZdneBHnuS1PvLdLxgFVTrUFhuT0"
+    />
+    <link rel="stylesheet" href="css/global.css" />
+    <link rel="stylesheet" href="css/auth.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Restaurant",
+        "name": "Little Chef Pizza",
+        "description": "Order pizza, wings, rolls and more from Little Chef Pizza, Gujrat. Delivery, takeaway and dine-in.",
+        "url": "https://little-chef-pizza.vercel.app/",
+        "image": "https://little-chef-pizza.vercel.app/assets/images/logo/logo-badge.png",
+        "servesCuisine": ["Pizza", "Fast Food"],
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Gujrat",
+          "addressRegion": "Punjab",
+          "addressCountry": "PK"
+        },
+        "areaServed": {
+          "@type": "City",
+          "name": "Gujrat"
+        }
       }
+    </script>
+  </head>
+  <body class="auth-body">
+    <div class="auth-backdrop" aria-hidden="true">
+      <div class="auth-backdrop__glow"></div>
+      <svg
+        class="auth-backdrop__pizza"
+        viewBox="0 0 200 200"
+        width="220"
+        height="220"
+      >
+        <!-- Lightweight procedural pseudo-3D pizza slice — pure CSS/SVG, no model loading, works even with animations disabled -->
+        <circle cx="100" cy="100" r="88" fill="#e7b93f" opacity="0.15" />
+        <circle cx="100" cy="100" r="60" fill="#ef7a22" opacity="0.18" />
+        <circle cx="100" cy="100" r="30" fill="#e2222a" opacity="0.16" />
+      </svg>
+      <svg
+        class="auth-backdrop__pizza auth-backdrop__pizza--2"
+        viewBox="0 0 200 200"
+        width="150"
+        height="150"
+      >
+        <circle cx="100" cy="100" r="88" fill="#e2222a" opacity="0.10" />
+        <circle cx="100" cy="100" r="50" fill="#e7b93f" opacity="0.14" />
+      </svg>
+    </div>
 
-.copy { text-align: center; }
-      .eyebrow { justify-content: center; font-size: 8px; letter-spacing: 2px; }
-      .eyebrow::before { width: 17px; }
-
-h1 {
-        margin: 15px 0 13px;
-        font-size: clamp(43px, 12.8vw, 63px);
-        line-height: 1.02;
-        letter-spacing: -2.8px;
-      }
-
-h1 em { letter-spacing: -2.8px; }
-
-.description {
-        max-width: 285px;
-        margin-inline: auto;
-        font-size: 12px;
-        line-height: 1.7;
-      }
-
-.actions { margin-top: 20px; }
-      .primary-button { padding: 13px 21px; gap: 24px; font-size: 12px; }
-      .small-note { justify-content: center; margin-top: 15px; font-size: 10px; }
-
-.scene {
-        width: min(265px, 83vw);
-        justify-self: center;
-        margin-top: 8px;
-      }
-
-.tag { padding: 8px 10px; gap: 7px; border-radius: 10px; }
-      .tag-icon { font-size: 16px; }
-      .tag-top { right: -7%; top: 12%; }
-      .tag-bottom { left: -7%; bottom: 14%; }
-      .tag strong { font-size: 9px; }
-      .tag small { margin-top: 3px; font-size: 8px; }
-      .visual-caption { font-size: 11px; bottom: 1%; right: 16%; }
-      .hero-footer { padding-block: 14px; font-size: 8px; letter-spacing: .7px; }
-    }
-
-@media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation: none !important;
-        transition: none !important;
-      }
-      .pizza-parallax { transform: none !important; }
-    }
-  </style>
-</head>
-
-<body>
-  <section class="hero" aria-labelledby="hero-title">
-    <div class="container">
-      <header class="nav">
-        <a class="brand" href="./" aria-label="Little Chef Pizza home">
-          <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-            <path d="M9 20V13C3 13 3 5 9 5c2-5 11-5 13 0 7-1 8 8 1 8v7"
-              stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-              stroke-linejoin="round"/>
-            <path d="M9 20h14v6H9zM13 12v5m6-5v5"
-              stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-          </svg>
-          <span>
-            <span class="brand-name">little chef.</span>
-            <span class="brand-sub">Pizza & good vibes</span>
-          </span>
-        </a>
-
-<div class="nav-right">
-          <span class="nav-note">Small chef. Big cravings.</span>
-          <button class="menu-button" onclick="window.location.href='auth.html'">Order Now ↗</button>
-        </div>
-      </header>
-
-<div class="hero-grid">
-        <div class="copy">
-          <div class="eyebrow reveal">A little slice of happiness</div>
-
-<h1 id="hero-title" class="reveal" style="--delay: .1s">
-            Little chef.<br />
-            <em>Big flavour.</em>
-          </h1>
-
-<p class="description reveal" style="--delay: .2s">
-            Golden crust. Melty cheese. That one-more-slice feeling.
-            Meet your next pizza obsession.
+    <main class="auth-stage">
+      <div class="auth-modal" id="auth-modal">
+        <!-- LOCATION GATE — shown first, before any login/signup/guest option -->
+        <section class="auth-view location-gate" data-view="location-gate">
+          <div class="auth-modal__brand">
+            <img
+              class="brand__mark"
+              src="assets/images/logo/logo-badge.png"
+              alt="Little Chef Pizza logo"
+              style="width: 56px; height: 56px"
+              width="56"
+              height="56"
+            />
+            <h2 class="text-center" style="margin-top: 8px">
+              Select Your Delivery Location
+            </h2>
+          </div>
+          <p class="muted text-center" style="margin-bottom: 14px">
+            Free delivery within 3 km of Gujrat — we deliver up to 5 km.
           </p>
 
-<div class="actions reveal" style="--delay: .3s">
-            <button class="primary-button" data-open-menu>
-              Explore the menu
-              <span class="button-arrow" aria-hidden="true">↗</span>
+          <div id="location-map" class="location-map"></div>
+
+          <div class="field">
+            <label for="loc-city">City</label>
+            <input id="loc-city" value="Gujrat, Punjab, Pakistan" disabled />
+          </div>
+          <div class="field">
+            <label for="loc-address">Choose Area</label>
+            <input
+              id="loc-address"
+              placeholder="Choose Area — type your street/area"
+            />
+          </div>
+          <button
+            type="button"
+            class="btn btn--ghost btn--block"
+            id="btn-locate-me"
+          >
+            📍 Locate Me
+          </button>
+
+          <div
+            id="location-status"
+            class="location-status"
+            aria-live="polite"
+          ></div>
+
+          <button
+            type="button"
+            class="btn btn--primary btn--block"
+            id="btn-location-continue"
+            disabled
+            style="margin-top: 14px"
+          >
+            Continue
+          </button>
+        </section>
+
+        <!-- WELCOME VIEW -->
+        <section class="auth-view" data-view="welcome" hidden>
+          <div class="auth-modal__brand">
+            <img
+              class="brand__mark"
+              src="assets/images/logo/logo-badge.png"
+              alt="Little Chef Pizza logo"
+              style="width: 64px; height: 64px"
+              width="64"
+              height="64"
+            />
+            <h1 class="auth-modal__title">Little Chef Pizza</h1>
+            <p class="auth-modal__tag">PIZZA &amp; FAST FOOD</p>
+          </div>
+          <p class="auth-welcome-line">
+            Welcome. How would you like to continue?
+          </p>
+
+          <div class="auth-actions">
+            <button
+              class="btn btn--primary btn--block"
+              data-goto="customer-login"
+            >
+              Login as Customer
+            </button>
+            <button class="btn btn--ghost btn--block" id="btn-guest">
+              Continue as Guest
             </button>
           </div>
 
-<div class="small-note reveal" style="--delay: .4s">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M12 20s-8-4.8-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.2-8 10-8 10Z"
-                stroke="currentColor" stroke-width="1.5"/>
-            </svg>
-            A little love in every slice.
-          </div>
-        </div>
+          <p class="auth-signup-line">
+            New customer?
+            <a href="#" data-goto="customer-signup">Create Account</a>
+          </p>
+        </section>
 
-<div class="scene reveal" style="--delay: .15s" aria-label="Illustrated pepperoni pizza">
-          <div class="ambient-glow"></div>
-          <div class="orbit"></div>
-          <div class="orbit inner"></div>
-
-<div class="pizza-parallax">
-            <div class="pizza-float">
-              <svg class="pizza-art" viewBox="0 0 500 500" role="img" aria-labelledby="pizza-title">
-                <title id="pizza-title">Golden pizza with pepperoni, basil and melted cheese</title>
-
-<defs>
-                  <radialGradient id="crust" cx=".4" cy=".35" r=".7">
-                    <stop offset="0" stop-color="#ffda83"/>
-                    <stop offset=".74" stop-color="#eeb75e"/>
-                    <stop offset=".9" stop-color="#b76527"/>
-                    <stop offset="1" stop-color="#693213"/>
-                  </radialGradient>
-
-<radialGradient id="cheese" cx=".35" cy=".3" r=".8">
-                    <stop offset="0" stop-color="#ffe6a0"/>
-                    <stop offset=".6" stop-color="#f4c569"/>
-                    <stop offset="1" stop-color="#dc8a37"/>
-                  </radialGradient>
-
-<radialGradient id="pepperoni">
-                    <stop offset="0" stop-color="#e46b37"/>
-                    <stop offset=".8" stop-color="#b93622"/>
-                    <stop offset="1" stop-color="#7b2418"/>
-                  </radialGradient>
-
-<linearGradient id="basil" x2="1" y2="1">
-                    <stop stop-color="#85a64a"/>
-                    <stop offset=".5" stop-color="#467631"/>
-                    <stop offset="1" stop-color="#234821"/>
-                  </linearGradient>
-
-<pattern id="bake" width="47" height="43" patternUnits="userSpaceOnUse">
-                    <ellipse cx="10" cy="13" rx="6" ry="3" fill="#ac531f" opacity=".23"/>
-                    <circle cx="31" cy="29" r="3" fill="#fff0be" opacity=".6"/>
-                    <ellipse cx="38" cy="6" rx="2" ry="4" fill="#b65b25" opacity=".25"/>
-                    <circle cx="16" cy="35" r="1.5" fill="#78451b" opacity=".45"/>
-                  </pattern>
-
-<g id="pep">
-                    <circle r="29" fill="#893719" opacity=".22" transform="translate(2 4)"/>
-                    <circle r="27" fill="url(#pepperoni)" stroke="#8f2d1b" stroke-width="1.5"/>
-                    <path d="M-16-12Q-6-24 10-17" fill="none" stroke="#ffab6c"
-                      stroke-width="2" stroke-linecap="round" opacity=".45"/>
-                    <g fill="#f5ac75" opacity=".65">
-                      <ellipse cx="-10" cy="-8" rx="3" ry="2"/>
-                      <circle cx="8" cy="-12" r="2.5"/>
-                      <ellipse cx="13" cy="7" rx="3.5" ry="2"/>
-                      <circle cx="-9" cy="13" r="2"/>
-                      <ellipse cx="-2" cy="2" rx="2" ry="3"/>
-                    </g>
-                    <g fill="#76271a" opacity=".5">
-                      <circle cx="-17" cy="3" r="2"/>
-                      <circle cx="3" cy="16" r="2.5"/>
-                      <circle cx="17" cy="-5" r="1.7"/>
-                    </g>
-                  </g>
-
-<g id="leaf">
-                    <path d="M0 24C-31 6-24-18 0-29 23-12 27 11 0 24Z"
-                      fill="#172d17" opacity=".2" transform="translate(3 4)"/>
-                    <path d="M0 24C-31 6-24-18 0-29 23-12 27 11 0 24Z"
-                      fill="url(#basil)"/>
-                    <path d="M0 22V-23M0 5l-12-10M0-4l10-9"
-                      stroke="#adc374" stroke-width="1.1" fill="none" opacity=".55"/>
-                  </g>
-                </defs>
-
-<circle cx="250" cy="255" r="220" fill="#090909"/>
-                <circle cx="250" cy="250" r="218" fill="#b56b31"/>
-                <circle cx="250" cy="247" r="215" fill="url(#crust)"/>
-                <circle cx="250" cy="247" r="205" fill="none"
-                  stroke="#ffdc89" stroke-width="5" opacity=".3"/>
-                <circle cx="250" cy="247" r="191" fill="#a13e20"/>
-                <circle cx="250" cy="247" r="185" fill="url(#cheese)"/>
-                <circle cx="250" cy="247" r="185" fill="url(#bake)"/>
-
-<!-- Bubbled mozzarella -->
-                <g fill="#fff0b0" opacity=".6">
-                  <path d="M121 186q24-21 43 2t-8 38q-34 8-35-40"/>
-                  <path d="M278 99q30-9 40 13t-21 31q-30-1-19-44"/>
-                  <path d="M318 299q26-24 43-3t-4 40q-41 8-39-37"/>
-                  <ellipse cx="206" cy="330" rx="24" ry="17"/>
-                  <ellipse cx="238" cy="186" rx="22" ry="14"/>
-                  <ellipse cx="130" cy="276" rx="18" ry="24"/>
-                </g>
-
-<!-- Crust char -->
-                <g fill="#87431c" opacity=".4">
-                  <ellipse cx="158" cy="62" rx="13" ry="4" transform="rotate(-27 158 62)"/>
-                  <ellipse cx="367" cy="81" rx="11" ry="4" transform="rotate(34 367 81)"/>
-                  <ellipse cx="449" cy="229" rx="4" ry="13"/>
-                  <ellipse cx="84" cy="360" rx="5" ry="13" transform="rotate(-35 84 360)"/>
-                  <ellipse cx="253" cy="448" rx="15" ry="4"/>
-                  <ellipse cx="395" cy="388" rx="12" ry="4" transform="rotate(-43 395 388)"/>
-                  <ellipse cx="48" cy="221" rx="3" ry="11"/>
-                </g>
-
-<use href="#pep" transform="translate(192 119) rotate(-15)"/>
-                <use href="#pep" transform="translate(297 151) rotate(25)"/>
-                <use href="#pep" transform="translate(370 216) rotate(-30)"/>
-                <use href="#pep" transform="translate(234 237) rotate(10)"/>
-                <use href="#pep" transform="translate(139 246) rotate(60)"/>
-                <use href="#pep" transform="translate(172 344) rotate(-20)"/>
-                <use href="#pep" transform="translate(279 365) rotate(40)"/>
-                <use href="#pep" transform="translate(347 306) rotate(75)"/>
-
-<!-- Roasted tomato pieces -->
-                <g fill="#bd4427" stroke="#e57940" stroke-width="3">
-                  <path d="M218 157l21-7 6 13-22 6Z"/>
-                  <path d="M291 277l18-12 9 14-20 10Z"/>
-                  <path d="M111 312l15-8 8 15-16 5Z"/>
-                  <path d="M326 108l14 5-6 14-14-6Z"/>
-                </g>
-
-<use href="#leaf" transform="translate(144 169) rotate(-45) scale(.85)"/>
-                <use href="#leaf" transform="translate(337 173) rotate(45) scale(.75)"/>
-                <use href="#leaf" transform="translate(277 287) rotate(-30) scale(.85)"/>
-                <use href="#leaf" transform="translate(217 390) rotate(65) scale(.7)"/>
-                <use href="#leaf" transform="translate(386 271) rotate(80) scale(.65)"/>
-
-<!-- Fine herb flecks -->
-                <g stroke="#486033" stroke-width="2.5" stroke-linecap="round" opacity=".8">
-                  <path d="m209 291 4 5m-30-90 5-3m103 21 4 4m-55-125 2 5"/>
-                  <path d="m-115 0 0 0" opacity="0"/>
-                  <path d="m123 210 3-4m201 153 4-3m-89 42 4 1m130-157 2 4"/>
-                  <path d="m188 273 4-1m80-88 2 4m-97 105 4 3m130 30 2-4"/>
-                </g>
-              </svg>
+        <!-- CUSTOMER LOGIN -->
+        <section class="auth-view" data-view="customer-login" hidden>
+          <button class="auth-back" data-goto="welcome" aria-label="Back">
+            ← Back
+          </button>
+          <h2 class="text-center">Customer Login</h2>
+          <form id="form-customer-login" novalidate>
+            <div class="field">
+              <label for="cl-identifier">Email or Phone Number</label>
+              <input
+                id="cl-identifier"
+                name="identifier"
+                autocomplete="username"
+                required
+              />
             </div>
-          </div>
+            <div class="field">
+              <label for="cl-password">Password</label>
+              <div class="input-group">
+                <input
+                  id="cl-password"
+                  name="password"
+                  type="password"
+                  autocomplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  class="input-group__toggle"
+                  data-toggle="cl-password"
+                >
+                  Show
+                </button>
+              </div>
+            </div>
+            <div
+              class="row"
+              style="justify-content: space-between; margin-bottom: 16px"
+            >
+              <label class="row gap-8" style="font-size: 13px"
+                ><input type="checkbox" id="cl-remember" /> Remember me</label
+              >
+              <a href="#" id="cl-forgot" style="font-size: 13px"
+                >Forgot password?</a
+              >
+            </div>
+            <button type="submit" class="btn btn--primary btn--block">
+              Log In
+            </button>
+          </form>
+          <p class="auth-signup-line">
+            New customer?
+            <a href="#" data-goto="customer-signup">Create Account</a>
+          </p>
+        </section>
 
-<div class="tag tag-top">
-            <span class="tag-icon" aria-hidden="true">✦</span>
-            <span>
-              <strong>Big on flavour</strong>
-              <small>Little chef energy.</small>
-            </span>
-          </div>
+        <!-- CUSTOMER SIGNUP -->
+        <section class="auth-view" data-view="customer-signup" hidden>
+          <button class="auth-back" data-goto="welcome" aria-label="Back">
+            ← Back
+          </button>
+          <h2 class="text-center">Create Your Account</h2>
+          <form id="form-customer-signup" novalidate>
+            <div class="field">
+              <label for="su-fullname">Full Name</label
+              ><input id="su-fullname" required />
+            </div>
+            <div class="field">
+              <label for="su-email">Email</label
+              ><input
+                id="su-email"
+                type="email"
+                placeholder="you@example.com"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="su-password">Password</label>
+              <div class="input-group">
+                <input
+                  id="su-password"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                />
+                <button
+                  type="button"
+                  class="input-group__toggle"
+                  data-toggle="su-password"
+                >
+                  Show
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="su-phone">Contact Number</label
+              ><input id="su-phone" type="tel" required />
+            </div>
+            <div class="field">
+              <label for="su-alt-phone"
+                >Alternative Number <span class="muted">(optional)</span></label
+              ><input id="su-alt-phone" type="tel" />
+            </div>
+            <div class="field">
+              <label for="su-address">Address</label>
+              <input
+                id="su-address"
+                placeholder="House / street / details"
+                maxlength="400"
+              />
+              <span class="field__hint"
+                >Pre-filled from the location you selected — edit if
+                needed.</span
+              >
+            </div>
+            <button type="submit" class="btn btn--primary btn--block">
+              Create Account
+            </button>
+          </form>
+        </section>
 
-<div class="tag tag-bottom">
-            <span class="tag-icon" aria-hidden="true">♡</span>
-            <span>
-              <strong>Your happy slice</strong>
-              <small>Go on. Take another.</small>
-            </span>
-          </div>
+        <!-- EMAIL VERIFICATION (OTP) -->
+        <section class="auth-view" data-view="verify-email" hidden>
+          <h2 class="text-center">Verify Your Email</h2>
+          <p class="text-center muted" id="verify-email-note">
+            We've sent a 6-digit code to your email. Enter it below to finish
+            creating your account.
+          </p>
+          <form id="form-verify-email" novalidate>
+            <div class="field">
+              <label for="ve-code">Verification Code</label>
+              <input
+                id="ve-code"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                placeholder="123456"
+                required
+              />
+            </div>
+            <button type="submit" class="btn btn--primary btn--block">
+              Verify &amp; Continue
+            </button>
+          </form>
+          <p class="auth-signup-line">
+            Didn't get it? <a href="#" id="ve-resend">Resend code</a>
+          </p>
+        </section>
 
-<span class="visual-caption">love at first bite.</span>
-        </div>
+        <!-- ADMIN LOGIN (app only — the corner button that reaches this view
+             is hidden on the website via CSS; it only renders inside the app) -->
+        <section class="auth-view" data-view="admin-login" hidden>
+          <button class="auth-back" data-goto="welcome" aria-label="Back">
+            ← Back
+          </button>
+          <h2 class="text-center">Admin Login</h2>
+          <p class="muted text-center" style="margin-bottom: 18px">
+            Restaurant staff only.
+          </p>
+          <form id="form-admin-login" novalidate>
+            <div class="field">
+              <label for="al-username">Username</label>
+              <input
+                id="al-username"
+                autocomplete="username"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="al-password">Password</label>
+              <div class="input-group">
+                <input
+                  id="al-password"
+                  type="password"
+                  autocomplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  class="input-group__toggle"
+                  data-toggle="al-password"
+                >
+                  Show
+                </button>
+              </div>
+            </div>
+            <button type="submit" class="btn btn--primary btn--block">
+              Log In
+            </button>
+          </form>
+        </section>
       </div>
+    </main>
 
-<footer class="hero-footer">
-        <span>Good food. Better mood.</span>
-        <span class="footer-accent">The little chef way ↗</span>
-      </footer>
-    </div>
-  </section>
+    <button
+      type="button"
+      id="admin-corner-btn"
+      class="admin-corner-btn"
+      title="Restaurant staff only"
+    >
+      Log in as Admin
+    </button>
 
-<dialog id="menu-dialog" aria-labelledby="menu-title">
-    <div class="dialog-header">
-      <h2 id="menu-title">Find your slice.</h2>
-      <button class="close-button" aria-label="Close menu" autofocus>×</button>
-    </div>
-
-<div class="menu-item">
-      <h3>Classic Margherita</h3>
-      <p>Tomato, mozzarella and a little basil love.</p>
-    </div>
-
-<div class="menu-item">
-      <h3>Pepperoni Favourite</h3>
-      <p>Pepperoni, melty mozzarella and golden crust.</p>
-    </div>
-
-<div class="menu-item">
-      <h3>Garden Party</h3>
-      <p>Peppers, mushrooms, olives and mozzarella.</p>
-    </div>
-
-<p class="demo-note">
-      Sample menu preview — replace with your restaurant’s actual items.
-    </p>
-    <a href="auth.html" class="order-now-btn">Start your order</a>
-  </dialog>
-
-<script>
-    const scene = document.querySelector(".scene");
-    const pizza = document.querySelector(".pizza-parallax");
-    const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
-    const finePointer = matchMedia("(hover: hover) and (pointer: fine)");
-
-let frame = 0;
-
-scene.addEventListener("pointermove", (event) => {
-      if (reducedMotion.matches || !finePointer.matches) return;
-
-const rect = scene.getBoundingClientRect();
-      const x = (event.clientX - rect.left) / rect.width - 0.5;
-      const y = (event.clientY - rect.top) / rect.height - 0.5;
-
-cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        pizza.style.transform = `
-          translate3d(${x * 15}px, ${y * 12}px, 0)
-          rotateX(${-y * 9}deg)
-          rotateY(${x * 9}deg)
-        `;
-      });
-    });
-
-function resetPizza() {
-      cancelAnimationFrame(frame);
-      pizza.style.transform = "";
-    }
-
-scene.addEventListener("pointerleave", resetPizza);
-    scene.addEventListener("pointercancel", resetPizza);
-    reducedMotion.addEventListener("change", resetPizza);
-    finePointer.addEventListener("change", resetPizza);
-
-// Pause decorative animation while the hero is off-screen.
-    const floatingPizza = document.querySelector(".pizza-float");
-
-const observer = new IntersectionObserver(([entry]) => {
-      floatingPizza.style.animationPlayState =
-        entry.isIntersecting ? "running" : "paused";
-    });
-
-observer.observe(scene);
-
-// Accessible native dialog: Escape closes it automatically.
-    const menuDialog = document.querySelector("#menu-dialog");
-    let menuTrigger;
-
-document.querySelectorAll("[data-open-menu]").forEach((button) => {
-      button.addEventListener("click", () => {
-        menuTrigger = button;
-        menuDialog.showModal();
-      });
-    });
-
-document.querySelector(".close-button").addEventListener("click", () => {
-      menuDialog.close();
-    });
-
-menuDialog.addEventListener("click", (event) => {
-      const rect = menuDialog.getBoundingClientRect();
-
-if (
-        event.target === menuDialog &&
-        (
-          event.clientX < rect.left ||
-          event.clientX > rect.right ||
-          event.clientY < rect.top ||
-          event.clientY > rect.bottom
-        )
-      ) {
-        menuDialog.close();
-      }
-    });
-
-menuDialog.addEventListener("close", () => {
-      menuTrigger?.focus();
-    });
-  </script>
-</body>
+    <script src="js/seed-data.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/validation.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/location.js"></script>
+    <script src="js/auth.js"></script>
+  </body>
 </html>

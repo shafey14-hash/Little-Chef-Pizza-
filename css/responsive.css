@@ -13,12 +13,6 @@ body {
 } /* safety net: nothing should ever force horizontal scroll */
 
 @media (max-width: 1024px) {
-  .hero__inner {
-    grid-template-columns: 1fr;
-  }
-  .hero__art {
-    order: -1;
-  }
   .bucket-layout {
     grid-template-columns: 1fr;
   }
@@ -284,32 +278,6 @@ body {
     padding: 26px 0;
   }
 
-  /* Hero: compact banner, not a full-screen splash. */
-  .hero {
-    padding: 26px 0 30px;
-  }
-  .hero h1 {
-    font-size: 18px;
-    margin-bottom: 8px;
-  }
-  .hero__eyebrow {
-    font-size: 12px;
-    margin-bottom: 8px;
-  }
-  .hero p {
-    font-size: 13px;
-  }
-  .hero__actions {
-    margin-top: 16px;
-    gap: 10px;
-  }
-  .hero__actions .btn {
-    height: 42px;
-    font-size: 14px;
-  }
-  .hero__art {
-    aspect-ratio: 16/8;
-  }
   .section-head {
     margin-bottom: 16px;
   }
@@ -646,5 +614,145 @@ body {
   }
   .bucket-pill__label {
     display: none;
+  }
+}
+
+/* ------------------------------------------------------------
+   Home hero (dark "Little chef. Big flavour." landing) —
+   scoped to .home-hero so nothing leaks into other pages.
+   ------------------------------------------------------------ */
+@media (min-width: 1500px) {
+  .home-hero {
+    min-height: 760px;
+  }
+  .home-hero__grid {
+    min-height: 610px;
+  }
+}
+
+@media (max-width: 900px) {
+  .home-hero {
+    min-height: auto;
+  }
+  .home-hero__grid {
+    min-height: 480px;
+  }
+  .home-hero__title {
+    font-size: 60px;
+    letter-spacing: -3.5px;
+  }
+  .home-hero__tag {
+    padding: 10px 12px;
+  }
+  .home-hero__tag--top {
+    right: -3%;
+  }
+  .home-hero__tag--bottom {
+    left: -6%;
+  }
+  .home-hero__tag strong {
+    font-size: 10px;
+  }
+  .home-hero__tag small {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 600px) {
+  .home-hero__grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    min-height: auto;
+    padding-block: 32px 12px;
+  }
+  .home-hero__copy {
+    text-align: center;
+  }
+  .home-hero__eyebrow {
+    justify-content: center;
+    font-size: 8px;
+    letter-spacing: 2px;
+  }
+  .home-hero__eyebrow::before {
+    width: 17px;
+  }
+  .home-hero__title {
+    margin: 15px 0 13px;
+    font-size: clamp(43px, 12.8vw, 63px);
+    line-height: 1.02;
+    letter-spacing: -2.8px;
+  }
+  .home-hero__title em {
+    letter-spacing: -2.8px;
+  }
+  .home-hero__desc {
+    max-width: 285px;
+    margin-inline: auto;
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  .home-hero__actions {
+    margin-top: 20px;
+  }
+  .home-hero__btn {
+    padding: 13px 21px;
+    gap: 24px;
+    font-size: 12px;
+  }
+  .home-hero__note {
+    justify-content: center;
+    margin-top: 15px;
+    font-size: 10px;
+  }
+  .home-hero__scene {
+    width: min(265px, 83vw);
+    justify-self: center;
+    margin-top: 8px;
+  }
+  .home-hero__tag {
+    padding: 8px 10px;
+    gap: 7px;
+    border-radius: 10px;
+  }
+  .home-hero__tag-icon {
+    font-size: 16px;
+  }
+  .home-hero__tag--top {
+    right: -7%;
+    top: 12%;
+  }
+  .home-hero__tag--bottom {
+    left: -7%;
+    bottom: 14%;
+  }
+  .home-hero__tag strong {
+    font-size: 9px;
+  }
+  .home-hero__tag small {
+    margin-top: 3px;
+    font-size: 8px;
+  }
+  .home-hero__caption {
+    font-size: 11px;
+    bottom: 1%;
+    right: 16%;
+  }
+  .home-hero__footer {
+    padding-block: 14px;
+    font-size: 8px;
+    letter-spacing: 0.7px;
+  }
+}
+
+/* Shop info card: stack contact column below the address on phones. */
+@media (max-width: 860px) {
+  .home-shopinfo {
+    grid-template-columns: 1fr;
+  }
+  .home-shopinfo__contact {
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
   }
 }

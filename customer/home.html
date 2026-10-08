@@ -15,40 +15,181 @@
     <link rel="stylesheet" href="../css/customer.css" />
     <link rel="stylesheet" href="../css/responsive.css" />
   </head>
-  <body>
-    <section class="hero">
-      <div class="container hero__inner">
-        <div>
-          <p class="hero__eyebrow">Gujrat's Favourite Pizza &amp; Fast Food</p>
-          <h1>Freshly Made.<br />Seriously Delicious.</h1>
-          <p>
-            Order your favourites from Little Chef Pizza — hot, fresh and on its
-            way. Delivery across Gujrat city, or ready for takeaway and dine-in.
-          </p>
-          <div class="hero__actions">
-            <a href="menu.html" class="btn btn--primary">Order Now</a>
-            <a
-              href="menu.html"
-              class="btn btn--ghost"
-              style="border-color: #3a3630; color: #fff"
-              >Explore Menu</a
-            >
+  <body class="page-home">
+    <!-- =============================== new home hero (scoped .home-hero) =============================== -->
+    <section class="home-hero" aria-labelledby="home-hero-title">
+      <div class="container" style="padding-top: 74px;">
+        <div class="home-hero__grid">
+          <div class="home-hero__copy">
+            <div class="home-hero__eyebrow home-hero__reveal">
+              A little slice of happiness
+            </div>
+            <h1 id="home-hero-title" class="home-hero__title home-hero__reveal" style="--delay: .1s">
+              Little chef.<br />
+              <em>Big flavour.</em>
+            </h1>
+            <p class="home-hero__desc home-hero__reveal" style="--delay: .2s">
+              Golden crust. Melty cheese. That one-more-slice feeling. Meet
+              your next pizza obsession.
+            </p>
+            <div class="home-hero__actions home-hero__reveal" style="--delay: .3s">
+              <a href="menu.html" class="home-hero__btn">
+                Explore the menu
+                <span class="home-hero__btn-arrow" aria-hidden="true">↗</span>
+              </a>
+            </div>
+            <div class="home-hero__note home-hero__reveal" style="--delay: .4s">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 20s-8-4.8-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.2-8 10-8 10Z"
+                  stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+              A little love in every slice.
+            </div>
+          </div>
+
+          <div class="home-hero__scene home-hero__reveal" style="--delay: .15s" aria-label="Illustrated pepperoni pizza">
+            <div class="home-hero__glow"></div>
+            <div class="home-hero__orbit"></div>
+            <div class="home-hero__orbit home-hero__orbit--inner"></div>
+            <div class="home-hero__parallax">
+              <div class="home-hero__float">
+                <svg class="home-hero__art" viewBox="0 0 500 500" role="img" aria-label="Golden pizza with pepperoni, basil and melted cheese">
+                  <defs>
+                    <radialGradient id="hh-crust" cx=".4" cy=".35" r=".7">
+                      <stop offset="0" stop-color="#ffda83"/>
+                      <stop offset=".74" stop-color="#eeb75e"/>
+                      <stop offset=".9" stop-color="#b76527"/>
+                      <stop offset="1" stop-color="#693213"/>
+                    </radialGradient>
+                    <radialGradient id="hh-cheese" cx=".35" cy=".3" r=".8">
+                      <stop offset="0" stop-color="#ffe6a0"/>
+                      <stop offset=".6" stop-color="#f4c569"/>
+                      <stop offset="1" stop-color="#dc8a37"/>
+                    </radialGradient>
+                    <radialGradient id="hh-pepperoni">
+                      <stop offset="0" stop-color="#e46b37"/>
+                      <stop offset=".8" stop-color="#b93622"/>
+                      <stop offset="1" stop-color="#7b2418"/>
+                    </radialGradient>
+                    <linearGradient id="hh-basil" x2="1" y2="1">
+                      <stop stop-color="#85a64a"/>
+                      <stop offset=".5" stop-color="#467631"/>
+                      <stop offset="1" stop-color="#234821"/>
+                    </linearGradient>
+                    <pattern id="hh-bake" width="47" height="43" patternUnits="userSpaceOnUse">
+                      <ellipse cx="10" cy="13" rx="6" ry="3" fill="#ac531f" opacity=".23"/>
+                      <circle cx="31" cy="29" r="3" fill="#fff0be" opacity=".6"/>
+                      <ellipse cx="38" cy="6" rx="2" ry="4" fill="#b65b25" opacity=".25"/>
+                      <circle cx="16" cy="35" r="1.5" fill="#78451b" opacity=".45"/>
+                    </pattern>
+                    <g id="hh-pep">
+                      <circle r="29" fill="#893719" opacity=".22" transform="translate(2 4)"/>
+                      <circle r="27" fill="url(#hh-pepperoni)" stroke="#8f2d1b" stroke-width="1.5"/>
+                      <path d="M-16-12Q-6-24 10-17" fill="none" stroke="#ffab6c"
+                        stroke-width="2" stroke-linecap="round" opacity=".45"/>
+                      <g fill="#f5ac75" opacity=".65">
+                        <ellipse cx="-10" cy="-8" rx="3" ry="2"/>
+                        <circle cx="8" cy="-12" r="2.5"/>
+                        <ellipse cx="13" cy="7" rx="3.5" ry="2"/>
+                        <circle cx="-9" cy="13" r="2"/>
+                        <ellipse cx="-2" cy="2" rx="2" ry="3"/>
+                      </g>
+                      <g fill="#76271a" opacity=".5">
+                        <circle cx="-17" cy="3" r="2"/>
+                        <circle cx="3" cy="16" r="2.5"/>
+                        <circle cx="17" cy="-5" r="1.7"/>
+                      </g>
+                    </g>
+                    <g id="hh-leaf">
+                      <path d="M0 24C-31 6-24-18 0-29 23-12 27 11 0 24Z"
+                        fill="#172d17" opacity=".2" transform="translate(3 4)"/>
+                      <path d="M0 24C-31 6-24-18 0-29 23-12 27 11 0 24Z"
+                        fill="url(#hh-basil)"/>
+                      <path d="M0 22V-23M0 5l-12-10M0-4l10-9"
+                        stroke="#adc374" stroke-width="1.1" fill="none" opacity=".55"/>
+                    </g>
+                  </defs>
+                  <circle cx="250" cy="255" r="220" fill="#090909"/>
+                  <circle cx="250" cy="250" r="218" fill="#b56b31"/>
+                  <circle cx="250" cy="247" r="215" fill="url(#hh-crust)"/>
+                  <circle cx="250" cy="247" r="205" fill="none"
+                    stroke="#ffdc89" stroke-width="5" opacity=".3"/>
+                  <circle cx="250" cy="247" r="191" fill="#a13e20"/>
+                  <circle cx="250" cy="247" r="185" fill="url(#hh-cheese)"/>
+                  <circle cx="250" cy="247" r="185" fill="url(#hh-bake)"/>
+                  <!-- Bubbled mozzarella -->
+                  <g fill="#fff0b0" opacity=".6">
+                    <path d="M121 186q24-21 43 2t-8 38q-34 8-35-40"/>
+                    <path d="M278 99q30-9 40 13t-21 31q-30-1-19-44"/>
+                    <path d="M318 299q26-24 43-3t-4 40q-41 8-39-37"/>
+                    <ellipse cx="206" cy="330" rx="24" ry="17"/>
+                    <ellipse cx="238" cy="186" rx="22" ry="14"/>
+                    <ellipse cx="130" cy="276" rx="18" ry="24"/>
+                  </g>
+                  <!-- Crust char -->
+                  <g fill="#87431c" opacity=".4">
+                    <ellipse cx="158" cy="62" rx="13" ry="4" transform="rotate(-27 158 62)"/>
+                    <ellipse cx="367" cy="81" rx="11" ry="4" transform="rotate(34 367 81)"/>
+                    <ellipse cx="449" cy="229" rx="4" ry="13"/>
+                    <ellipse cx="84" cy="360" rx="5" ry="13" transform="rotate(-35 84 360)"/>
+                    <ellipse cx="253" cy="448" rx="15" ry="4"/>
+                    <ellipse cx="395" cy="388" rx="12" ry="4" transform="rotate(-43 395 388)"/>
+                    <ellipse cx="48" cy="221" rx="3" ry="11"/>
+                  </g>
+                  <use href="#hh-pep" transform="translate(192 119) rotate(-15)"/>
+                  <use href="#hh-pep" transform="translate(297 151) rotate(25)"/>
+                  <use href="#hh-pep" transform="translate(370 216) rotate(-30)"/>
+                  <use href="#hh-pep" transform="translate(234 237) rotate(10)"/>
+                  <use href="#hh-pep" transform="translate(139 246) rotate(60)"/>
+                  <use href="#hh-pep" transform="translate(172 344) rotate(-20)"/>
+                  <use href="#hh-pep" transform="translate(279 365) rotate(40)"/>
+                  <use href="#hh-pep" transform="translate(347 306) rotate(75)"/>
+                  <!-- Roasted tomato pieces -->
+                  <g fill="#bd4427" stroke="#e57940" stroke-width="3">
+                    <path d="M218 157l21-7 6 13-22 6Z"/>
+                    <path d="M291 277l18-12 9 14-20 10Z"/>
+                    <path d="M111 312l15-8 8 15-16 5Z"/>
+                    <path d="M326 108l14 5-6 14-14-6Z"/>
+                  </g>
+                  <use href="#hh-leaf" transform="translate(144 169) rotate(-45) scale(.85)"/>
+                  <use href="#hh-leaf" transform="translate(337 173) rotate(45) scale(.75)"/>
+                  <use href="#hh-leaf" transform="translate(277 287) rotate(-30) scale(.85)"/>
+                  <use href="#hh-leaf" transform="translate(217 390) rotate(65) scale(.7)"/>
+                  <use href="#hh-leaf" transform="translate(386 271) rotate(80) scale(.65)"/>
+                  <!-- Fine herb flecks -->
+                  <g stroke="#486033" stroke-width="2.5" stroke-linecap="round" opacity=".8">
+                    <path d="m209 291 4 5m-30-90 5-3m103 21 4 4m-55-125 2 5"/>
+                    <path d="m123 210 3-4m201 153 4-3m-89 42 4 1m130-157 2 4"/>
+                    <path d="m188 273 4-1m80-88 2 4m-97 105 4 3m130 30 2-4"/>
+                  </g>
+                </svg>
+              </div>
+            </div>
+            <div class="home-hero__tag home-hero__tag--top">
+              <span class="home-hero__tag-icon" aria-hidden="true">✦</span>
+              <span>
+                <strong>Big on flavour</strong>
+                <small>Little chef energy.</small>
+              </span>
+            </div>
+            <div class="home-hero__tag home-hero__tag--bottom">
+              <span class="home-hero__tag-icon" aria-hidden="true">♡</span>
+              <span>
+                <strong>Your happy slice</strong>
+                <small>Go on. Take another.</small>
+              </span>
+            </div>
+            <span class="home-hero__caption">love at first bite.</span>
           </div>
         </div>
-        <div class="hero__art">
-          <video
-            id="hero-video"
-            class="hero__video"
-            autoplay
-            muted
-            loop
-            playsinline
-            poster="../assets/images/hero/pizza-hero-poster.jpg"
-            aria-hidden="true"
-          ></video>
-        </div>
+
+        <footer class="home-hero__footer">
+          <span>Good food. Better mood.</span>
+          <span class="home-hero__footer-accent">The little chef way ↗</span>
+        </footer>
       </div>
     </section>
+    <!-- =============================== /new home hero =============================== -->
 
     <section class="section container">
       <div class="section-head">
@@ -100,6 +241,17 @@
       </div>
     </section>
 
+    <!-- =============================== shop directions & details =============================== -->
+    <section class="section container">
+      <div class="section-head">
+        <h2>Visit Little Chef Pizza</h2>
+      </div>
+      <div class="home-shopinfo" id="home-shop-info">
+        <div class="skeleton" style="height: 180px"></div>
+      </div>
+    </section>
+    <!-- =============================== /shop directions & details =============================== -->
+
     <section class="section--dark section">
       <div
         class="container"
@@ -140,25 +292,88 @@
     <script src="../js/nav.js"></script>
     <script src="../js/notify.js"></script>
     <script>
-      // Only load the hero video's actual bytes if the visitor hasn't asked for
-      // reduced motion — otherwise the poster frame alone is shown (see the
-      // matching CSS rule in customer.css), and no video is downloaded at all.
-      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        const heroVideo = document.getElementById("hero-video");
-        if (heroVideo) {
-          const source = document.createElement("source");
-          source.src = "../assets/videos/hero/pizza-hero.mp4";
-          source.type = "video/mp4";
-          heroVideo.appendChild(source);
-          heroVideo.load();
-        }
-      }
-    </script>
-    <script>
       (async () => {
         await LCP_NAV.mountCustomer("home");
         LCP_MENU.renderFeatured("home-featured-products", "products", 4);
         LCP_MENU.renderFeatured("home-featured-deals", "deals", 2);
+
+        // Scroll-aware topnav: add .scrolled class when page is scrolled past hero
+        const topnav = document.querySelector(".topnav");
+        if (topnav) {
+          const onScroll = () => topnav.classList.toggle("scrolled", window.scrollY > 60);
+          window.addEventListener("scroll", onScroll, { passive: true });
+          onScroll(); // run once on mount
+        }
+      })();
+    </script>
+    <script>
+      // Hero motion: desktop-only pointer parallax, and pause the float
+      // animation while the hero is scrolled off-screen.
+      (() => {
+        const scene = document.querySelector(".home-hero__scene");
+        const pizza = document.querySelector(".home-hero__parallax");
+        const floatingPizza = document.querySelector(".home-hero__float");
+        if (!scene || !pizza || !floatingPizza) return;
+        const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+        const finePointer = matchMedia("(hover: hover) and (pointer: fine)");
+        let frame = 0;
+        scene.addEventListener("pointermove", (event) => {
+          if (reducedMotion.matches || !finePointer.matches) return;
+          const rect = scene.getBoundingClientRect();
+          const x = (event.clientX - rect.left) / rect.width - 0.5;
+          const y = (event.clientY - rect.top) / rect.height - 0.5;
+          cancelAnimationFrame(frame);
+          frame = requestAnimationFrame(() => {
+            pizza.style.transform = `translate3d(${x * 15}px, ${y * 12}px, 0) rotateX(${-y * 9}deg) rotateY(${x * 9}deg)`;
+          });
+        });
+        const resetPizza = () => {
+          cancelAnimationFrame(frame);
+          pizza.style.transform = "";
+        };
+        scene.addEventListener("pointerleave", resetPizza);
+        scene.addEventListener("pointercancel", resetPizza);
+        const observer = new IntersectionObserver(([entry]) => {
+          floatingPizza.style.animationPlayState = entry.isIntersecting
+            ? "running"
+            : "paused";
+        });
+        observer.observe(scene);
+      })();
+
+      // Shop directions & details — built from the same seed data as the
+      // footer so the address/phones always stay in one place (seed-data.js).
+      (() => {
+        const r = LCP_SEED.restaurant;
+        const tel1 = String(r.phone_primary).replace(/[^0-9+]/g, "");
+        const tel2 = String(r.phone_secondary).replace(/[^0-9+]/g, "");
+        const wa = String(r.phone_whatsapp).replace(/\D/g, "").replace(/^0/, "92");
+        const esc = LCP_NAV.escapeHtml;
+        const mapsUrl =
+          "https://www.google.com/maps/search/?api=1&query=" +
+          encodeURIComponent(r.address);
+        document.getElementById("home-shop-info").innerHTML = `
+          <div class="home-shopinfo__main">
+            <h3>📍 Directions &amp; details</h3>
+            <p class="home-shopinfo__addr">${esc(r.address)}</p>
+            <p class="home-shopinfo__note">${esc(r.delivery_note)}</p>
+            <a class="btn btn--primary btn--sm" target="_blank" rel="noopener" href="${mapsUrl}">Get Directions</a>
+          </div>
+          <div class="home-shopinfo__contact">
+            <a class="home-shopinfo__row" href="tel:${tel1}">
+              <span class="home-shopinfo__label">Tel</span>
+              <span>${esc(r.phone_primary)}</span>
+            </a>
+            <a class="home-shopinfo__row" href="tel:${tel2}">
+              <span class="home-shopinfo__label">Phone</span>
+              <span>${esc(r.phone_secondary)}</span>
+            </a>
+            <a class="home-shopinfo__row" href="https://wa.me/${wa}" target="_blank" rel="noopener">
+              <span class="home-shopinfo__label">WhatsApp</span>
+              <span>${esc(r.phone_whatsapp)}</span>
+            </a>
+            <p class="home-shopinfo__hint">Dine-in &amp; takeaway welcome — delivery within 5 km of Gujrat.</p>
+          </div>`;
       })();
     </script>
   </body>

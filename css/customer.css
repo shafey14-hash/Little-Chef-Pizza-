@@ -6,6 +6,48 @@
   background: #fff;
   border-bottom: 1px solid var(--line);
 }
+
+/* ---- Home page: topnav overlays the dark hero, goes transparent → blurred on scroll */
+.page-home .topnav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(11, 11, 12, 0.72);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+.page-home .topnav.scrolled {
+  background: rgba(11, 11, 12, 0.96);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+.page-home .topnav .brand__name,
+.page-home .topnav .brand__tag {
+  color: #f7f4ed;
+}
+.page-home .topnav .brand__tag {
+  color: #ffba59;
+}
+.page-home .topnav .nav__link {
+  color: rgba(247, 244, 237, 0.7);
+  border-color: transparent;
+}
+.page-home .topnav .nav__link:hover {
+  color: #f7f4ed;
+}
+.page-home .topnav .nav__link--active {
+  color: #ffba59;
+  border-color: #ffba59;
+}
+.page-home .topnav .nav__who {
+  color: rgba(247, 244, 237, 0.6);
+}
+/* Push main content down by topnav height since topnav is now fixed */
+.page-home .home-hero {
+  margin-top: -74px;
+}
 .topnav__inner {
   display: flex;
   align-items: center;
@@ -495,74 +537,363 @@
   color: #7d7466;
 }
 
-/* ---------------------------------------------------------------- hero */
-.hero {
-  background: var(--black);
-  color: #fff;
-  padding: 80px 0 90px;
+/* ---------------------------------------------------------------- home hero
+   Scoped redesign (".home-hero" prefix on everything). Palette is local to
+   the hero on purpose — it differs slightly from the site tokens (warmer
+   near-black background, amber accent) to match the new home design. */
+.home-hero {
+  --hh-text: #f7f4ed;
+  --hh-muted: #a5a39e;
+  --hh-accent: #ffba59;
+  --hh-ease: cubic-bezier(0.22, 1, 0.36, 1);
   position: relative;
+  isolation: isolate;
   overflow: hidden;
+  min-height: 690px;
+  background:
+    radial-gradient(ellipse at 78% 47%, #292018 0%, transparent 44%),
+    linear-gradient(125deg, #161617 0%, #0b0b0c 48%, #11100e 100%);
 }
-.hero__inner {
+/* Quiet background texture, no external assets. */
+.home-hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  opacity: 0.13;
+  background-image: radial-gradient(#b7a68b 0.6px, transparent 0.6px);
+  background-size: 9px 9px;
+  mask-image: linear-gradient(to right, transparent, #000);
+  pointer-events: none;
+}
+.home-hero__grid {
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 40px;
+  grid-template-columns: 1fr 1.05fr;
   align-items: center;
+  min-height: 540px;
+  gap: 12px;
+  padding-block: 42px 54px;
 }
-.hero__eyebrow {
-  color: var(--gold);
+.home-hero__copy {
+  position: relative;
+  z-index: 2;
+}
+.home-hero__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--hh-accent);
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 1px;
-  font-size: 13px;
-  margin-bottom: 12px;
+  letter-spacing: 2.7px;
+  text-transform: uppercase;
 }
-.hero h1 {
-  color: #fff;
-  font-size: 42px;
-  margin-bottom: 16px;
+.home-hero__eyebrow::before {
+  content: "";
+  width: 23px;
+  height: 1px;
+  background: var(--hh-accent);
 }
-.hero p {
-  color: #cfc7b8;
-  font-size: 16.5px;
-  max-width: 460px;
+.home-hero__title {
+  margin: 23px 0 20px;
+  color: var(--hh-text);
+  font-size: clamp(54px, 6.6vw, 86px);
+  font-weight: 800;
+  line-height: 1.01;
+  letter-spacing: -5px;
 }
-.hero__actions {
-  display: flex;
-  gap: 14px;
-  margin-top: 26px;
-  flex-wrap: wrap;
+.home-hero__title em {
+  color: var(--hh-accent);
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  letter-spacing: -4px;
 }
-.hero__art {
-  border-radius: var(--radius-l);
-  overflow: hidden;
-  aspect-ratio: 16/9;
-  background: linear-gradient(135deg, #1b1815, #0c0b0a);
-  display: flex;
+.home-hero__desc {
+  max-width: 350px;
+  margin: 0;
+  color: var(--hh-muted);
+  font-size: 14px;
+  line-height: 1.85;
+}
+.home-hero__actions {
+  margin-top: 30px;
+}
+.home-hero__btn {
+  position: relative;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #2a2724;
+  gap: 28px;
+  overflow: hidden;
+  padding: 17px 23px;
+  border: 0;
+  border-radius: 100px;
+  background: var(--hh-accent);
+  color: #1b140b;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 8px 32px #ffba5912;
+  transition:
+    transform 0.3s var(--hh-ease),
+    box-shadow 0.3s;
 }
-.hero__art img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.home-hero__btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, #ffffff55, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.7s var(--hh-ease);
 }
-.hero__video {
+.home-hero__btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px #ffba5924;
+}
+.home-hero__btn:hover::before {
+  transform: translateX(120%);
+}
+.home-hero__btn-arrow {
+  transition: transform 0.3s var(--hh-ease);
+  font-size: 18px;
+}
+.home-hero__btn:hover .home-hero__btn-arrow {
+  transform: translateX(4px);
+}
+.home-hero__note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 25px;
+  color: #8e8b85;
+  font-size: 11px;
+}
+.home-hero__note svg {
+  color: var(--hh-accent);
+  flex-shrink: 0;
+}
+/* Visual motion is split across layers to avoid transform conflicts. */
+.home-hero__scene {
+  position: relative;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  aspect-ratio: 1;
+  max-width: 535px;
+  justify-self: end;
+  display: grid;
+  place-items: center;
+  perspective: 1000px;
+}
+.home-hero__glow {
+  position: absolute;
+  width: 76%;
+  height: 76%;
+  border-radius: 50%;
+  background: #e8a13b;
+  opacity: 0.07;
+  filter: blur(50px);
+  pointer-events: none;
+}
+.home-hero__orbit {
+  position: absolute;
+  inset: 2%;
+  border: 1px solid #ffffff0b;
+  border-radius: 50%;
+  transform: rotate(-22deg);
+}
+.home-hero__orbit::before {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  top: 15%;
+  left: 13%;
+  border-radius: 50%;
+  background: var(--hh-accent);
+  box-shadow: 0 0 16px #ffba5955;
+}
+.home-hero__orbit--inner {
+  inset: 9%;
+  border-style: dashed;
+  opacity: 0.45;
+  transform: rotate(12deg);
+}
+.home-hero__parallax {
+  position: relative;
+  width: 89%;
+  transition: transform 0.65s var(--hh-ease);
+  will-change: transform;
+}
+.home-hero__float {
+  animation: hhPizzaFloat 6s ease-in-out infinite;
+}
+.home-hero__art {
   display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 30px 25px #00000080);
+  transform: rotate(-12deg);
+  transition: filter 0.5s;
 }
-/* Respect reduced-motion: freeze on the poster frame instead of looping */
+.home-hero__scene:hover .home-hero__art {
+  filter: drop-shadow(0 35px 30px #00000099);
+}
+.home-hero__tag {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid #ffffff16;
+  border-radius: 14px;
+  background: #191817e8;
+  box-shadow: 0 12px 30px #00000030;
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+}
+.home-hero__tag--top {
+  top: 9%;
+  right: -1%;
+  transform: rotate(7deg);
+}
+.home-hero__tag--bottom {
+  bottom: 12%;
+  left: -4%;
+  transform: rotate(-6deg);
+}
+.home-hero__tag-icon {
+  font-size: 20px;
+  color: var(--hh-accent);
+}
+.home-hero__tag strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--hh-text);
+}
+.home-hero__tag small {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--hh-muted);
+}
+.home-hero__caption {
+  position: absolute;
+  bottom: 0;
+  right: 12%;
+  color: #82786b;
+  font: italic 14px Georgia, "Times New Roman", serif;
+  letter-spacing: 0.2px;
+}
+.home-hero__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-block: 19px 23px;
+  border-top: 1px solid #ffffff0d;
+  color: #777570;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+.home-hero__footer-accent {
+  color: #bcaa8f;
+}
+.home-hero__reveal {
+  animation: hhReveal 0.9s var(--hh-ease) both;
+  animation-delay: var(--delay, 0s);
+}
+@keyframes hhReveal {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes hhPizzaFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-11px) rotate(1.5deg);
+  }
+}
+/* Scoped reduced-motion: freeze hero decorations instead of the global
+   blanket rule the original demo page used. */
 @media (prefers-reduced-motion: reduce) {
-  .hero__video {
-    display: none;
+  .home-hero__reveal {
+    animation: none;
   }
-  .hero__art {
-    background-image: url("../assets/images/hero/pizza-hero-poster.jpg");
-    background-size: cover;
-    background-position: center;
+  .home-hero__float {
+    animation: none;
   }
+  .home-hero__parallax {
+    transform: none !important;
+  }
+}
+
+/* -------------------------------------------------- home: shop info block */
+.home-shopinfo {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 28px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-1);
+  padding: 30px 32px;
+  align-items: start;
+}
+.home-shopinfo__main h3 {
+  margin: 0 0 12px;
+  font-size: 22px;
+}
+.home-shopinfo__addr {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.65;
+  margin: 0 0 10px;
+}
+.home-shopinfo__note {
+  color: var(--ink-soft);
+  font-size: 13.5px;
+  line-height: 1.6;
+  margin: 0 0 18px;
+}
+.home-shopinfo__contact {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-left: 1px solid var(--line);
+  padding-left: 28px;
+}
+.home-shopinfo__row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+}
+.home-shopinfo__row:hover {
+  color: var(--red);
+}
+.home-shopinfo__label {
+  min-width: 68px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.home-shopinfo__hint {
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  line-height: 1.6;
+  margin: 6px 0 0;
 }
 
 /* ---------------------------------------------------------------- section blocks */
