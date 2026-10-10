@@ -19,6 +19,7 @@
     },
     "android": {
       "package": "com.littlechefpizza.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0c0b0a"

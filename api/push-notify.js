@@ -243,9 +243,10 @@ module.exports = async (req, res) => {
 
     const profQuery = `profile_id=eq.${encodeURIComponent(profile.id)}`;
     const subs = await subsFor(profQuery);
-    // The APK has no Web Push, so a test must reach it through FCM alone —
-    // fetch both audiences up front and only refuse when NEITHER exists.
-    const appTokens = fcmConfigured() ? await appTokensFor(profQuery) : [];
+    // The APK has no Web Push, so a test must reach the app token — which is
+    // an Expo token now, independent of FCM config. Fetch both audiences up
+    // front and only refuse when NEITHER exists.
+    const appTokens = await appTokensFor(profQuery);
     if (!subs.length && !appTokens.length)
       return res
         .status(200)
@@ -263,11 +264,11 @@ module.exports = async (req, res) => {
     const result = subs.length
       ? await sendToSubscriptions(subs, testPayload)
       : { sent: 0, removed: 0 };
+    // Same dual dispatch as the webhook path (Expo first, then FCM for any
+    // legacy-format tokens) — sending an Expo token straight to FCM would
+    // come back NOT_FOUND and prune the live token.
     const appResult = appTokens.length
-      ? await sendToAppTokens(appTokens, {
-          ...testPayload,
-          onDeadToken: pruneAppToken,
-        })
+      ? await sendFcm(profQuery, testPayload)
       : { sent: 0, removed: 0 };
     return res
       .status(200)
