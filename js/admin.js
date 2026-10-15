@@ -227,6 +227,7 @@ const LCP_ADMIN = (() => {
         <ul class="order-card__line-items">${lineItemsHtml}</ul>
         <div class="summary-row"><span>Subtotal</span><span>${LCP_UTIL.pkr(o.subtotal)}</span></div>
         <div class="summary-row"><span>Delivery Charges</span><span>${o.delivery_charge ? LCP_UTIL.pkr(o.delivery_charge) : "—"}</span></div>
+        ${Number(o.discount) > 0 ? `<div class="summary-row summary-row--discount"><span>Voucher Discount${o.voucher_code ? ` (${LCP_NAV.escapeHtml(o.voucher_code)})` : ""}</span><span>− ${LCP_UTIL.pkr(o.discount)}</span></div>` : ""}
         <div class="summary-row summary-row--total"><span>Total</span><span>${LCP_UTIL.pkr(o.total)}</span></div>
         <div style="margin:8px 0;"><span class="badge badge--muted">${o.payment_method === "easypaisa" ? "EasyPaisa" : "Cash on Delivery"}</span></div>
         <div data-actions class="row gap-8" style="flex-wrap:wrap; margin-top:10px;"></div>`;

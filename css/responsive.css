@@ -12,6 +12,17 @@ body {
   overflow-x: hidden;
 } /* safety net: nothing should ever force horizontal scroll */
 
+/* 7 customer nav links (Campaigns added) need a tighter desktop nav
+   between the tabbar cutoff (860px) and full width. */
+@media (max-width: 1100px) {
+  .nav {
+    gap: 16px;
+  }
+  .nav__link {
+    font-size: 13.5px;
+  }
+}
+
 @media (max-width: 1024px) {
   .bucket-layout {
     grid-template-columns: 1fr;
@@ -78,10 +89,17 @@ body {
     align-items: center;
     justify-content: center;
     gap: 2px;
-    padding: 8px 2px 6px;
+    padding: 8px 1px 5px;
     color: var(--ink-soft);
-    font-size: 10.5px;
+    font-size: 9.5px;
     font-weight: 700;
+    min-width: 0;
+  }
+  .mobile-tabbar__label {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .mobile-tabbar__icon {
     font-size: 19px;

@@ -172,6 +172,17 @@
             </div>
 
             <div class="hr"></div>
+
+            <div id="voucher-banner" class="voucher-banner" hidden>
+              <div class="voucher-banner__icon" aria-hidden="true">🎁</div>
+              <div class="voucher-banner__body">
+                <strong id="vb-title">Voucher applied</strong>
+                <p class="muted" id="vb-reason"></p>
+                <p class="voucher-banner__save" id="vb-save"></p>
+                <p class="muted voucher-banner__code" id="vb-code"></p>
+              </div>
+            </div>
+
             <h3>Review Your Order</h3>
             <div id="review-lines" class="stack"></div>
             <div class="summary-row">
@@ -179,6 +190,9 @@
             </div>
             <div class="summary-row">
               <span>Delivery Charges</span><span id="rv-delivery">—</span>
+            </div>
+            <div class="summary-row summary-row--discount" id="rv-discount-row" hidden>
+              <span id="rv-discount-label">Voucher Discount</span><span id="rv-discount"></span>
             </div>
             <div class="summary-row summary-row--total">
               <span>Total</span><span id="rv-total"></span>

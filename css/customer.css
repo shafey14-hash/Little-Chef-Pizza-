@@ -1256,6 +1256,187 @@
   margin: 14px 0;
 }
 
+/* ------------------------------------------------------- voucher/campaigns */
+.voucher-banner {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: var(--success-bg);
+  border: 1.5px solid var(--success);
+  border-left: 6px solid var(--gold);
+  border-radius: var(--radius-m);
+  padding: 14px 16px;
+  margin: 18px 0;
+}
+.voucher-banner__icon {
+  font-size: 26px;
+  line-height: 1;
+  background: #fff;
+  border: 1.5px solid var(--gold);
+  border-radius: 50%;
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.voucher-banner__body strong {
+  color: var(--success);
+  font-size: 15px;
+}
+.voucher-banner__body p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.voucher-banner__save {
+  font-weight: 800;
+  color: var(--success);
+}
+.voucher-banner__code {
+  font-family: "Courier New", Courier, monospace;
+  letter-spacing: 0.04em;
+}
+.summary-row--discount {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.campaign-card {
+  border: 1.5px solid var(--gold);
+  border-radius: var(--radius-m);
+  background: #fffdf6;
+  padding: 20px;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.campaign-card__badge {
+  background: var(--red);
+  color: #fff;
+  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  line-height: 1;
+}
+.campaign-card__badge span:first-child {
+  font-size: 20px;
+}
+.campaign-card__badge span:last-child {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+}
+.campaign-card h3 {
+  margin: 0 0 6px;
+  font-size: 17px;
+}
+.campaign-card p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+.campaign-progress {
+  margin-top: 12px;
+}
+.campaign-progress__bar {
+  height: 8px;
+  border-radius: 999px;
+  background: #f0e6c8;
+  overflow: hidden;
+}
+.campaign-progress__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--red));
+  border-radius: 999px;
+}
+.campaign-progress__label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin-top: 6px;
+}
+
+.voucher-card {
+  border: 1.5px dashed var(--gold);
+  border-radius: var(--radius-m);
+  background: #fffdf6;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+.voucher-card--used {
+  border-color: var(--line);
+  background: #fafafa;
+  opacity: 0.75;
+}
+.voucher-card__code {
+  font-family: "Courier New", Courier, monospace;
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: 0.06em;
+  color: var(--black);
+}
+.voucher-card__reason {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 4px 0 0;
+  line-height: 1.5;
+}
+.voucher-card__pct {
+  background: var(--success-bg);
+  color: var(--success);
+  font-weight: 900;
+  font-size: 18px;
+  border-radius: var(--radius-m);
+  padding: 10px 14px;
+  white-space: nowrap;
+}
+.voucher-card--used .voucher-card__pct {
+  background: #eee;
+  color: var(--ink-soft);
+}
+.voucher-status {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 999px;
+  padding: 3px 10px;
+  margin-top: 8px;
+}
+.voucher-status--unused {
+  background: var(--success-bg);
+  color: var(--success);
+}
+.voucher-status--used {
+  background: #eee;
+  color: var(--ink-soft);
+}
+.campaigns-empty {
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius-m);
+  padding: 26px 20px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 14px;
+  background: #fff;
+}
+
 /* ---------------------------------------------------------------- orders */
 .order-card {
   border: 1px solid var(--line);

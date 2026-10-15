@@ -349,8 +349,8 @@ create policy "site_settings_admin_write" on public.site_settings for all
 update public.site_settings set value = '250' where key = 'delivery_charge';
 
 insert into public.site_settings (key, value) values
-  ('easypaisa_account_number', '"0300-0000000"'),
-  ('easypaisa_account_name', '"Little Chef Pizza"')
+  ('easypaisa_account_number', '"03091859571"'),
+  ('easypaisa_account_name', '"Khawar Naseer"')
 on conflict (key) do nothing;
 
 -- =========================================================================

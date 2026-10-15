@@ -114,6 +114,12 @@
               previousStatuses &&
               previousStatuses[o.order_number] &&
               previousStatuses[o.order_number] !== nextStatuses[o.order_number];
+            const discountRow =
+              Number(o.discount) > 0
+                ? `<div class="summary-row summary-row--discount"><span>Voucher Discount${
+                    o.voucher_code ? ` (${LCP_NAV.escapeHtml(o.voucher_code)})` : ""
+                  }</span><span>− ${LCP_UTIL.pkr(o.discount)}</span></div>`
+                : "";
             list.insertAdjacentHTML(
               "beforeend",
               `
@@ -124,6 +130,7 @@
             </div>
             <div class="muted">${LCP_UTIL.fmtDate(o.created_at)} · ${o.order_type.toUpperCase()}</div>
             <div class="order-card__items">${LCP_NAV.escapeHtml(itemsText)}</div>
+            ${discountRow}
             <div class="summary-row summary-row--total"><span>Total</span><span>${LCP_UTIL.pkr(o.total)}</span></div>
           </div>
         `,

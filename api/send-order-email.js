@@ -22,6 +22,7 @@ const {
   capitalize,
   sendMail,
 } = require("./_lib/email-template");
+const { dbRest } = require("./_lib/supabase-admin");
 
 const C = BRAND.colors;
 const FONT_F = "'Segoe UI',Helvetica,Arial,sans-serif";
@@ -33,6 +34,20 @@ function subjectAndBody(event, order) {
   const name = order.customer_name || "there";
   const orderNum = order.order_number || "—";
   const isEasypaisa = (order.payment_method || "").toLowerCase() === "easypaisa";
+  const discount = Number(order.discount) || 0;
+  const voucherNote = order.voucher_code ? ` (voucher ${order.voucher_code})` : "";
+  const textTotals = `${discount > 0 ? `Discount: -${pkr(discount)}${voucherNote}\n` : ""}Total: ${pkr(order.total)}`;
+  const discountRow =
+    discount > 0
+      ? infoRow(
+          "Voucher Discount",
+          `<span style="color:#0a7d32;font-weight:800;">−&nbsp;${pkr(discount)}</span>${
+            order.voucher_code
+              ? `<div style="font-size:0.72rem;color:${C.inkSoft};font-family:${FONT_F};">${esc(order.voucher_code)}</div>`
+              : ""
+          }`,
+        )
+      : "";
 
   const orderBox = (extraRows = "") =>
     orderInfoBox({
@@ -51,6 +66,7 @@ function subjectAndBody(event, order) {
     ${infoRow("Payment Method", isEasypaisa ? '<span style="display:inline-block;background:#00a651;color:#ffffff;border-radius:4px;padding:0 7px;font-weight:800;">e</span>&nbsp;EasyPaisa' : "💵 Cash on Delivery")}
     ${infoRow("Contact Number", esc(order.phone || order.customer_phone || "—"))}
     ${order.order_type === "delivery" ? infoRow("Delivery Address", esc(order.address || order.delivery_address || "—")) : ""}
+    ${discountRow}
   `;
 
   // ── 1. New order placed ──
@@ -58,7 +74,7 @@ function subjectAndBody(event, order) {
     if (isEasypaisa) {
       return {
         subject: `Order ${orderNum} received — verifying your payment | ${BRAND.name}`,
-        text: `Hi ${name},\n\nWe've received your order ${orderNum} and are verifying your EasyPaisa payment. This usually takes a few minutes — we'll email you again once it's confirmed.\n\nTotal: ${pkr(order.total)}\n\n${BRAND.name} — ${BRAND.phone}`,
+        text: `Hi ${name},\n\nWe've received your order ${orderNum} and are verifying your EasyPaisa payment. This usually takes a few minutes — we'll email you again once it's confirmed.\n\n${textTotals}\n\n${BRAND.name} — ${BRAND.phone}`,
         html: masterLayout({
           previewText: `Order ${orderNum} received — we're verifying your payment.`,
           bannerBg: C.warnBg,
@@ -83,7 +99,7 @@ function subjectAndBody(event, order) {
     }
     return {
       subject: `Order ${orderNum} received! | ${BRAND.name}`,
-      text: `Hi ${name},\n\nThanks for your order ${orderNum}! We've received it — our team will confirm it shortly and the kitchen will start preparing it.\n\nTotal: ${pkr(order.total)}\nPayment: Cash on Delivery\n\n${BRAND.name} — ${BRAND.phone}`,
+      text: `Hi ${name},\n\nThanks for your order ${orderNum}! We've received it — our team will confirm it shortly and the kitchen will start preparing it.\n\n${textTotals}\nPayment: Cash on Delivery\n\n${BRAND.name} — ${BRAND.phone}`,
       html: masterLayout({
         previewText: `Order ${orderNum} received — we'll confirm it shortly.`,
         bannerBg: C.warnBg,
@@ -113,7 +129,7 @@ function subjectAndBody(event, order) {
       case "pending": // easypaisa payment approved
         return {
           subject: `Payment confirmed for order ${orderNum} | ${BRAND.name}`,
-          text: `Hi ${name},\n\nYour payment for order ${orderNum} has been confirmed. We're preparing your order now!\n\nTotal: ${pkr(order.total)}\n\n${BRAND.name} — ${BRAND.phone}`,
+          text: `Hi ${name},\n\nYour payment for order ${orderNum} has been confirmed. We're preparing your order now!\n\n${textTotals}\n\n${BRAND.name} — ${BRAND.phone}`,
           html: masterLayout({
             previewText: `Payment confirmed — order ${orderNum} is being prepared!`,
             bannerBg: C.successBg,
@@ -139,7 +155,7 @@ function subjectAndBody(event, order) {
       case "confirmed":
         return {
           subject: `Order ${orderNum} confirmed! | ${BRAND.name}`,
-          text: `Hi ${name},\n\nGreat news — ${isEasypaisa ? "your payment has been verified and your order" : "your order"} ${orderNum} is confirmed and our kitchen is preparing it fresh now!\n\nTotal: ${pkr(order.total)}\nPayment: ${isEasypaisa ? "EasyPaisa" : "Cash on Delivery"}\n\n${BRAND.name} — ${BRAND.phone}`,
+          text: `Hi ${name},\n\nGreat news — ${isEasypaisa ? "your payment has been verified and your order" : "your order"} ${orderNum} is confirmed and our kitchen is preparing it fresh now!\n\n${textTotals}\nPayment: ${isEasypaisa ? "EasyPaisa" : "Cash on Delivery"}\n\n${BRAND.name} — ${BRAND.phone}`,
           html: masterLayout({
             previewText: `Order ${orderNum} confirmed — our kitchen is on it!`,
             bannerBg: C.successBg,
@@ -167,7 +183,7 @@ function subjectAndBody(event, order) {
       case "out_for_delivery":
         return {
           subject: `Order ${orderNum} is on its way! | ${BRAND.name}`,
-          text: `Hi ${name},\n\nYour order ${orderNum} is out for delivery and should arrive soon. Please keep your phone nearby.\n\nTotal: ${pkr(order.total)}\n\n${BRAND.name} — ${BRAND.phone}`,
+          text: `Hi ${name},\n\nYour order ${orderNum} is out for delivery and should arrive soon. Please keep your phone nearby.\n\n${textTotals}\n\n${BRAND.name} — ${BRAND.phone}`,
           html: masterLayout({
             previewText: `Order ${orderNum} is out for delivery!`,
             bannerBg: C.orangeBg,
@@ -288,6 +304,22 @@ module.exports = async (req, res) => {
     const { event, order } = req.body || {};
     if (!order || !order.customer_email) {
       return res.status(200).json({ skipped: "no email on file" });
+    }
+
+    // The DB trigger's payload carries no discount fields — pull them from
+    // the order row so voucher savings appear in the email. Best-effort:
+    // a failed lookup must never stop the email itself.
+    try {
+      const { data } = await dbRest(
+        `orders?order_number=eq.${encodeURIComponent(order.order_number || "")}&select=discount,voucher_code`,
+      );
+      const row = Array.isArray(data) ? data[0] : null;
+      if (row) {
+        order.discount = Number(row.discount) || 0;
+        order.voucher_code = row.voucher_code || null;
+      }
+    } catch (e) {
+      console.error("discount lookup failed:", e && e.message);
     }
 
     const content = subjectAndBody(event, order);

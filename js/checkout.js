@@ -17,17 +17,21 @@ function lcpRenderOrderSuccess(data, user) {
   const etaText = data.order_type === "delivery" ? "Estimated delivery: up to 40 minutes."
                 : data.order_type === "takeaway" ? "Estimated preparation: up to 20 minutes."
                 : "Please proceed to your table — our staff will assist you.";
+  const savedAmt = Number(data.discount) || 0;
+  const savedNote = savedAmt > 0
+    ? ` You saved Rs. ${savedAmt} with your voucher${data.voucher_code ? ` ${data.voucher_code}` : ""}. 🎉`
+    : "";
 
   if (data.status === "payment_verification") {
     document.getElementById("success-icon").textContent = "⏳";
     document.getElementById("success-title").textContent = "Payment Submitted";
     document.getElementById("success-meta").textContent = `Your payment is being verified. ${data.order_type.toUpperCase()} · Rs. ${data.total}`;
-    document.getElementById("success-note").textContent = "Please wait for payment verification. Verification usually takes about 2 minutes. Your order cannot be cancelled after placement.";
+    document.getElementById("success-note").textContent = "Please wait for payment verification. Verification usually takes about 2 minutes. Your order cannot be cancelled after placement." + savedNote;
   } else {
     document.getElementById("success-icon").textContent = "✓";
     document.getElementById("success-title").textContent = "Order Placed Successfully!";
     document.getElementById("success-meta").textContent = `${data.order_type.toUpperCase()} · Rs. ${data.total} · ${etaText}`;
-    document.getElementById("success-note").textContent = "Your order cannot be cancelled after placement.";
+    document.getElementById("success-note").textContent = "Your order cannot be cancelled after placement." + savedNote;
   }
   document.getElementById("success-view-orders").hidden = !user;
   document.getElementById("success-continue").hidden = !!user;
@@ -97,6 +101,24 @@ function lcpRenderOrderSuccess(data, user) {
   const DELIVERY_CHARGE = Number(deliveryChargeSetting) || 250;
   const deliveryCardNote = document.querySelector('.order-type-card[data-type="delivery"] .muted');
   if (deliveryCardNote) deliveryCardNote.textContent = `Up to 40 minutes · Free delivery within 3km · Rs. ${DELIVERY_CHARGE} beyond 3km (within 5km)`;
+
+  // Welcome voucher (e.g. the First-100 campaign): logged-in customers get
+  // their best unused voucher attached automatically — no code entry.
+  // Guests order without one. create_order() re-validates server-side.
+  let voucher = null;
+  if (user) {
+    const { data: bestVoucher } = await LCP_DB.vouchers.bestUnused(user.id);
+    voucher = bestVoucher;
+    if (voucher) {
+      const banner = document.getElementById("voucher-banner");
+      document.getElementById("vb-title").textContent =
+        `${voucher.discount_percent}% voucher applied to this order`;
+      document.getElementById("vb-reason").textContent = voucher.reason || "";
+      document.getElementById("vb-code").textContent =
+        `Voucher ${voucher.code} · attached automatically at checkout`;
+      banner.hidden = false;
+    }
+  }
 
   let orderType = null;
   let paymentMethod = "cod";
@@ -232,13 +254,26 @@ function lcpRenderOrderSuccess(data, user) {
       ]));
     });
     const deliveryCharge = orderType === "delivery" ? (deliveryIsFree ? 0 : DELIVERY_CHARGE) : 0;
+    // Mirror of the server math: round(subtotal * percent / 100, 2). The
+    // authoritative value comes back on the created order row.
+    const discount = voucher ? Math.round(cur.subtotal * voucher.discount_percent) / 100 : 0;
+    const discountRow = document.getElementById("rv-discount-row");
+    if (voucher && discount > 0) {
+      discountRow.hidden = false;
+      document.getElementById("rv-discount").textContent = `− ${LCP_UTIL.pkr(discount)}`;
+      document.getElementById("rv-discount-label").textContent = `Voucher Discount (${voucher.discount_percent}%)`;
+      const save = document.getElementById("vb-save");
+      if (save) save.textContent = `You save ${LCP_UTIL.pkr(discount)} on this order.`;
+    } else {
+      discountRow.hidden = true;
+    }
     document.getElementById("rv-subtotal").textContent = LCP_UTIL.pkr(cur.subtotal);
     document.getElementById("rv-delivery").textContent = orderType !== "delivery"
       ? "—"
       : deliveryIsFree
         ? "Free ✓ (within 3km)"
         : `Rs. ${deliveryCharge}`;
-    document.getElementById("rv-total").textContent = LCP_UTIL.pkr(cur.subtotal + deliveryCharge);
+    document.getElementById("rv-total").textContent = LCP_UTIL.pkr(cur.subtotal - discount + deliveryCharge);
   }
 
   // Enable "Place Order" once cancellation ack is checked AND (for
@@ -333,6 +368,7 @@ function lcpRenderOrderSuccess(data, user) {
       payment_method: paymentMethod,
       payment_screenshot_path: paymentMethod === "easypaisa" ? screenshotPath : null,
       cancellation_acknowledged: ack,
+      voucher_id: voucher ? voucher.id : null,
     };
 
     const { data, error } = await LCP_DB.orders.create(payload);

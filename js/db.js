@@ -665,6 +665,50 @@ const LCP_DB = (() => {
     },
   };
 
+  // ---------------------------------------------------------- vouchers
+  // Read-only from the client: vouchers are granted by the DB signup
+  // trigger and spent inside create_order() — both SECURITY DEFINER, so
+  // no client write is possible (or needed).
+  const vouchers = {
+    /** Best unused voucher for a profile — biggest discount first. */
+    async bestUnused(profileId) {
+      if (!CONFIGURED || !profileId) return { data: null };
+      const { data, error } = await sb
+        .from("vouchers")
+        .select("*")
+        .eq("profile_id", profileId)
+        .eq("status", "unused")
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+        .order("discount_percent", { ascending: false })
+        .order("created_at", { ascending: true })
+        .limit(1);
+      if (error) return { data: null };
+      return { data: Array.isArray(data) && data.length ? data[0] : null };
+    },
+    async listMine(profileId) {
+      if (!CONFIGURED || !profileId) return { data: [] };
+      const { data, error } = await sb
+        .from("vouchers")
+        .select("*")
+        .eq("profile_id", profileId)
+        .order("created_at", { ascending: false });
+      return error ? { data: [] } : { data: data || [] };
+    },
+  };
+
+  // --------------------------------------------------------- campaigns
+  const campaigns = {
+    async listActive() {
+      if (!CONFIGURED) return { data: [] };
+      const { data, error } = await sb
+        .from("campaigns")
+        .select("*")
+        .eq("active", true)
+        .order("created_at", { ascending: true });
+      return error ? { data: [] } : { data: data || [] };
+    },
+  };
+
   // ------------------------------------------------------------- storage
   const BUCKET = "menu-images";
   const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -773,6 +817,7 @@ const LCP_DB = (() => {
         p_payment_method: payload.payment_method,
         p_payment_screenshot_path: payload.payment_screenshot_path || null,
         p_cancellation_acknowledged: payload.cancellation_acknowledged,
+        p_voucher_id: payload.voucher_id || null,
       });
       if (error)
         return {
@@ -900,5 +945,5 @@ const LCP_DB = (() => {
     },
   };
 
-  return { auth, catalog, orders, storage, settings, isConfigured: CONFIGURED };
+  return { auth, catalog, orders, storage, settings, vouchers, campaigns, isConfigured: CONFIGURED };
 })();

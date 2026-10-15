@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Campaigns — Little Chef Pizza</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="../assets/images/logo/favicon.svg"
+    />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <meta name="theme-color" content="#e2222a" />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/customer.css" />
+    <link rel="stylesheet" href="../css/responsive.css" />
+  </head>
+  <body>
+    <section class="section container" style="max-width: 760px">
+      <h1>Campaigns 🎁</h1>
+      <p class="muted" style="margin-top: -6px">
+        Live offers and your vouchers. Vouchers attach themselves at checkout —
+        you never have to type a code.
+      </p>
+
+      <div id="campaigns-list"></div>
+      <div class="campaigns-empty" id="campaigns-empty" hidden>
+        No campaigns are running right now — but new ones are on the way. Check
+        back soon! 🍕
+      </div>
+
+      <h2 id="vouchers-heading" style="margin-top: 34px" hidden>
+        Your Vouchers
+      </h2>
+
+      <div id="vouchers-guest" class="empty-state" hidden>
+        <div class="empty-state__icon">🎟️</div>
+        <h3>Create an account to grab your voucher</h3>
+        <p>
+          Vouchers are tied to your account. Sign up during a live campaign and
+          your discount will be waiting right here — ready to apply itself at
+          checkout.
+        </p>
+        <a
+          href="../index.html"
+          class="btn btn--primary"
+          style="margin-top: 14px"
+          >Login / Create Account</a
+        >
+      </div>
+
+      <div id="vouchers-list"></div>
+      <div class="campaigns-empty" id="vouchers-empty" hidden>
+        You don't have any vouchers yet. When a campaign rewards your account,
+        your voucher will appear here automatically. 🎁
+      </div>
+    </section>
+
+    <script src="../js/seed-data.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/db.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/validation.js"></script>
+    <script src="../js/cart.js"></script>
+    <script src="../js/cart-ui.js"></script>
+    <script src="../js/nav.js"></script>
+    <script src="../js/notify.js"></script>
+    <script>
+      (async () => {
+        const user = await LCP_NAV.mountCustomer("campaigns");
+
+        // ---- Active campaigns (public — guests see these too) ----
+        const { data: camps } = await LCP_DB.campaigns.listActive();
+        const campsEl = document.getElementById("campaigns-list");
+        if (!camps.length) {
+          document.getElementById("campaigns-empty").hidden = false;
+        } else {
+          camps.forEach((c) => {
+            const max = Number(c.max_grants) || 0;
+            const claimed = Math.min(Number(c.granted_count) || 0, max);
+            const pct = max > 0 ? Math.round((claimed / max) * 100) : 0;
+            const left = Math.max(0, max - claimed);
+            campsEl.insertAdjacentHTML(
+              "beforeend",
+              `
+          <div class="campaign-card">
+            <div class="campaign-card__badge"><span>${Number(c.discount_percent)}%</span><span>off</span></div>
+            <div>
+              <h3>${LCP_NAV.escapeHtml(c.title)}</h3>
+              <p>${LCP_NAV.escapeHtml(c.description)}</p>
+              <div class="campaign-progress">
+                <div class="campaign-progress__bar"><div class="campaign-progress__fill" style="width:${pct}%"></div></div>
+                <div class="campaign-progress__label">${claimed} of ${max} claimed${left > 0 ? ` · only ${left} left — hurry!` : " · fully claimed"}</div>
+              </div>
+            </div>
+          </div>`,
+            );
+          });
+        }
+
+        // ---- My vouchers (login required) ----
+        if (!user) {
+          document.getElementById("vouchers-guest").hidden = false;
+          return;
+        }
+        document.getElementById("vouchers-heading").hidden = false;
+
+        const { data: vs } = await LCP_DB.vouchers.listMine(user.id);
+        if (!vs.length) {
+          document.getElementById("vouchers-empty").hidden = false;
+          return;
+        }
+        const vEl = document.getElementById("vouchers-list");
+        vs.forEach((v) => {
+          const used = v.status === "used";
+          vEl.insertAdjacentHTML(
+            "beforeend",
+            `
+          <div class="voucher-card${used ? " voucher-card--used" : ""}">
+            <div>
+              <div class="voucher-card__code">${LCP_NAV.escapeHtml(v.code)}</div>
+              <p class="voucher-card__reason">${LCP_NAV.escapeHtml(v.reason || "")}</p>
+              <span class="voucher-status ${used ? "voucher-status--used" : "voucher-status--unused"}">${
+                used
+                  ? "Used ✓ — applied to an order"
+                  : "Unused — attaches automatically at checkout"
+              }</span>
+            </div>
+            <div class="voucher-card__pct">${Number(v.discount_percent)}%<br /><small>OFF</small></div>
+          </div>`,
+          );
+        });
+      })();
+    </script>
+  </body>
+</html>

@@ -52,6 +52,7 @@ const LCP_NAV = (() => {
       ["home", "Home", "home.html", "🏠"],
       ["menu", "Menu", "menu.html", "🍕"],
       ["deals", "Deals", "deals.html", "🏷️"],
+      ["campaigns", "Campaigns", "campaigns.html", "🎁"],
       ["track", "Track", "track.html", "🔍"],
       ["orders", "My Orders", "orders.html", "🧾"],
       ["profile", "Profile", "profile.html", "👤"],
