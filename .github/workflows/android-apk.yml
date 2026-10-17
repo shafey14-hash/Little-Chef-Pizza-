@@ -24,22 +24,27 @@ on:
       - ".github/workflows/android-apk.yml"
   workflow_dispatch:
 
-env:
-  HAS_EXPO: ${{ secrets.EXPO_TOKEN != '' }}
-
 jobs:
   ota-update:
     name: Publish EAS Update (JS over-the-air)
     runs-on: ubuntu-latest
-    if: env.HAS_EXPO == 'true'
+    env:
+      HAS_EXPO: ${{ secrets.EXPO_TOKEN != '' }}
     steps:
+      - name: Notice when EXPO_TOKEN is missing
+        if: env.HAS_EXPO != 'true'
+        run: echo "EXPO_TOKEN secret not set — skipping OTA publish (the APK build still runs)."
+
       - uses: actions/checkout@v4
+        if: env.HAS_EXPO == 'true'
 
       - uses: actions/setup-node@v4
+        if: env.HAS_EXPO == 'true'
         with:
           node-version: 22
 
       - name: Install mobile app dependencies
+        if: env.HAS_EXPO == 'true'
         working-directory: mobile
         run: npm ci
 
@@ -47,6 +52,7 @@ jobs:
       # runtimeVersion from app.json (policy: appVersion). Installed apps
       # whose native version matches receive it automatically at launch.
       - name: Publish EAS Update
+        if: env.HAS_EXPO == 'true'
         working-directory: mobile
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
