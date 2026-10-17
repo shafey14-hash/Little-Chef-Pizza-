@@ -2,9 +2,17 @@
 # APK to the website root as app.apk — Vercel then serves it at
 # https://little-chef-pizza.vercel.app/app.apk.
 #
+# It ALSO publishes an EAS Update (OTA) on every mobile push: the installed
+# app picks up JS-only changes on its next launch — no APK reinstall needed.
+# Native changes (new packages, config plugins, version bumps) still need the
+# new APK from this workflow.
+#
 # One-time GitHub secrets:
 #   GOOGLE_SERVICES_JSON_BASE64   — single-line base64 of google-services.json
 #                                   created with: base64 -w0 google-services.json
+#   EXPO_TOKEN                    — Expo access token (expo.dev → account →
+#                                   Settings → Access Tokens). If missing, the
+#                                   OTA job is skipped and only the APK builds.
 
 name: Build Android APK (Local CI)
 
@@ -16,7 +24,34 @@ on:
       - ".github/workflows/android-apk.yml"
   workflow_dispatch:
 
+env:
+  HAS_EXPO: ${{ secrets.EXPO_TOKEN != '' }}
+
 jobs:
+  ota-update:
+    name: Publish EAS Update (JS over-the-air)
+    runs-on: ubuntu-latest
+    if: env.HAS_EXPO == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install mobile app dependencies
+        working-directory: mobile
+        run: npm ci
+
+      # Publishes the JS bundle to the "production" channel under the
+      # runtimeVersion from app.json (policy: appVersion). Installed apps
+      # whose native version matches receive it automatically at launch.
+      - name: Publish EAS Update
+        working-directory: mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx eas-cli@latest update --channel production --non-interactive
+
   build:
     runs-on: ubuntu-latest
     permissions:

@@ -203,6 +203,17 @@ export default function OrdersScreen() {
                     {fmtDate(o.created_at)} · {o.order_type.toUpperCase()}
                   </Text>
                   <Text style={styles.items}>{itemsText}</Text>
+                  {Number(o.discount) > 0 ? (
+                    <View style={styles.discountRow}>
+                      <Text style={styles.discountLabel}>
+                        Voucher Discount
+                        {o.voucher_code ? ` (${o.voucher_code})` : ""}
+                      </Text>
+                      <Text style={styles.discountValue}>
+                        − {pkr(o.discount)}
+                      </Text>
+                    </View>
+                  ) : null}
                   <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>Total</Text>
                     <Text style={styles.totalValue}>{pkr(o.total)}</Text>
@@ -273,6 +284,21 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.body,
     lineHeight: 20,
     marginBottom: 10,
+  },
+  discountRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  discountLabel: {
+    fontSize: 13,
+    fontFamily: FONTS.body,
+    color: COLORS.inkSoft,
+  },
+  discountValue: {
+    fontSize: 13,
+    fontFamily: FONTS.bodyBold,
+    color: COLORS.success,
   },
   totalRow: {
     flexDirection: "row",

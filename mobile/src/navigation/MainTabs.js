@@ -1,7 +1,7 @@
 // src/navigation/MainTabs.js
 //
-// The 6-item bottom tab bar from the website's mobile view:
-// 🏠 Home · 🍕 Menu · 🏷️ Deals · 🔍 Track · 🧾 My Orders · 👤 Profile
+// The 7-item bottom tab bar from the website's mobile view:
+// 🏠 Home · 🍕 Menu · 🏷️ Deals · 🎁 Campaigns · 🔍 Track · 🧾 My Orders · 👤 Profile
 
 import React from "react";
 import { Text, View, Pressable, StyleSheet } from "react-native";
@@ -23,7 +23,7 @@ const TABS = [
   { name: "Home", label: "Home", icon: "🏠", component: HomeScreen },
   { name: "Menu", label: "Menu", icon: "🍕", component: MenuScreen },
   { name: "Deals", label: "Deals", icon: "🏷️", component: DealsScreen },
-  { name: "Campaigns", label: "Offers", icon: "🎁", component: CampaignsScreen },
+  { name: "Campaigns", label: "Campaigns", icon: "🎁", component: CampaignsScreen },
   { name: "Track", label: "Track", icon: "🔍", component: TrackScreen },
   { name: "Orders", label: "My Orders", icon: "🧾", component: OrdersScreen },
   { name: "Profile", label: "Profile", icon: "👤", component: ProfileScreen },

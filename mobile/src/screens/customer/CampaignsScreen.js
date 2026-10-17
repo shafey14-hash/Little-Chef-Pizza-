@@ -91,12 +91,12 @@ export default function CampaignsScreen() {
       >
         <Text style={styles.title}>Campaigns 🎁</Text>
         <Text style={styles.intro}>
-          Live offers and your vouchers. Vouchers attach themselves automatically
-          at checkout — you never have to type a code.
+          Live campaigns and your vouchers. Vouchers attach themselves
+          automatically at checkout — you never have to type a code.
         </Text>
 
         {/* -------------------- Active Campaigns -------------------- */}
-        <Text style={styles.sectionHeader}>Live Offers</Text>
+        <Text style={styles.sectionHeader}>Active Campaigns</Text>
 
         {campaigns === null ? (
           <View style={styles.loadingBox}>

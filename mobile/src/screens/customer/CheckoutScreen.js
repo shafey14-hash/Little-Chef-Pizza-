@@ -738,10 +738,10 @@ function SuccessPanel({ order, etaText, signedIn, onViewOrders, onContinue }) {
       </Text>
       <Text style={styles.successP}>Order Number</Text>
       <Text style={styles.successNum}>{order.order_number}</Text>
-      {Number(order.voucher_discount) > 0 ? (
+      {Number(order.discount) > 0 ? (
         <View style={styles.successVoucherBanner}>
           <Text style={styles.successVoucherText}>
-            🎁 Saved Rs. {order.voucher_discount} with voucher{" "}
+            🎁 Saved Rs. {order.discount} with voucher{" "}
             {order.voucher_code ? `(${order.voucher_code})` : ""}
           </Text>
         </View>
