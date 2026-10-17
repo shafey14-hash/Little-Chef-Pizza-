@@ -43,6 +43,7 @@ export async function createOrder(payload) {
     p_payment_method: payload.payment_method,
     p_payment_screenshot_path: payload.payment_screenshot_path || null,
     p_cancellation_acknowledged: payload.cancellation_acknowledged,
+    p_voucher_id: payload.voucher_id || null,
   });
   if (error)
     return {
@@ -396,4 +397,40 @@ export async function verifyEmailChange({ email, token: code }) {
         "That code is incorrect or has expired. Please try again.",
     };
   }
+}
+
+// ----------------------------------------------------------- campaigns & vouchers
+
+export async function listActiveCampaigns() {
+  const { data, error } = await supabase
+    .from("campaigns")
+    .select("*")
+    .eq("active", true)
+    .order("created_at", { ascending: true });
+  return error ? { data: [] } : { data: data || [] };
+}
+
+export async function listMyVouchers(profileId) {
+  if (!profileId) return { data: [] };
+  const { data, error } = await supabase
+    .from("vouchers")
+    .select("*")
+    .eq("profile_id", profileId)
+    .order("created_at", { ascending: false });
+  return error ? { data: [] } : { data: data || [] };
+}
+
+export async function bestUnusedVoucher(profileId) {
+  if (!profileId) return { data: null };
+  const { data, error } = await supabase
+    .from("vouchers")
+    .select("*")
+    .eq("profile_id", profileId)
+    .eq("status", "unused")
+    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+    .order("discount_percent", { ascending: false })
+    .order("created_at", { ascending: true })
+    .limit(1);
+  if (error) return { data: null };
+  return { data: Array.isArray(data) && data.length ? data[0] : null };
 }

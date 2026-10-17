@@ -12,6 +12,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   AccessibilityInfo,
   Animated,
+  Easing,
   Image,
   Linking,
   Pressable,
@@ -183,23 +184,44 @@ function PizzaSvg() {
         <Ellipse cx={48} cy={221} rx={3} ry={11} />
       </G>
 
+      {/* Pepperonis matching website layout */}
       <Pepperoni x={192} y={119} rotate={-15} />
       <Pepperoni x={297} y={151} rotate={25} />
       <Pepperoni x={370} y={216} rotate={-30} />
-      <Pepperoni x={234} y={268} rotate={10} />
-      <Pepperoni x={160} y={290} rotate={-8} />
+      <Pepperoni x={234} y={237} rotate={10} />
+      <Pepperoni x={139} y={246} rotate={60} />
+      <Pepperoni x={172} y={344} rotate={-20} />
+      <Pepperoni x={279} y={365} rotate={40} />
+      <Pepperoni x={347} y={306} rotate={75} />
 
-      <BasilLeaf x={246} y={196} rotate={20} scale={0.95} />
-      <BasilLeaf x={322} y={282} rotate={-42} scale={0.9} />
-      <BasilLeaf x={176} y={214} rotate={68} scale={0.85} />
+      {/* Roasted tomato pieces */}
+      <G fill="#bd4427" stroke="#e57940" strokeWidth={3}>
+        <Path d="M218 157l21-7 6 13-22 6Z" />
+        <Path d="M291 277l18-12 9 14-20 10Z" />
+        <Path d="M111 312l15-8 8 15-16 5Z" />
+        <Path d="M326 108l14 5-6 14-14-6Z" />
+      </G>
+
+      {/* Basil leaves matching website layout */}
+      <BasilLeaf x={144} y={169} rotate={-45} scale={0.85} />
+      <BasilLeaf x={337} y={173} rotate={45} scale={0.75} />
+      <BasilLeaf x={277} y={287} rotate={-30} scale={0.85} />
+      <BasilLeaf x={217} y={390} rotate={65} scale={0.7} />
+      <BasilLeaf x={386} y={271} rotate={80} scale={0.65} />
+
+      {/* Fine herb flecks */}
+      <G stroke="#486033" strokeWidth={2.5} strokeLinecap="round" opacity={0.8}>
+        <Path d="M182 210l5-3M316 220l4 4M252 334l-5 3M190 286l3-5M304 338l5 2M334 140l-4 3M224 134l4 4" />
+      </G>
     </Svg>
   );
 }
 
-/* Slow 6s float, mirroring the site's hhPizzaFloat. Skipped entirely when
+/* Slow float + smooth continuous 360 circular rotation. Skipped entirely when
    the user prefers reduced motion. */
 function usePizzaFloat() {
   const progress = useRef(new Animated.Value(0)).current;
+  const spin = useRef(new Animated.Value(0)).current;
   const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
@@ -214,19 +236,31 @@ function usePizzaFloat() {
 
   useEffect(() => {
     if (reduceMotion) return undefined;
-    const loop = Animated.loop(
+    const floatLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(progress, { toValue: 1, duration: 3000, useNativeDriver: true }),
         Animated.timing(progress, { toValue: 0, duration: 3000, useNativeDriver: true }),
       ]),
     );
-    loop.start();
-    return () => loop.stop();
-  }, [reduceMotion, progress]);
+    const spinLoop = Animated.loop(
+      Animated.timing(spin, {
+        toValue: 1,
+        duration: 32000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    );
+    floatLoop.start();
+    spinLoop.start();
+    return () => {
+      floatLoop.stop();
+      spinLoop.stop();
+    };
+  }, [reduceMotion, progress, spin]);
 
   return {
     translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [0, -11] }),
-    rotate: progress.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "1.5deg"] }),
+    rotate: spin.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] }),
   };
 }
 
@@ -319,12 +353,12 @@ export default function HomeScreen({ navigation }) {
             <Animated.View
               style={[
                 styles.parallax,
-                { transform: [{ translateY: float.translateY }, { rotate: float.rotate }] },
+                { transform: [{ translateY: float.translateY }] },
               ]}
             >
-              <View style={styles.art}>
+              <Animated.View style={[styles.art, { transform: [{ rotate: float.rotate }] }]}>
                 <PizzaSvg />
-              </View>
+              </Animated.View>
             </Animated.View>
 
             <View style={[styles.tag, styles.tagTop]}>

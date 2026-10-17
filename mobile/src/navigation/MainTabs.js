@@ -11,6 +11,7 @@ import { COLORS, FONTS, SIZES, shadowCard } from "../theme";
 import HomeScreen from "../screens/customer/HomeScreen";
 import MenuScreen from "../screens/customer/MenuScreen";
 import DealsScreen from "../screens/customer/DealsScreen";
+import CampaignsScreen from "../screens/customer/CampaignsScreen";
 import TrackScreen from "../screens/customer/TrackScreen";
 import OrdersScreen from "../screens/customer/OrdersScreen";
 import ProfileScreen from "../screens/customer/ProfileScreen";
@@ -22,6 +23,7 @@ const TABS = [
   { name: "Home", label: "Home", icon: "🏠", component: HomeScreen },
   { name: "Menu", label: "Menu", icon: "🍕", component: MenuScreen },
   { name: "Deals", label: "Deals", icon: "🏷️", component: DealsScreen },
+  { name: "Campaigns", label: "Offers", icon: "🎁", component: CampaignsScreen },
   { name: "Track", label: "Track", icon: "🔍", component: TrackScreen },
   { name: "Orders", label: "My Orders", icon: "🧾", component: OrdersScreen },
   { name: "Profile", label: "Profile", icon: "👤", component: ProfileScreen },
@@ -56,7 +58,7 @@ export default function MainTabs() {
           tabBarActiveTintColor: COLORS.red,
           tabBarInactiveTintColor: COLORS.inkSoft,
           tabBarLabelStyle: {
-            fontSize: 10,
+            fontSize: 9,
             fontFamily: FONTS.bodySemi,
           },
           tabBarStyle: {

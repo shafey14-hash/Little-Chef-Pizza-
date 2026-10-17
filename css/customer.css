@@ -730,7 +730,8 @@
   width: 100%;
   height: auto;
   filter: drop-shadow(0 30px 25px #00000080);
-  transform: rotate(-12deg);
+  transform-origin: 50% 50%;
+  animation: hhPizzaSpin 32s linear infinite;
   transition: filter 0.5s;
 }
 .home-hero__scene:hover .home-hero__art {
@@ -815,10 +816,18 @@
 @keyframes hhPizzaFloat {
   0%,
   100% {
-    transform: translateY(0) rotate(0);
+    transform: translateY(0);
   }
   50% {
-    transform: translateY(-11px) rotate(1.5deg);
+    transform: translateY(-11px);
+  }
+}
+@keyframes hhPizzaSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 /* Scoped reduced-motion: freeze hero decorations instead of the global
@@ -828,6 +837,9 @@
     animation: none;
   }
   .home-hero__float {
+    animation: none;
+  }
+  .home-hero__art {
     animation: none;
   }
   .home-hero__parallax {

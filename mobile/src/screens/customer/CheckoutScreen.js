@@ -25,7 +25,12 @@ import {
 } from "../../state/cart";
 import { getCatalog, loadCatalog } from "../../state/catalog";
 import { deliveryCheck, getStoredLocation } from "../../state/location";
-import { createOrder, settingsGet, uploadPaymentScreenshot } from "../../lib/db";
+import {
+  bestUnusedVoucher,
+  createOrder,
+  settingsGet,
+  uploadPaymentScreenshot,
+} from "../../lib/db";
 import {
   pkr,
   validateEmail,
@@ -53,6 +58,7 @@ export default function CheckoutScreen() {
   const [orderType, setOrderType] = useState(null);
   const [deliveryChargeSetting, setDeliveryChargeSetting] = useState(250);
   const [storedLocation, setStoredLocation] = useState(null);
+  const [voucher, setVoucher] = useState(null);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -79,6 +85,9 @@ export default function CheckoutScreen() {
   const deliveryIsFree = !!(locCheck && locCheck.band === "free");
   const deliveryCharge =
     orderType === "delivery" ? (deliveryIsFree ? 0 : deliveryChargeSetting) : 0;
+  const voucherDiscount = voucher
+    ? Math.round((cart.subtotal * (Number(voucher.discount_percent) || 0)) / 100)
+    : 0;
 
   useEffect(() => {
     (async () => {
@@ -132,12 +141,14 @@ export default function CheckoutScreen() {
         return;
       }
 
-      const [charge, loc] = await Promise.all([
+      const [charge, loc, bestV] = await Promise.all([
         settingsGet("delivery_charge"),
         getStoredLocation(),
+        profile?.id ? bestUnusedVoucher(profile.id) : Promise.resolve({ data: null }),
       ]);
       if (charge != null) setDeliveryChargeSetting(Number(charge) || 250);
       setStoredLocation(loc);
+      if (bestV && bestV.data) setVoucher(bestV.data);
       setGated(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -294,6 +305,7 @@ export default function CheckoutScreen() {
       payment_screenshot_path:
         paymentMethod === "easypaisa" ? screenshotPath : null,
       cancellation_acknowledged: ack,
+      voucher_id: voucher?.id || null,
     };
     const { data, error } = await createOrder(payload);
     setPlacing(false);
@@ -513,6 +525,29 @@ export default function CheckoutScreen() {
                   ) : null}
 
                   <View style={styles.hr} />
+
+                  {voucher ? (
+                    <View style={styles.voucherBanner}>
+                      <Text style={styles.voucherBannerIcon}>🎁</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.voucherBannerTitle}>
+                          {voucher.discount_percent}% voucher applied to this order
+                        </Text>
+                        {!!voucher.reason && (
+                          <Text style={styles.voucherBannerReason}>
+                            {voucher.reason}
+                          </Text>
+                        )}
+                        <Text style={styles.voucherBannerSave}>
+                          You save {pkr(voucherDiscount)} on this order.
+                        </Text>
+                        <Text style={styles.voucherBannerCode}>
+                          Voucher {voucher.code} · attached automatically
+                        </Text>
+                      </View>
+                    </View>
+                  ) : null}
+
                   <Text style={styles.h3}>Review Your Order</Text>
                   {[...cart.items, ...cart.deals].map((l) => (
                     <View
@@ -551,10 +586,20 @@ export default function CheckoutScreen() {
                           : `Rs. ${deliveryCharge}`}
                     </Text>
                   </View>
+                  {voucher && voucherDiscount > 0 ? (
+                    <View style={styles.summaryRow}>
+                      <Text style={[styles.summaryLabel, styles.discountLabel]}>
+                        Voucher Discount ({voucher.discount_percent}%)
+                      </Text>
+                      <Text style={[styles.summaryValue, styles.discountValue]}>
+                        − {pkr(voucherDiscount)}
+                      </Text>
+                    </View>
+                  ) : null}
                   <View style={[styles.summaryRow, styles.totalRow]}>
                     <Text style={styles.totalLabel}>Total</Text>
                     <Text style={styles.totalValue}>
-                      {pkr(cart.subtotal + deliveryCharge)}
+                      {pkr(Math.max(0, cart.subtotal - voucherDiscount + deliveryCharge))}
                     </Text>
                   </View>
 
@@ -693,6 +738,14 @@ function SuccessPanel({ order, etaText, signedIn, onViewOrders, onContinue }) {
       </Text>
       <Text style={styles.successP}>Order Number</Text>
       <Text style={styles.successNum}>{order.order_number}</Text>
+      {Number(order.voucher_discount) > 0 ? (
+        <View style={styles.successVoucherBanner}>
+          <Text style={styles.successVoucherText}>
+            🎁 Saved Rs. {order.voucher_discount} with voucher{" "}
+            {order.voucher_code ? `(${order.voucher_code})` : ""}
+          </Text>
+        </View>
+      ) : null}
       <Text style={styles.successMeta}>
         {verifying
           ? `Your payment is being verified. ${order.order_type.toUpperCase()} · Rs. ${order.total}`
@@ -997,5 +1050,63 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
     justifyContent: "center",
     marginTop: 20,
+  },
+
+  /* Voucher banner in checkout review */
+  voucherBanner: {
+    backgroundColor: "#fff6e5",
+    borderWidth: 1,
+    borderColor: "#f5d496",
+    borderRadius: RADIUS.md,
+    padding: 14,
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "flex-start",
+    marginBottom: 16,
+  },
+  voucherBannerIcon: {
+    fontSize: 22,
+    marginTop: 2,
+  },
+  voucherBannerTitle: {
+    fontSize: 14.5,
+    fontFamily: FONTS.display,
+    color: COLORS.ink,
+    marginBottom: 2,
+  },
+  voucherBannerReason: {
+    fontSize: 12,
+    fontFamily: FONTS.body,
+    color: COLORS.inkSoft,
+    marginBottom: 4,
+  },
+  voucherBannerSave: {
+    fontSize: 13,
+    fontFamily: FONTS.bodyBold,
+    color: COLORS.gold,
+    marginBottom: 2,
+  },
+  voucherBannerCode: {
+    fontSize: 11,
+    fontFamily: FONTS.body,
+    color: COLORS.inkSoft,
+  },
+  discountLabel: {
+    color: COLORS.gold,
+  },
+  discountValue: {
+    color: COLORS.gold,
+  },
+  successVoucherBanner: {
+    backgroundColor: "#fff6e5",
+    borderRadius: RADIUS.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginVertical: 6,
+  },
+  successVoucherText: {
+    fontSize: 13,
+    fontFamily: FONTS.bodyBold,
+    color: COLORS.gold,
   },
 });
