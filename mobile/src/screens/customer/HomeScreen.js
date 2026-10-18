@@ -22,6 +22,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import Svg, {
   Circle,
   Defs,
@@ -300,8 +301,13 @@ export default function HomeScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={["left", "right"]}>
-      <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+      <StatusBar style="light" />
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.inner}
+        showsVerticalScrollIndicator={false}
+      >
         {/* ------------------------------------------------- hero */}
         <View style={styles.hero}>
           {/* Brand row — the site's LC-badge topnav, app edition. */}
@@ -478,7 +484,8 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.cream },
+  safe: { flex: 1, backgroundColor: HH.bg },
+  scroll: { flex: 1, backgroundColor: COLORS.cream },
   inner: { paddingBottom: 32 },
 
   /* ------------------------------------------------------- hero */

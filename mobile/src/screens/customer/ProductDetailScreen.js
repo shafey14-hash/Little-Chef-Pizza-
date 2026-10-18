@@ -41,7 +41,7 @@ export default function ProductDetailScreen({ navigation, route }) {
 
   if (product === null || product === "missing") {
     return (
-      <SafeAreaView style={styles.safe} edges={["left", "right"]}>
+      <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
         <View style={styles.pad}>
           <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
             <Text style={styles.backLink}>← Back to Menu</Text>
@@ -76,7 +76,7 @@ export default function ProductDetailScreen({ navigation, route }) {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={["left", "right"]}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
         <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
           <Text style={styles.backLink}>← Back to Menu</Text>

@@ -29,6 +29,7 @@ import {
 // ---------------------------------------------------------------- button
 export function Button({
   title,
+  children,
   onPress,
   variant = "primary", // primary | ghost | danger | gold
   disabled,
@@ -51,6 +52,8 @@ export function Button({
         ? COLORS.black
         : COLORS.white;
 
+  const label = title || children;
+
   return (
     <Pressable
       onPress={onPress}
@@ -72,7 +75,7 @@ export function Button({
           </Text>
         </View>
       ) : (
-        <Text style={[styles.btnText, { color: fg }, textStyle]}>{title}</Text>
+        <Text style={[styles.btnText, { color: fg }, textStyle]}>{label}</Text>
       )}
     </Pressable>
   );

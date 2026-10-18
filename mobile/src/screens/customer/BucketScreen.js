@@ -114,9 +114,25 @@ export default function BucketScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={["left", "right"]}>
-      <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Your Bucket</Text>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+      <View style={styles.topBar}>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={10} style={styles.backBtn}>
+          <Text style={styles.backBtnText}>← Back</Text>
+        </Pressable>
+        <Text style={styles.topBarTitle}>Your Bucket</Text>
+        {!empty ? (
+          <Pressable onPress={confirmClear} hitSlop={10}>
+            <Text style={styles.topBarClear}>Clear</Text>
+          </Pressable>
+        ) : (
+          <View style={{ width: 44 }} />
+        )}
+      </View>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.inner}
+        showsVerticalScrollIndicator={false}
+      >
 
         {empty ? (
           <View style={styles.empty}>
@@ -188,7 +204,39 @@ export default function BucketScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.cream },
+  safe: { flex: 1, backgroundColor: COLORS.white },
+  scroll: { flex: 1, backgroundColor: COLORS.cream },
+  topBar: {
+    height: 52,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.line,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+  },
+  backBtn: {
+    paddingVertical: 6,
+    paddingRight: 10,
+  },
+  backBtnText: {
+    color: COLORS.ink,
+    fontSize: 14,
+    fontFamily: FONTS.bodySemi,
+  },
+  topBarTitle: {
+    color: COLORS.ink,
+    fontSize: 16,
+    fontFamily: FONTS.display,
+  },
+  topBarClear: {
+    color: COLORS.danger,
+    fontSize: 13,
+    fontFamily: FONTS.bodySemi,
+    paddingVertical: 6,
+    paddingLeft: 10,
+  },
   inner: {
     padding: SPACING.gutter,
     paddingBottom: 120,

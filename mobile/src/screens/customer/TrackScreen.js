@@ -9,6 +9,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Input } from "../../ui/components";
+import AppHeader from "../../ui/AppHeader";
 import { trackOrder } from "../../lib/db";
 import { timeAgo } from "../../lib/format";
 import { COLORS, FONTS, RADIUS, SIZES, SPACING, shadowCard } from "../../theme";
@@ -53,8 +54,10 @@ export default function TrackScreen({ route }) {
   }, []);
 
   return (
-    <SafeAreaView style={styles.safe} edges={["left", "right"]}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+      <AppHeader />
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={styles.inner}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -148,7 +151,8 @@ function OrderCard({ order: o }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.cream },
+  safe: { flex: 1, backgroundColor: COLORS.white },
+  scroll: { flex: 1, backgroundColor: COLORS.cream },
   inner: { paddingBottom: 40 },
   hero: {
     alignItems: "center",

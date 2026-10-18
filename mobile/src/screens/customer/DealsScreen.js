@@ -7,6 +7,7 @@ import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DealCard, Skeleton } from "../../ui/cards";
+import AppHeader from "../../ui/AppHeader";
 import { COLORS, FONTS, SIZES, SPACING } from "../../theme";
 import { getCatalog, loadCatalog } from "../../state/catalog";
 
@@ -24,8 +25,13 @@ export default function DealsScreen() {
   }, []);
 
   return (
-    <SafeAreaView style={styles.safe} edges={["left", "right"]}>
-      <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+      <AppHeader />
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.inner}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>Little Chef Deals</Text>
         <Text style={styles.intro}>
           Great combos, great prices. Deal composition and pricing may be
@@ -48,7 +54,8 @@ export default function DealsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.cream },
+  safe: { flex: 1, backgroundColor: COLORS.white },
+  scroll: { flex: 1, backgroundColor: COLORS.cream },
   inner: {
     padding: SPACING.gutter,
     paddingBottom: 32,

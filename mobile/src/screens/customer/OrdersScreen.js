@@ -13,6 +13,7 @@ import { useAuth } from "../../state/auth";
 import { listForUser, subscribeToOrders } from "../../lib/db";
 import { fmtDate, pkr } from "../../lib/format";
 import { Button } from "../../ui/components";
+import AppHeader from "../../ui/AppHeader";
 import { toast } from "../../ui/toast";
 import { COLORS, FONTS, RADIUS, SIZES, SPACING } from "../../theme";
 
@@ -106,9 +107,11 @@ export default function OrdersScreen() {
 
   if (!profile) {
     return (
-      <SafeAreaView style={styles.safe} edges={["left", "right"]}>
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>🔒</Text>
+      <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+        <AppHeader />
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>🔒</Text>
           <Text style={styles.emptyTitle}>
             Create an account to see your order history
           </Text>
@@ -125,6 +128,7 @@ export default function OrdersScreen() {
             }}
           />
         </View>
+        </View>
       </SafeAreaView>
     );
   }
@@ -140,8 +144,10 @@ export default function OrdersScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={["left", "right"]}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+      <AppHeader />
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={styles.inner}
         showsVerticalScrollIndicator={false}
       >
@@ -229,7 +235,9 @@ export default function OrdersScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.cream },
+  safe: { flex: 1, backgroundColor: COLORS.white },
+  scroll: { flex: 1, backgroundColor: COLORS.cream },
+  emptyContainer: { flex: 1, backgroundColor: COLORS.cream, justifyContent: "center" },
   inner: { padding: SPACING.gutter, paddingBottom: 32 },
   h1: {
     fontSize: SIZES.h1,

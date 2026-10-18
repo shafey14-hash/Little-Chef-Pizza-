@@ -21,6 +21,7 @@ import { useAuth } from "../../state/auth";
 import { listActiveCampaigns, listMyVouchers } from "../../lib/db";
 import { supabase } from "../../lib/supabase";
 import { Button } from "../../ui/components";
+import AppHeader from "../../ui/AppHeader";
 import { COLORS, FONTS, RADIUS, SIZES, SPACING, shadowCard } from "../../theme";
 
 export default function CampaignsScreen() {
@@ -76,8 +77,10 @@ export default function CampaignsScreen() {
   }, [fetchData]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={["left", "right"]}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+      <AppHeader />
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={styles.inner}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -265,7 +268,8 @@ export default function CampaignsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.cream },
+  safe: { flex: 1, backgroundColor: COLORS.white },
+  scroll: { flex: 1, backgroundColor: COLORS.cream },
   inner: {
     padding: SPACING.gutter,
     paddingBottom: 40,

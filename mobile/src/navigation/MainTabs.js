@@ -7,6 +7,7 @@ import React from "react";
 import { Text, View, Pressable, StyleSheet } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS, FONTS, SIZES, shadowCard } from "../theme";
 import HomeScreen from "../screens/customer/HomeScreen";
 import MenuScreen from "../screens/customer/MenuScreen";
@@ -29,7 +30,7 @@ const TABS = [
   { name: "Profile", label: "Profile", icon: "👤", component: ProfileScreen },
 ];
 
-function FloatingBucketPill() {
+function FloatingBucketPill({ bottomOffset }) {
   const { itemCount } = useCart();
   const navigation = useNavigation();
 
@@ -37,7 +38,7 @@ function FloatingBucketPill() {
 
   return (
     <Pressable
-      style={styles.bucketPill}
+      style={[styles.bucketPill, { bottom: bottomOffset }]}
       onPress={() => navigation.navigate("Bucket")}
     >
       <Text style={styles.bucketIcon}>🧺</Text>
@@ -50,6 +51,10 @@ function FloatingBucketPill() {
 }
 
 export default function MainTabs() {
+  const insets = useSafeAreaInsets();
+  const bottomInset = insets.bottom > 0 ? insets.bottom : 6;
+  const tabHeight = SIZES.tabH + (insets.bottom > 0 ? insets.bottom - 4 : 0);
+
   return (
     <View style={styles.wrapper}>
       <Tab.Navigator
@@ -58,13 +63,21 @@ export default function MainTabs() {
           tabBarActiveTintColor: COLORS.red,
           tabBarInactiveTintColor: COLORS.inkSoft,
           tabBarLabelStyle: {
-            fontSize: 9,
+            fontSize: 9.5,
             fontFamily: FONTS.bodySemi,
           },
           tabBarStyle: {
-            height: SIZES.tabH,
+            height: tabHeight,
+            paddingBottom: bottomInset,
+            paddingTop: 6,
             backgroundColor: COLORS.white,
             borderTopColor: COLORS.line,
+            borderTopWidth: 1,
+            elevation: 8,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: -3 },
+            shadowOpacity: 0.06,
+            shadowRadius: 8,
           },
         }}
       >
@@ -84,7 +97,7 @@ export default function MainTabs() {
           />
         ))}
       </Tab.Navigator>
-      <FloatingBucketPill />
+      <FloatingBucketPill bottomOffset={tabHeight + 14} />
     </View>
   );
 }

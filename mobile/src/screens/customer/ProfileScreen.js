@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
+import AppHeader from "../../ui/AppHeader";
 import { useAuth } from "../../state/auth";
 import {
   CENTER,
@@ -72,9 +73,11 @@ export default function ProfileScreen() {
 
   if (!profile) {
     return (
-      <SafeAreaView style={styles.safe} edges={["left", "right"]}>
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>🔒</Text>
+      <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+        <AppHeader />
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>🔒</Text>
           <Text style={styles.emptyTitle}>Please log in first</Text>
           <Text style={styles.emptyText}>
             Log in or create an account first to view your profile and manage
@@ -87,6 +90,7 @@ export default function ProfileScreen() {
               await setGuest(false);
             }}
           />
+        </View>
         </View>
       </SafeAreaView>
     );
@@ -109,8 +113,10 @@ export default function ProfileScreen() {
           : `${ordersCount} orders placed so far`;
 
   return (
-    <SafeAreaView style={styles.safe} edges={["left", "right"]}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+      <AppHeader />
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={styles.inner}
         showsVerticalScrollIndicator={false}
       >
@@ -667,7 +673,9 @@ function EditProfileModal({ visible, profile, deliveryCharge, refreshProfile, on
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.cream },
+  safe: { flex: 1, backgroundColor: COLORS.white },
+  scroll: { flex: 1, backgroundColor: COLORS.cream },
+  emptyContainer: { flex: 1, backgroundColor: COLORS.cream, justifyContent: "center" },
   inner: { padding: SPACING.gutter, paddingBottom: 40, gap: 14 },
   h1: {
     fontSize: SIZES.h1,
