@@ -20,7 +20,8 @@ import {
   stopAppPush,
 } from "./src/lib/app-push";
 import { ToastHost } from "./src/ui/toast";
-import VersionGate from "./src/ui/VersionGate";
+// VersionGate removed — all changes ship via OTA or real-time DB.
+// Re-enable only if a native runtime change forces a new APK install.
 import { initOtaUpdates } from "./src/lib/updates";
 import RootNavigator from "./src/navigation/RootNavigator";
 
@@ -79,7 +80,7 @@ export default function App() {
         <StatusBar style="dark" />
         <RootGate navigationRef={navigationRef} />
         <ToastHost />
-        <VersionGate />
+        {/* VersionGate disabled — see comment at top */}
       </NavigationContainer>
     </AuthProvider>
   );
