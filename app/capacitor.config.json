@@ -4,7 +4,8 @@
   "webDir": "public",
   "server": {
     "url": "https://little-chef-pizza.vercel.app",
-    "cleartext": false
+    "cleartext": false,
+    "errorPath": "offline.html"
   },
   "android": {
     "allowMixedContent": false

@@ -1,11 +1,9 @@
-# Builds the React Native (Expo) Android app locally on GitHub Actions and publishes the
-# APK to the website root as app.apk — Vercel then serves it at
-# https://little-chef-pizza.vercel.app/app.apk.
+# React Native (Expo) app — kept so already-installed RN apps keep working.
 #
-# It ALSO publishes an EAS Update (OTA) on every mobile push: the installed
-# app picks up JS-only changes on its next launch — no APK reinstall needed.
-# Native changes (new packages, config plugins, version bumps) still need the
-# new APK from this workflow.
+# ota-update: publishes an EAS Update (OTA) on every mobile push; installed RN
+# apps pick up JS-only changes on their next launch.
+# build: manual only (Actions tab → Run workflow); uploads the RN APK as a
+# workflow artifact. The public app.apk is built by android-webview-apk.yml.
 #
 # One-time GitHub secrets:
 #   GOOGLE_SERVICES_JSON_BASE64   — single-line base64 of google-services.json
@@ -58,10 +56,13 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: npx eas-cli@latest update --channel production --message "$(git log -1 --pretty=%s)" --non-interactive
 
+  # The website's app.apk now comes from android-webview-apk.yml. This RN build
+  # runs only when started manually and never overwrites app.apk.
   build:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     env:
       HAS_FCM: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 != '' }}
 
@@ -111,20 +112,9 @@ jobs:
         # which often causes false-positive failures in CI environments.
         run: ./gradlew assembleRelease -x lint -x lintVitalAnalyzeRelease -x lintVitalRelease
 
-      - name: Copy APK to Root
-        run: |
-          cp mobile/android/app/build/outputs/apk/release/app-release.apk app.apk
-          ls -lh app.apk
-
-      - name: Publish app.apk to the website root
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app.apk
-          if git diff --cached --quiet; then
-            echo "APK unchanged — nothing to commit."
-            exit 0
-          fi
-          git commit -m "Publish latest app.apk (Local CI build)"
-          git push
-          echo "Pushed app.apk"
+      - name: Upload RN APK as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rn-app-release
+          path: mobile/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error

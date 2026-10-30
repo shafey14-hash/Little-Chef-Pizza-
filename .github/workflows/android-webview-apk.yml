@@ -1,0 +1,156 @@
+# Builds the Capacitor WebView Android app (app/) and publishes it to the
+# website root as app.apk — Vercel serves it at
+# https://little-chef-pizza.vercel.app/app.apk (homepage button + QR code).
+#
+# The app loads the LIVE website (server.url), so website changes reach every
+# installed app instantly; only app/ changes need a new APK.
+#
+# Signed with the same key as the earlier React Native app.apk (the Expo
+# template debug key), so it installs over it as an update — no uninstall.
+#
+# GitHub secret: GOOGLE_SERVICES_JSON_BASE64 (same one the RN build uses).
+
+name: Build Android WebView APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/android-webview-apk.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: publish-app-apk
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      HAS_FCM: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 != '' }}
+      # SHA-256 of the certificate the currently installed app.apk is signed with.
+      EXPECTED_CERT_SHA256: fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Fail fast if the Firebase config secret is missing
+        if: env.HAS_FCM != 'true'
+        run: |
+          echo "FAIL: the GOOGLE_SERVICES_JSON_BASE64 secret is not set (push notifications need it)."
+          exit 1
+
+      - name: Install Capacitor dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Sync web assets into the Android project
+        working-directory: app
+        run: npx cap sync android
+
+      - name: Decode google-services.json
+        if: env.HAS_FCM == 'true'
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        working-directory: app/android/app
+        run: |
+          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > google-services.json
+          if ! grep -q '"project_id"' google-services.json; then
+            echo "FAIL: GOOGLE_SERVICES_JSON_BASE64 decoded but is not a google-services.json."
+            exit 1
+          fi
+          echo "OK: google-services.json decoded"
+
+      - name: Check offline page is bundled
+        run: |
+          test -f app/android/app/src/main/assets/public/offline.html
+          grep -q '"errorPath": *"offline.html"' app/android/app/src/main/assets/capacitor.config.json
+          echo "OK: offline.html + errorPath present"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build unsigned release APK
+        working-directory: app/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      - name: Zipalign APK
+        run: |
+          BT_ROOT=$ANDROID_SDK_ROOT/build-tools
+          BT=$(ls -d "$BT_ROOT"/* 2>/dev/null | sort -V | tail -1)
+          if [ -z "$BT" ]; then
+            SDKMANAGER=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager
+            [ -x "$SDKMANAGER" ] || SDKMANAGER=$(find "$ANDROID_SDK_ROOT/cmdline-tools" -name sdkmanager -type f 2>/dev/null | head -1)
+            yes | "$SDKMANAGER" "build-tools;34.0.0" >/dev/null || true
+            BT=$BT_ROOT/34.0.0
+          fi
+          echo "Using build-tools at: $BT"
+          "$BT/zipalign" -f -p 4 \
+            app/android/app/build/outputs/apk/release/app-release-unsigned.apk \
+            aligned.apk
+          echo "OK: aligned.apk created"
+
+      # The Expo template debug.keystore is public (shipped inside the npm
+      # package), which is exactly why the earlier RN APK was signed with it.
+      - name: Fetch signing key (same as the installed app)
+        run: |
+          mkdir -p "$RUNNER_TEMP/tpl"
+          cd "$RUNNER_TEMP/tpl"
+          npm pack expo-template-bare-minimum@57.0.33 --silent
+          tar -xzf expo-template-bare-minimum-57.0.33.tgz package/android/app/debug.keystore
+          cp package/android/app/debug.keystore "$RUNNER_TEMP/debug.keystore"
+          echo "OK: debug.keystore fetched"
+
+      - name: Sign + verify APK (must match the installed app's certificate)
+        run: |
+          BT=$(ls -d "$ANDROID_SDK_ROOT"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" sign \
+            --ks "$RUNNER_TEMP/debug.keystore" \
+            --ks-key-alias androiddebugkey \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --out signed.apk aligned.apk
+          "$BT/apksigner" verify --print-certs signed.apk | tee certs.txt
+          if ! grep -q "certificate SHA-256 digest: $EXPECTED_CERT_SHA256" certs.txt; then
+            echo "FAIL: signing certificate does not match the installed app — users could not update."
+            exit 1
+          fi
+          if [ -f app.apk ]; then
+            OLD=$("$BT/apksigner" verify --print-certs app.apk | grep -m1 "certificate SHA-256 digest" | awk '{print $NF}')
+            if [ "$OLD" != "$EXPECTED_CERT_SHA256" ]; then
+              echo "FAIL: current app.apk is signed with $OLD, expected $EXPECTED_CERT_SHA256."
+              exit 1
+            fi
+          fi
+          echo "OK: certificate matches the installed app"
+
+      - name: Publish app.apk to the website root
+        run: |
+          cp signed.apk app.apk
+          ls -lh app.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.apk
+          if git diff --cached --quiet; then
+            echo "APK unchanged — nothing to commit."
+            exit 0
+          fi
+          git commit -m "Publish latest app.apk (WebView CI build)"
+          git pull --rebase origin main
+          git push
+          echo "Pushed app.apk"
