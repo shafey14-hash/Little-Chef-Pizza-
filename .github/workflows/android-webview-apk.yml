@@ -151,6 +151,7 @@ jobs:
             exit 0
           fi
           git commit -m "Publish latest app.apk (WebView CI build)"
-          git pull --rebase origin main
+          # chmod +x gradlew and cap sync leave tracked files modified; autostash keeps the rebase from aborting.
+          git pull --rebase --autostash origin main
           git push
           echo "Pushed app.apk"
